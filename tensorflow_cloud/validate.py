@@ -1,0 +1,96 @@
+# Copyright 2020 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import os
+
+from . import machine_config
+
+
+def validate(
+        entry_point, distribution_strategy, requirements_txt,
+        chief_config, worker_config, worker_count, region, args, stream_logs):
+    _validate_files(entry_point, requirements_txt)
+    _validate_distribution_strategy(distribution_strategy)
+    _validate_cluster_config(chief_config, worker_count, worker_config)
+    _validate_other_args(region, args, stream_logs)
+
+
+def _validate_files(entry_point, requirements_txt):
+    cwd = os.getcwd()
+    if not os.path.isfile(os.path.join(cwd, entry_point)):
+        raise ValueError(
+            'Invalid `entry_point`. '
+            'Expected a relative path in the current directory tree. '
+            'Received: {}'.format(entry_point))
+
+    if not os.path.isfile(os.path.join(cwd, requirements_txt)):
+        raise ValueError(
+            'Invalid `requirements_txt`. '
+            'Expected a relative path in the current directory tree. '
+            'Received: {}'.format(requirements_txt))
+
+
+def _validate_distribution_strategy(distribution_strategy):
+    if distribution_strategy not in ['auto', None]:
+        raise ValueError(
+            'Invalid `distribution_strategy` input. '
+            'Expected "auto" or None. '
+            'Received {}.'.format(distribution_strategy))
+
+
+def _validate_cluster_config(chief_config, worker_count, worker_config):
+    if not isinstance(chief_config, machine_config.MachineConfig):
+        raise ValueError(
+            'Invalid `chief_config` input. '
+            'Expected "auto" or `MachineConfig` instance. '
+            'Received {}.'.format(chief_config))
+    try:
+        if int(worker_count) < 0:
+            raise ValueError
+    except ValueError:
+        raise ValueError(
+            'Invalid `worker_count` input. '
+            'Expected a postive integer value. '
+            'Received {}.'.format(worker_count))
+
+    if (int(worker_count) > 0 and
+            not isinstance(worker_config, machine_config.MachineConfig)):
+        raise ValueError(
+            'Invalid `worker_config` input. '
+            'Expected "auto" or `MachineConfig` instance. '
+            'Received {}.'.format(worker_config))
+    # TODO(psv): Incompatible chief and worker configs
+
+
+def _validate_other_args(region, args, stream_logs):
+    if not isinstance(region, basestring):
+        raise ValueError(
+            'Invalid `region` input. '
+            'Expected None or a string value. '
+            'Received {}.'.format(str(region)))
+
+    if args is not None and not isinstance(args, list):
+        raise ValueError(
+            'Invalid `args` input. '
+            'Expected None or a list. '
+            'Received {}.'.format(str(args)))
+
+    if not isinstance(stream_logs, bool):
+        raise ValueError(
+            'Invalid `stream_logs` input. '
+            'Expected a boolean. '
+            'Received {}.'.format(str(stream_logs)))
