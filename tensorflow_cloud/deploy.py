@@ -49,7 +49,7 @@ def deploy_job(region,
             back from the cloud job.
 
     Raises:
-
+        RuntimeError, if there was an error submitting the job.
     """
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
