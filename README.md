@@ -2,14 +2,13 @@
 
 <h2>What is this repo?</h2>
 
-This repository provides APIs that will allow to easily go from debugging and training your TensorFlow code in a local environment to distributed training in the cloud.
+This repository provides APIs that will allow to easily go from debugging and training your Keras and TensorFlow code in a local environment to distributed training in the cloud.
 
 
 ## Usage
 
-Usage with `tf.keras` script that trains using `model.fit` [tests/call_run_on_script_with_keras_fit.py](tests/call_run_on_script_with_keras_fit.py).
-
-Usage with `tf.keras` script that trains using a custom training loop [tests/call_run_on_script_with_keras_ctl.py](tests/call_run_on_script_with_keras_ctl.py).
+- [Usage with `tf.keras` script that trains using `model.fit`](tests/call_run_on_script_with_keras_fit.py).
+- [Usage with `tf.keras` script that trains using a custom training loop](tests/call_run_on_script_with_keras_ctl.py).
 
 ## Contributing
 

@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 from tensorflow_cloud import machine_config
 from tensorflow_cloud import run
 
 
-run.run(entry_point='tests/testdata/mnist_example_using_fit.py',
+run.run(
+    entry_point='tests/testdata/mnist_example_using_fit.py',
     distribution_strategy=None,
     requirements_txt='tests/testdata/requirements.txt',
     chief_config=machine_config.MachineConfig(

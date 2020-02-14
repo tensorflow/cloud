@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module that contains the `run` API for scaling Keras/Tensorflow jobs."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -41,21 +43,19 @@ def _set_running_remotely(value):
     _IS_RUNNING_REMOTELY = value
 
 
-def run(
-    entry_point,
-    requirements_txt=None,
-    distribution_strategy='auto',
-    docker_base_image=None,
-    chief_config='auto',
-    worker_config='auto',
-    worker_count=0,
-    region=None,
-    entry_point_args=None,
-    stream_logs=False,
-):
+def run(entry_point,
+        requirements_txt=None,
+        distribution_strategy='auto',
+        docker_base_image=None,
+        chief_config='auto',
+        worker_config='auto',
+        worker_count=0,
+        region=None,
+        entry_point_args=None,
+        stream_logs=False):
     """Runs your Tensorflow code in Google Cloud Platform.
 
-    # Arguments:
+    Args:
         entry_point: String. Python file path to the file that contains the
             TensorFlow code.
             Note: This path must be in the current working directory tree.
@@ -73,6 +73,7 @@ def run(
                 `tf.distribute.experimental.MultiWorkerMirroredStrategy`.
             - If number of GPUs > 0, we will use
                 `tf.distribute.MirroredStrategy`
+            - Otherwise, we will use `tf.distribute.OneDeviceStrategy`
             If you have created a distribution strategy instance in your script
             already, please set `distribution_stratgey` as None here.
             For example, if you are using `tf.keras` custom training loops,
@@ -109,45 +110,73 @@ def run(
         return
     _set_running_remotely(True)
 
-    # Get defaults.
+    # Get defaults values for input params.
     if chief_config == 'auto':
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
     if worker_config == 'auto':
         worker_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
     region = region or gcp.get_region()
-    dst_path_prefix = '/app/'
+    # Working directory in the docker container filesystem.
+    destination_dir = '/app/'
+    if not isinstance(worker_count, int):
+        worker_count = int(worker_count)
+    # Default location to which the docker image that is created is pushed.
     docker_registry = 'gcr.io/{}'.format(gcp.get_project_name())
 
     # Run validations.
     validate.validate(
-        entry_point, distribution_strategy, requirements_txt,
+        entry_point, requirements_txt, distribution_strategy,
         chief_config, worker_config, worker_count, region,
         entry_point_args, stream_logs)
 
-    # Create the script to run (starter_script).
     # Make the `entry_point` cloud and distribution ready.
-    startup_script = preprocess.get_startup_script(
-        entry_point, chief_config, worker_count, distribution_strategy)
+    # A temporary script called `wrapped_entry_point` is created.
+    # This contains the `entry_point` wrapped in distribution strategy.
+    wrapped_entry_point = None
+    if (distribution_strategy == 'auto' and
+        chief_config.accelerator_type !=
+            machine_config.AcceleratorType.NO_ACCELERATOR):
+        wrapped_entry_point = preprocess.get_wrapped_entry_point(
+            entry_point, chief_config, worker_count, distribution_strategy)
 
-    # Get all the files, that we need to package, mapped to the dst location.
-    # This will include the startup script, requirements_txt, dockerfile,
-    # files in the entry_point dir.
-    dockerfile, file_map = containerize.get_file_map(
-        entry_point, startup_script, chief_config, requirements_txt,
-        dst_path_prefix, docker_base_image)
+    # Create docker file.
+    docker_entry_point = wrapped_entry_point or entry_point
+    docker_file = containerize.create_docker_file(
+        docker_entry_point,
+        chief_config,
+        requirements_txt=requirements_txt,
+        destination_dir=destination_dir,
+        docker_base_image=docker_base_image)
+
+    # Get all the files, that we need to package, mapped to the destination
+    # location. This will include the wrapped_entry_point, requirements_txt,
+    # dockerfile and the entry_point directory tree.
+    file_map = containerize.get_file_path_map(
+        entry_point,
+        docker_file,
+        wrapped_entry_point=wrapped_entry_point,
+        requirements_txt=requirements_txt,
+        destination_dir=destination_dir)
 
     # Create a tarball with the files.
-    tarball = package.get_tarball(file_map)
+    tar_file_path = package.get_tar_file_path(file_map)
 
-    # Create docker image.
-    docker_img = containerize.get_docker_image(docker_registry, tarball)
+    # Build and push docker image.
+    docker_img_uri = containerize.get_docker_image(
+        docker_registry, tar_file_path)
 
     # Delete all the temporary files we created.
-    os.remove(startup_script)
-    os.remove(dockerfile)
-    os.remove(tarball)
+    if wrapped_entry_point is not None:
+        os.remove(wrapped_entry_point)
+    os.remove(docker_file)
+    os.remove(tar_file_path)
 
     # Deploy docker image on the cloud.
     job_name = deploy.deploy_job(
-        region, docker_img, chief_config, worker_count, worker_config,
-        entry_point_args, stream_logs)
+        region,
+        docker_img_uri,
+        chief_config,
+        worker_count,
+        worker_config,
+        entry_point_args,
+        stream_logs)

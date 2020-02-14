@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for cloud preprocessing."""
+"""Tests for the cloud preprocessing module."""
 
 import os
 import unittest
@@ -26,24 +26,23 @@ class TestPreprocess(unittest.TestCase):
         self.entry_point = 'testdata/sample_compile_fit.py'
         _, self.entry_point_name = os.path.split(self.entry_point)
 
-    def get_startup_script(
+    def get_wrapped_entry_point(
             self, chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_1X'],
-            worker_count=0, distribution_strategy='auto'):
-        self.startup_script = preprocess.get_startup_script(
-            self.entry_point, chief_config, worker_count,
-            distribution_strategy)
+            worker_count=0):
+        self.wrapped_entry_point = preprocess.get_wrapped_entry_point(
+            self.entry_point, chief_config, worker_count)
 
-        with open(self.startup_script, 'r') as f:
+        with open(self.wrapped_entry_point, 'r') as f:
             script_lines = f.readlines()
         return script_lines
 
     def assert_and_cleanup(self, expected_lines, script_lines):
         self.assertListEqual(expected_lines, script_lines)
-        os.remove(self.startup_script)
+        os.remove(self.wrapped_entry_point)
 
     def test_auto_one_device_strategy(self):
         self.setup()
-        script_lines = self.get_startup_script()
+        script_lines = self.get_wrapped_entry_point()
         expected_lines = [
             'import tensorflow as tf\n',
             'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
@@ -54,7 +53,7 @@ class TestPreprocess(unittest.TestCase):
     def test_auto_mirrored_strategy(self):
         self.setup()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
-        script_lines = self.get_startup_script(chief_config=chief_config)
+        script_lines = self.get_wrapped_entry_point(chief_config=chief_config)
         expected_lines = [
             'import tensorflow as tf\n',
             'strategy = tf.distribute.MirroredStrategy()\n',
@@ -65,31 +64,12 @@ class TestPreprocess(unittest.TestCase):
     def test_auto_multi_worker_strategy(self):
         self.setup()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
-        script_lines = self.get_startup_script(
+        script_lines = self.get_wrapped_entry_point(
             chief_config=chief_config, worker_count=2)
         expected_lines = [
             'import tensorflow as tf\n',
             'strategy = tf.distribute.experimental.'
             'MultiWorkerMirroredStrategy()\n',
             'tf.distribute.experimental_set_strategy(strategy)\n',
-            'exec(open("{}").read())\n'.format(self.entry_point_name)]
-        self.assert_and_cleanup(expected_lines, script_lines)
-
-    def test_cpu_config_no_strategy(self):
-        self.setup()
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS['CPU']
-        script_lines = self.get_startup_script(chief_config=chief_config)
-        expected_lines = [
-            'import tensorflow as tf\n',
-            'exec(open("{}").read())\n'.format(self.entry_point_name)]
-        self.assert_and_cleanup(expected_lines, script_lines)
-
-    def test_none_distribution_strategy(self):
-        self.setup()
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS['CPU']
-        script_lines = self.get_startup_script(
-            chief_config=chief_config, distribution_strategy=None)
-        expected_lines = [
-            'import tensorflow as tf\n',
             'exec(open("{}").read())\n'.format(self.entry_point_name)]
         self.assert_and_cleanup(expected_lines, script_lines)

@@ -33,8 +33,6 @@ class TestGcp(unittest.TestCase):
         assert gcp.get_accelerator_type('V100') == 'NVIDIA_TESLA_V100'
         assert gcp.get_accelerator_type('P4') == 'NVIDIA_TESLA_P4'
         assert gcp.get_accelerator_type('T4') == 'NVIDIA_TESLA_T4'
-        with pytest.raises(ValueError, match=r'Invalid accelerator type.'):
-            gcp.get_accelerator_type('Something')
 
     def test_get_machine_type(self):
         assert gcp.get_machine_type(4, 15) == 'n1-standard-4'
@@ -54,8 +52,6 @@ class TestGcp(unittest.TestCase):
         assert gcp.get_machine_type(32, 28.8) == 'n1-highcpu-32'
         assert gcp.get_machine_type(64, 57.6) == 'n1-highcpu-64'
         assert gcp.get_machine_type(96, 86.4) == 'n1-highcpu-96'
-        with pytest.raises(ValueError, match=r'Invalid machine type.'):
-            gcp.get_machine_type(3, 5)
 
     def test_validate_machine_configuration(self):
         # valid config

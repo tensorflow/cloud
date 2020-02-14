@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for the cloud deploy module."""
+
 import io
 import mock
 import os
@@ -29,7 +31,7 @@ from mock import call, patch
 class TestDeploy(unittest.TestCase):
 
     def setup(self, MockDiscovery):
-        self.mock_job_name = 'tf-train-abcde'
+        self.mock_job_id = 'tf-train-abcde'
         self.mock_project_name = 'my-gcp-project'
         self.entry_point = 'testdata/sample_compile_fit.py'
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
@@ -41,7 +43,7 @@ class TestDeploy(unittest.TestCase):
         self.stream_logs = False
 
         self.expected_request_dict = {
-            'jobId': self.mock_job_name,
+            'jobId': self.mock_job_id,
             'trainingInput': {
                 'use_chief_in_tf_config': True,
                 'scaleTier': 'custom',
@@ -70,9 +72,9 @@ class TestDeploy(unittest.TestCase):
         # Verify mocking is correct and setup method mocks.
         assert MockDiscovery is deploy.discovery
 
-        def _mock_get_name():
-            return self.mock_job_name
-        deploy._get_name = _mock_get_name
+        def _mock_generate_job_id():
+            return self.mock_job_id
+        deploy._generate_job_id = _mock_generate_job_id
 
         def _mock_get_project_name():
             return self.mock_project_name
@@ -87,7 +89,7 @@ class TestDeploy(unittest.TestCase):
             self.region, self.docker_img, self.chief_config, self.worker_count,
             self.worker_config, self.entry_point_args, self.stream_logs)
 
-        self.assertEqual(job_name, self.mock_job_name)
+        self.assertEqual(job_name, self.mock_job_id)
 
         # Verify discovery API is invoked as expected.
         self.assertEqual(MockDiscovery.build.call_count, 1)
@@ -114,8 +116,8 @@ class TestDeploy(unittest.TestCase):
             'Job submitted successfully.\nYour job ID is:  {}\nPlease access '
             'your job logs at the following URL:\nhttps://'
             'console.cloud.google.com/mlengine/jobs/{}?project={}\n'.format(
-                self.mock_job_name,
-                self.mock_job_name,
+                self.mock_job_id,
+                self.mock_job_id,
                 self.mock_project_name))
 
     @patch('tensorflow_cloud.deploy.discovery')

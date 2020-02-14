@@ -24,7 +24,7 @@ from tensorflow_cloud import package
 
 class TestPackage(unittest.TestCase):
 
-    def test_get_tarball(self):
+    def test_get_tar_file_path(self):
         _, temp_file1 = tempfile.mkstemp(suffix='.py')
         _, temp_file2 = tempfile.mkstemp(suffix='.txt')
 
@@ -33,7 +33,7 @@ class TestPackage(unittest.TestCase):
             temp_file2: 'Dockerfile',
         }
 
-        tarball = package.get_tarball(file_map)
+        tarball = package.get_tar_file_path(file_map)
         assert tarfile.is_tarfile(tarball)
 
         tar_file = tarfile.open(tarball)

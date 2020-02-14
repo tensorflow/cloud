@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Machine configuration annotations used by the Keras cloud APIs."""
+"""Machine configuration annotations used by the `run` API."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -51,24 +51,23 @@ class AcceleratorType(Enum):
 
 
 class MachineConfig(object):
-    """Represents the configuration or type of machine to be used."""
+    """Represents the configuration or type of machine to be used.
+
+    Args:
+      cpu_cores: Number of virtual CPU cores. Defaults to 8.
+      memory: Amount of memory in GB. Defaults to 30GB.
+      accelerator_type: Type of the accelerator to be used
+        ('K80', 'P100', 'V100', 'P4', 'T4') or 'CPU' for no
+        accelerator. Defaults to `auto`, which maps to a standard
+        gpu config such as 'K80'.
+      accelerator_count: Number of accelerators. Defaults to 1.
+    """
 
     def __init__(self,
                  cpu_cores=8,
                  memory=30,
                  accelerator_type='auto',
                  accelerator_count=1):
-        """Creates a `MachineConfig` instance.
-
-        Args:
-          cpu_cores: Number of virtual CPU cores. Defaults to 8.
-          memory: Amount of memory in GB. Defaults to 30GB.
-          accelerator_type: Type of the accelerator to be used
-            ('K80', 'P100', 'V100', 'P4', 'T4') or 'CPU' for no
-            accelerator. Defaults to `auto`, which maps to a standard
-            gpu config such as 'K80'.
-          accelerator_count: Number of accelerators. Defaults to 1.
-        """
         self.cpu_cores = cpu_cores
         self.memory = memory
         self.accelerator_type = accelerator_type
@@ -80,6 +79,7 @@ class MachineConfig(object):
         self.validate()
 
     def validate(self):
+        """Checks that the machine configuration created is valid for GCP."""
         AcceleratorType.validate(self.accelerator_type)
         gcp.validate_machine_configuration(
             self.cpu_cores,
@@ -88,6 +88,7 @@ class MachineConfig(object):
             self.accelerator_count)
 
 
+# Dictionary with common machine configurations.
 COMMON_MACHINE_CONFIGS = {
     'CPU':
         MachineConfig(

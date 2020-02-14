@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''Tests for validation module.'''
+'''Tests for the validation module.'''
 
 import pytest
 import unittest
@@ -69,7 +69,7 @@ class TestValidate(unittest.TestCase):
             validate.validate(
                 entry_point='tests/testdata/mnist_example_using_fit.py',
                 distribution_strategy='auto',
-                requirements_txt='requirements.txt',
+                requirements_txt='temp.txt',
                 chief_config=TestValidate.VALID_MACHINE_CONFIG,
                 worker_config=TestValidate.VALID_MACHINE_CONFIG,
                 worker_count=1,
@@ -131,18 +131,6 @@ class TestValidate(unittest.TestCase):
                 args=None,
                 stream_logs=True)
 
-        with pytest.raises(ValueError, match=r'Invalid `worker_count`'):
-            validate.validate(
-                entry_point='tests/testdata/mnist_example_using_fit.py',
-                distribution_strategy='auto',
-                requirements_txt='tests/testdata/requirements.txt',
-                chief_config=TestValidate.VALID_MACHINE_CONFIG,
-                worker_config=TestValidate.VALID_MACHINE_CONFIG,
-                worker_count='one',
-                region='us-central1',
-                args=None,
-                stream_logs=True)
-
     def test_invalid_region(self):
         with pytest.raises(ValueError, match=r'Invalid `region`'):
             validate.validate(
@@ -157,7 +145,7 @@ class TestValidate(unittest.TestCase):
                 stream_logs=True)
 
     def test_invalid_args(self):
-        with pytest.raises(ValueError, match=r'Invalid `args`'):
+        with pytest.raises(ValueError, match=r'Invalid `entry_point_args`'):
             validate.validate(
                 entry_point='tests/testdata/mnist_example_using_fit.py',
                 distribution_strategy='auto',

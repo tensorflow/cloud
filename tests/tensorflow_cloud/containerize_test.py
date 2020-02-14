@@ -29,6 +29,7 @@ class TestContainerize(unittest.TestCase):
     def setup(self):
         self.entry_point = 'tests/testdata/mnist_example_using_fit.py'
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_1X']
+        self.entry_point_dir, _ = os.path.split(self.entry_point)
 
     def cleanup(self):
         os.remove(self.docker_file)
@@ -38,10 +39,10 @@ class TestContainerize(unittest.TestCase):
             actual_lines = f.readlines()
             self.assertListEqual(expected_lines, actual_lines)
 
-    def test_get_file_map_defaults(self):
+    def test_create_docker_file_defaults(self):
         self.setup()
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point, self.entry_point, self.chief_config)
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config)
 
         expected_docker_file_lines = [
           'FROM tensorflow/tensorflow:{}-gpu\n'.format(VERSION),
@@ -50,23 +51,16 @@ class TestContainerize(unittest.TestCase):
           'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines)
-
-        entry_point_dir, _ = os.path.split(self.entry_point)
-        self.assertDictEqual(file_map, {
-            self.docker_file: 'Dockerfile',
-            entry_point_dir: '/app/',
-            self.entry_point: '/app/mnist_example_using_fit.py'})
-
         self.cleanup()
 
-    def test_get_file_map_with_requirements(self):
+    def test_create_docker_with_requirements(self):
         self.setup()
         req_file = 'requirements.txt'
         with open(req_file, 'w') as f:
             f.writelines(['tensorflow-datasets'])
 
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point, self.entry_point, self.chief_config,
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
             requirements_txt=req_file)
 
         expected_docker_file_lines = [
@@ -79,21 +73,14 @@ class TestContainerize(unittest.TestCase):
         ]
         self.assert_docker_file(expected_docker_file_lines)
 
-        entry_point_dir, _ = os.path.split(self.entry_point)
-        self.assertDictEqual(file_map, {
-            self.docker_file: 'Dockerfile',
-            req_file: '/app/requirements.txt',
-            entry_point_dir: '/app/',
-            self.entry_point: '/app/mnist_example_using_fit.py'})
-
         os.remove(req_file)
         self.cleanup()
 
-    def test_get_file_map_with_dst_dir(self):
+    def test_create_docker_file_with_destination_dir(self):
         self.setup()
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point, self.entry_point, self.chief_config,
-            dst_dir='/my_app/temp/')
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
+            destination_dir='/my_app/temp/')
 
         expected_docker_file_lines = [
           'FROM tensorflow/tensorflow:{}-gpu\n'.format(VERSION),
@@ -102,19 +89,12 @@ class TestContainerize(unittest.TestCase):
           'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines)
-
-        entry_point_dir, _ = os.path.split(self.entry_point)
-        self.assertDictEqual(file_map, {
-            self.docker_file: 'Dockerfile',
-            entry_point_dir: '/my_app/temp/',
-            self.entry_point: '/my_app/temp/mnist_example_using_fit.py'})
-
         self.cleanup()
 
-    def test_get_file_map_with_docker_base_image(self):
+    def test_create_docker_file_with_docker_base_image(self):
         self.setup()
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point, self.entry_point, self.chief_config,
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
             docker_base_image='tensorflow/tensorflow:latest')
 
         expected_docker_file_lines = [
@@ -124,19 +104,11 @@ class TestContainerize(unittest.TestCase):
           'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines)
-
-        entry_point_dir, _ = os.path.split(self.entry_point)
-        self.assertDictEqual(file_map, {
-            self.docker_file: 'Dockerfile',
-            entry_point_dir: '/app/',
-            self.entry_point: '/app/mnist_example_using_fit.py'})
-
         self.cleanup()
 
-    def test_get_file_map_with_gpu_config(self):
+    def test_create_docker_file_with_cpu_config(self):
         self.setup()
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point,  # mocking startup_script
+        self.docker_file = containerize.create_docker_file(
             self.entry_point,
             machine_config.COMMON_MACHINE_CONFIGS['CPU'])
 
@@ -147,12 +119,71 @@ class TestContainerize(unittest.TestCase):
           'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines)
+        self.cleanup()
 
-        entry_point_dir, _ = os.path.split(self.entry_point)
+    def test_get_file_path_map_defaults(self):
+        self.setup()
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config)
+        file_map = containerize.get_file_path_map(
+            self.entry_point, self.docker_file)
+
         self.assertDictEqual(file_map, {
             self.docker_file: 'Dockerfile',
-            entry_point_dir: '/app/',
-            self.entry_point: '/app/mnist_example_using_fit.py'})
+            self.entry_point_dir: '/app/'})
+
+        self.cleanup()
+
+    def test_get_file_path_map_with_requirements(self):
+        self.setup()
+        req_file = 'requirements.txt'
+        with open(req_file, 'w') as f:
+            f.writelines(['tensorflow-datasets'])
+
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
+            requirements_txt=req_file)
+        file_map = containerize.get_file_path_map(
+            self.entry_point, self.docker_file, requirements_txt=req_file)
+
+        self.assertDictEqual(file_map, {
+            self.docker_file: 'Dockerfile',
+            req_file: '/app/requirements.txt',
+            self.entry_point_dir: '/app/'})
+
+        os.remove(req_file)
+        self.cleanup()
+
+    def test_get_file_path_map_with_destination_dir(self):
+        self.setup()
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
+            destination_dir='/my_app/temp/')
+        file_map = containerize.get_file_path_map(
+            self.entry_point, self.docker_file,
+            destination_dir='/my_app/temp/')
+
+        self.assertDictEqual(file_map, {
+            self.docker_file: 'Dockerfile',
+            self.entry_point_dir: '/my_app/temp/'})
+
+        self.cleanup()
+
+    def test_get_file_path_map_with_wrapped_entry_point(self):
+        self.setup()
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
+            destination_dir='/my_app/temp/')
+        # entry_point file mimic wrapped entry_point here.
+        file_map = containerize.get_file_path_map(
+            self.entry_point, self.docker_file,
+            wrapped_entry_point=self.entry_point,
+            destination_dir='/my_app/temp/')
+
+        self.assertDictEqual(file_map, {
+            self.docker_file: 'Dockerfile',
+            self.entry_point_dir: '/my_app/temp/',
+            self.entry_point: '/my_app/temp/mnist_example_using_fit.py'})
 
         self.cleanup()
 
@@ -172,10 +203,11 @@ class TestContainerize(unittest.TestCase):
             return mock_img_tag
         containerize._generate_name = _mock_generate_name
 
-        entry_point_dir = os.path.dirname(os.path.abspath(self.entry_point))
-        self.docker_file, file_map = containerize.get_file_map(
-            self.entry_point, self.entry_point, self.chief_config)
-        tarball = package.get_tarball(file_map)
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config)
+        file_map = containerize.get_file_path_map(
+            self.entry_point, self.docker_file)
+        tarball = package.get_tar_file_path(file_map)
         img_tag = containerize.get_docker_image(mock_registry, tarball)
 
         self.assertEqual(img_tag, mock_img_tag)

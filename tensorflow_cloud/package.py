@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Utility for packaging files into a tarball."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,9 +20,22 @@ import tarfile
 import tempfile
 
 
-def get_tarball(file_location_map):
+def get_tar_file_path(file_location_map):
+    """Packages files into a tarball and returns the tarball file path.
+
+    Args:
+        file_location_map: Dictionary mapping file paths in the local
+            file system to the paths in the docker daemon process location.
+            The `key` or source is the path of the file that will be used when
+            creating the archive. The `value` or destination is set as the
+            `arcname` for the file at this time. When extracting files from
+            the archive, they are extracted to the destination path.
+
+    Returns:
+        The tarball file path.
+    """
     _, output_file = tempfile.mkstemp()
     with tarfile.open(output_file, 'w:gz', dereference=True) as tar:
-        for src, dst in file_location_map.items():
-            tar.add(src, arcname=dst)
+        for source, destination in file_location_map.items():
+            tar.add(source, arcname=destination)
     return output_file

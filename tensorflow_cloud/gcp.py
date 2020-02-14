@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Utilities related to GCP."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,16 +21,30 @@ import google.auth
 
 
 def get_project_name():
+    """Returns the current GCP project name."""
     # https://google-auth.readthedocs.io/en/latest/reference/google.auth.html
     _, project_id = google.auth.default()
     if project_id is None:
-        raise Exception('Could not determine the GCP project id.')
+        raise RuntimeError('Could not determine the GCP project id.')
 
     return project_id
 
 
-def validate_machine_configuration(
-        cpu_cores, memory, accelerator_type, accelerator_count):
+def validate_machine_configuration(cpu_cores,
+                                   memory,
+                                   accelerator_type,
+                                   accelerator_count):
+    """Validates machine confgurations for a GCP job.
+
+    Args:
+        cpu_cores: Number of virtual CPU cores.
+        memory: Amount of memory in GB.
+        accelerator_type: 'MachineConfig.AcceleratorType'
+      accelerator_count: Number of accelerators. Defaults to 1.
+
+    Raises:
+        ValueError, if machine configuration is not a valid GCP configuration.
+    """
     valid_configurations = _get_valid_machine_configurations()
     current_config = (
         cpu_cores, memory, accelerator_type.value, accelerator_count)
@@ -44,79 +60,62 @@ def validate_machine_configuration(
 
 
 def get_region():
+    """Returns the default GCP region for running a job."""
     return 'us-central1'
 
 
 def get_accelerator_type(accl_type):
-    if accl_type == 'CPU':
-        return 'ACCELERATOR_TYPE_UNSPECIFIED'
-    if accl_type == 'K80':
-        return 'NVIDIA_TESLA_K80'
-    if accl_type == 'P100':
-        return 'NVIDIA_TESLA_P100'
-    if accl_type == 'V100':
-        return 'NVIDIA_TESLA_V100'
-    if accl_type == 'P4':
-        return 'NVIDIA_TESLA_P4'
-    if accl_type == 'T4':
-        return 'NVIDIA_TESLA_T4'
-    else:
-        raise ValueError('Invalid accelerator type.')
+    """Returns the accelerator type to be used on a GCP machine."""
+    accl_type_map = {
+        'CPU': 'ACCELERATOR_TYPE_UNSPECIFIED',
+        'K80': 'NVIDIA_TESLA_K80',
+        'P100': 'NVIDIA_TESLA_P100',
+        'V100': 'NVIDIA_TESLA_V100',
+        'P4': 'NVIDIA_TESLA_P4',
+        'T4': 'NVIDIA_TESLA_T4',
+    }
+    return accl_type_map[accl_type]
 
 
 def get_machine_type(cpu_cores, memory):
-    config = (cpu_cores, memory)
-    if config == (4, 15):
-        return 'n1-standard-4'
-    if config == (8, 30):
-        return 'n1-standard-8'
-    if config == (16, 60):
-        return 'n1-standard-16'
-    if config == (32, 120):
-        return 'n1-standard-32'
-    if config == (64, 240):
-        return 'n1-standard-64'
-    if config == (96, 360):
-        return 'n1-standard-96'
-    if config == (2, 13):
-        return 'n1-highmem-2'
-    if config == (4, 26):
-        return 'n1-highmem-4'
-    if config == (8, 52):
-        return 'n1-highmem-8'
-    if config == (16, 104):
-        return 'n1-highmem-16'
-    if config == (32, 208):
-        return 'n1-highmem-32'
-    if config == (64, 416):
-        return 'n1-highmem-64'
-    if config == (96, 624):
-        return 'n1-highmem-96'
-    if config == (16, 14.4):
-        return 'n1-highcpu-16'
-    if config == (32, 28.8):
-        return 'n1-highcpu-32'
-    if config == (64, 57.6):
-        return 'n1-highcpu-64'
-    if config == (96, 86.4):
-        return 'n1-highcpu-96'
-    else:
-        raise ValueError('Invalid machine type.')
+    """Returns the GCP AI Platform machine type."""
+    machine_type_map = {
+        (4, 15): 'n1-standard-4',
+        (8, 30): 'n1-standard-8',
+        (16, 60): 'n1-standard-16',
+        (32, 120): 'n1-standard-32',
+        (64, 240): 'n1-standard-64',
+        (96, 360): 'n1-standard-96',
+        (2, 13): 'n1-highmem-2',
+        (4, 26): 'n1-highmem-4',
+        (8, 52): 'n1-highmem-8',
+        (16, 104): 'n1-highmem-16',
+        (32, 208): 'n1-highmem-32',
+        (64, 416): 'n1-highmem-64',
+        (96, 624): 'n1-highmem-96',
+        (16, 14.4): 'n1-highcpu-16',
+        (32, 28.8): 'n1-highcpu-32',
+        (64, 57.6): 'n1-highcpu-64',
+        (96, 86.4): 'n1-highcpu-96',
+    }
+    return machine_type_map[(cpu_cores, memory)]
 
 
 def _get_valid_machine_configurations():
-    valid_configs = []
+    """Returns the list of valid GCP machine configurations."""
 
-    # Add CPU configurations
-    cpu_memory = [
-        (4, 15), (8, 30), (16, 60), (32, 120), (64, 240), (96, 360),
-        (2, 13), (4, 26), (8, 52), (16, 104), (32, 208), (64, 416),
-        (96, 624), (16, 14.4), (32, 28.8), (64, 57.6), (96, 86.4)]
-    for (cpu, memory) in cpu_memory:
-        valid_configs.append((cpu, memory, 'CPU', 0))
+    return [
+        # Add CPU configurations
+        (4, 15, 'CPU', 0), (8, 30, 'CPU', 0), (16, 60, 'CPU', 0),
+        (32, 120, 'CPU', 0), (64, 240, 'CPU', 0), (96, 360, 'CPU', 0),
+        (2, 13, 'CPU', 0), (4, 26, 'CPU', 0), (8, 52, 'CPU', 0),
+        (16, 104, 'CPU', 0), (32, 208, 'CPU', 0), (64, 416, 'CPU', 0),
+        (96, 624, 'CPU', 0), (16, 14.4, 'CPU', 0), (32, 28.8, 'CPU', 0),
+        (64, 57.6, 'CPU', 0), (96, 86.4, 'CPU', 0),
 
-    # https://cloud.google.com/ml-engine/docs/using-gpus#compute-engine-machine-types-with-gpu
-    valid_configs.extend([
+        # GPU configs:
+        # https://cloud.google.com/ml-engine/docs/using-gpus#compute-engine-machine-types-with-gpu
+
         # 'n1-standard-4', 'K80'
         (4, 15, 'K80', 1), (4, 15, 'K80', 2),
         (4, 15, 'K80', 4), (4, 15, 'K80', 8),
@@ -293,5 +292,4 @@ def _get_valid_machine_configurations():
         (96, 86.4, 'T4', 4),
         # 'n1-highcpu-96', 'V100'
         (96, 86.4, 'V100', 8),
-    ])
-    return valid_configs
+    ]
