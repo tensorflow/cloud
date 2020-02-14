@@ -50,7 +50,6 @@ def run(entry_point,
         chief_config='auto',
         worker_config='auto',
         worker_count=0,
-        region=None,
         entry_point_args=None,
         stream_logs=False):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -98,8 +97,6 @@ def run(entry_point,
         worker_count: Optional integer that represents the number of general
             workers in a distribution cluster. Defaults to 0. This count does
             not include the chief worker.
-        region: Optional string. Cloud region in which to submit the
-            job. Defaults to 'us-central1' for GCP.
         entry_point_args: Optional list of strings. Defaults to None.
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
@@ -115,7 +112,7 @@ def run(entry_point,
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
     if worker_config == 'auto':
         worker_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
-    region = region or gcp.get_region()
+    region = gcp.get_region()
     # Working directory in the docker container filesystem.
     destination_dir = '/app/'
     if not isinstance(worker_count, int):
