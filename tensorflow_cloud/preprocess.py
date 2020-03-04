@@ -71,7 +71,10 @@ def get_wrapped_entry_point(entry_point,
         'import tensorflow as tf\n',
         strategy,
         'tf.distribute.experimental_set_strategy(strategy)\n',
-        # Add user's code
+        # Add user's code.
+        # We are using exec here to execute the user code object.
+        # This will support use case where the user's program has a
+        # main method.
         'exec(open("{}").read())\n'.format(entry_point_file_name)
     ]
 

@@ -134,7 +134,7 @@ def run(entry_point,
         chief_config.accelerator_type !=
             machine_config.AcceleratorType.NO_ACCELERATOR):
         wrapped_entry_point = preprocess.get_wrapped_entry_point(
-            entry_point, chief_config, worker_count, distribution_strategy)
+            entry_point, chief_config, worker_count)
 
     # Create docker file.
     docker_entry_point = wrapped_entry_point or entry_point

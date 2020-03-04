@@ -74,7 +74,7 @@ class MachineConfig(object):
         self.accelerator_count = accelerator_count
 
         if self.accelerator_type == 'auto':
-            self.accelerator_type = AcceleratorType.NVIDIA_TESLA_K80
+            self.accelerator_type = AcceleratorType.NVIDIA_TESLA_P100
 
         self.validate()
 

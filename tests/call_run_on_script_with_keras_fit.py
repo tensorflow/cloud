@@ -18,16 +18,31 @@ from __future__ import print_function
 from tensorflow_cloud import machine_config
 from tensorflow_cloud import run
 
+# # Automated CPU strategy: CPU chief config and no workers
+# run.run(
+#     entry_point='tests/testdata/mnist_example_using_fit.py',
+#     distribution_strategy='auto',
+#     requirements_txt='tests/testdata/requirements.txt',
+#     chief_config=machine_config.COMMON_MACHINE_CONFIGS['CPU'],
+#     stream_logs=True)
 
+
+# # Automated OneDeviceStrategy: default 1 GPU chief config and no workers
+# run.run(
+#     entry_point='tests/testdata/mnist_example_using_fit.py',
+#     distribution_strategy='auto',
+#     requirements_txt='tests/testdata/requirements.txt',
+#     stream_logs=True)
+
+# Automated MirroredStrategy: chief config with multiple GPUs
 run.run(
     entry_point='tests/testdata/mnist_example_using_fit.py',
-    distribution_strategy=None,
+    distribution_strategy='auto',
     requirements_txt='tests/testdata/requirements.txt',
     chief_config=machine_config.MachineConfig(
             cpu_cores=8,
             memory=30,
             accelerator_type=machine_config.AcceleratorType.NVIDIA_TESLA_P100,
-            accelerator_count=4),
-    worker_count=1,
-    region='us-west1',
+            accelerator_count=2),
+    worker_count=0,
     stream_logs=True)
