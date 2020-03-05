@@ -21,7 +21,12 @@ from tensorflow_cloud import machine_config
 from tensorflow_cloud import package
 
 from mock import call, patch
-from tensorflow.python.framework.versions import VERSION
+
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use the latest TF docker image if a local installation is not available.
+    VERSION = 'latest'
 
 
 class TestContainerize(unittest.TestCase):

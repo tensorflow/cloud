@@ -15,19 +15,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow_cloud import machine_config
+import argparse
+
 from tensorflow_cloud import run
 
+parser = argparse.ArgumentParser(description='Model save path arguments.')
+parser.add_argument(
+    '--path', required=True, type=str, help='Keras model save path')
+args = parser.parse_args()
 
 run.run(
-    entry_point='tests/testdata/mnist_example_using_fit.py',
+    entry_point='tests/testdata/save_and_load.py',
     distribution_strategy=None,
     requirements_txt='tests/testdata/requirements.txt',
-    chief_config=machine_config.MachineConfig(
-            cpu_cores=8,
-            memory=30,
-            accelerator_type=machine_config.AcceleratorType.NVIDIA_TESLA_P100,
-            accelerator_count=4),
-    worker_count=1,
-    region='us-west1',
-    stream_logs=True)
+    entry_point_args=['--path', args.path])

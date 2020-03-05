@@ -44,7 +44,7 @@ train_images = train_images / np.float32(255)
 test_images = test_images / np.float32(255)
 
 # Create strategy
-strategy = tf.distribute.MirroredStrategy()
+strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
 
