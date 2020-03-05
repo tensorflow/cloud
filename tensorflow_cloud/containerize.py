@@ -26,7 +26,13 @@ import uuid
 from . import machine_config
 
 from docker import APIClient
-from tensorflow.python.framework.versions import VERSION
+
+
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use the latest TF docker image if a local installation is not available.
+    VERSION = 'latest'
 
 
 logger = logging.getLogger(__name__)

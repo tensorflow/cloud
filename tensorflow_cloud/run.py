@@ -84,6 +84,9 @@ def run(entry_point,
             Tensorflow docker image (https://www.tensorflow.org/install/docker)
             as the base image. The version of TensorFlow and Python in that
             case will match your local environment.
+            If both docker_base_image and a local TF installation are not
+            available, the latest TF docker image will be used.
+            For example: 'tensorflow/tensorflow:latest-gpu'
         chief_config: Optional `MachineConfig` that represents the
             configuration for the chief worker in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
