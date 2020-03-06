@@ -177,7 +177,7 @@ def _stream_logs(job_id):
                 break
             if output:
                 print(output.strip())
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as err:
         raise RuntimeError(
             'There was an error streaming the job logs. {}'.format(
                 err._get_reason()))
