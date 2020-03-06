@@ -22,4 +22,5 @@ run.run(
     entry_point='tests/testdata/mnist_example_using_ctl.py',
     distribution_strategy=None,
     worker_count=1,
-    requirements_txt='tests/testdata/requirements.txt')
+    requirements_txt='tests/testdata/requirements.txt',
+    stream_logs=True)

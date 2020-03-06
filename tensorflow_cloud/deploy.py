@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import subprocess
 import uuid
 
 from googleapiclient import discovery
@@ -64,7 +65,8 @@ def deploy_job(region,
             body=request_dict
         ).execute()
         _print_logs_info(job_id, project_id)
-        # TODO(psv): Add support for streaming logs.
+        if enable_stream_logs:
+            _stream_logs(job_id)
     except errors.HttpError as err:
         raise RuntimeError(
             'There was an error submitting the job.' + err._get_reason())
@@ -152,6 +154,33 @@ def _print_logs_info(job_id, project_id):
     print('Please access your job logs at the following URL:')
     print('https://console.cloud.google.com/mlengine/jobs/{}?project={}'
           .format(job_id, project_id))
+
+
+def _stream_logs(job_id):
+    """Streams job logs to stdout.
+
+    Args:
+        job_id: The job id to stream logs from.
+
+    Raises:
+        RuntimeError, if there are any errors from the streaming subprocess.
+    """
+    try:
+        print('Streaming job logs: ')
+        process = subprocess.Popen(
+            ["gcloud", "ai-platform", "jobs", "stream-logs", job_id],
+            stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline()
+            # Break out of the loop when poll returns an exit code.
+            if process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+    except subprocess.CalledProcessError:
+        raise RuntimeError(
+            'There was an error streaming the job logs. {}'.format(
+                err._get_reason()))
 
 
 def _generate_job_id():
