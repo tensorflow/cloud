@@ -163,7 +163,7 @@ def _stream_logs(job_id):
         job_id: The job id to stream logs from.
 
     Raises:
-        RuntimeError, if there are any errors from the streaming subprocess.
+        RuntimeError: if there are any errors from the streaming subprocess.
     """
     try:
         print('Streaming job logs: ')
