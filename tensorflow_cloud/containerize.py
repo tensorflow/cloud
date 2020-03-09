@@ -221,7 +221,7 @@ def _get_logs(logs_generator, name):
             came from.
 
     Raises:
-        RuntimeError, if there are any errors when building or publishing a
+        RuntimeError: if there are any errors when building or publishing a
         docker image.
     """
     for line in logs_generator:

@@ -80,7 +80,7 @@ class TestDeploy(unittest.TestCase):
             return self.mock_project_name
         deploy.gcp.get_project_name = _mock_get_project_name
 
-    @patch('sys.stdout', new_callable=io.BytesIO)
+    @patch('sys.stdout', new_callable=io.StringIO)
     @patch('tensorflow_cloud.deploy.discovery')
     def test_deploy_job(self, MockDiscovery, MockStdOut):
         self.setup(MockDiscovery)
