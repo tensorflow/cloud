@@ -109,7 +109,7 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
 
 def _validate_other_args(region, args, stream_logs):
     """Validates region, entry_point_args, stream_logs params."""
-    if not isinstance(region, basestring):
+    if not isinstance(region, str):
         raise ValueError(
             'Invalid `region` input. '
             'Expected None or a string value. '

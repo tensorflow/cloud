@@ -167,17 +167,8 @@ def _stream_logs(job_id):
     """
     try:
         print('Streaming job logs: ')
-        process = subprocess.Popen(
-            ["gcloud", "ai-platform", "jobs", "stream-logs", job_id],
-            stdout=subprocess.PIPE)
-        while True:
-            output = process.stdout.readline()
-            # Break out of the loop when poll returns an exit code.
-            if process.poll() is not None:
-                break
-            if output:
-                print(output.strip())
-    except subprocess.CalledProcessError as err:
+        subprocess.run(["gcloud", "ai-platform", "jobs", "stream-logs", job_id])
+    except subprocess.SubprocessError as err:
         raise RuntimeError(
             'There was an error streaming the job logs. {}'.format(
                 err._get_reason()))
