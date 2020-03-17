@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-VERSION = '1.0.0'
+VERSION = '0.1.0'
 
 
 setup(
@@ -41,9 +41,7 @@ setup(
     },
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
         'Operating System :: Unix',
-        'Operating System :: Microsoft :: Windows',
         'Operating System :: MacOS',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
