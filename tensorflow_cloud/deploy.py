@@ -54,7 +54,7 @@ def deploy_job(region,
     """
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
-    ml_apis = discovery.build('ml', 'v1')
+    ml_apis = discovery.build('ml', 'v1', cache_discovery=False)
 
     request_dict = _create_request_dict(
         job_id, region, image_uri, chief_config, worker_count, worker_config,
