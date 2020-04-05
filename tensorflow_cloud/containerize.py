@@ -236,5 +236,6 @@ def _get_logs(logs_generator, name):
                 raise RuntimeError(
                     'Docker image {} failed: {}'.format(name, str(
                         line.get('error'))))
-        except json.decoder.JSONDecodeError:
-            pass
+        except json.decoder.JSONDecodeError as err:
+            raise RuntimeError(
+                'There was an error decoding the Docker logs')
