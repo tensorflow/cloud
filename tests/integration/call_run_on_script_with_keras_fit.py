@@ -38,7 +38,7 @@ from tensorflow_cloud import run
 run.run(
     entry_point='tests/testdata/mnist_example_using_fit.py',
     distribution_strategy='auto',
-    requirements_txt='tests/testdata/requirements.txt',
+    pip_libraries=['tensorflow-datasets', 'pandas'],
     chief_config=machine_config.MachineConfig(
             cpu_cores=8,
             memory=30,

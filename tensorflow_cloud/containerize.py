@@ -19,7 +19,6 @@ from __future__ import print_function
 import json
 import logging
 import os
-import sys
 import tempfile
 import uuid
 
@@ -42,6 +41,7 @@ logging.basicConfig(level=logging.INFO)
 def create_docker_file(docker_entry_point,
                        chief_config,
                        requirements_txt=None,
+                       pip_libraries=None,
                        destination_dir='/app/',
                        docker_base_image=None):
     """Creates a Dockerfile.
@@ -53,6 +53,8 @@ def create_docker_file(docker_entry_point,
             the chief worker in a distribution cluster.
         requirements_txt: Optional string. File path to requirements.txt file
             containing aditionally pip dependencies, if any.
+        pip_libraries: Optional list. Comma separated libraries.
+            Example: ['tensorflow', 'tensorflow-cloud', 'cloudml-hypertune']
         destination_dir: Optional working directory in the docker container
             filesystem.
         docker_base_image: Optional base docker image to use. Defaults to None.
@@ -83,6 +85,11 @@ def create_docker_file(docker_entry_point,
         lines.append('RUN if [ -e {} ]; '
                      'then pip install --no-cache -r {}; '
                      'fi'.format(dst_requirements_txt, dst_requirements_txt))
+
+    if pip_libraries is not None:
+        _pip_libraries = list(filter(None, pip_libraries))
+        for pip_library in _pip_libraries:
+            lines.append('RUN pip install {}'.format(pip_library))
 
     _, docker_entry_point_file_name = os.path.split(docker_entry_point)
 
@@ -214,12 +221,10 @@ def _generate_name(docker_registry):
 
 def _get_logs(logs_generator, name):
     """Decodes logs from docker and generates user friendly logs.
-
     Args:
         logs_generator: Generator returned from docker build/push APIs.
         name: String, 'build' or 'publish' used to identify where the generator
             came from.
-
     Raises:
         RuntimeError: if there are any errors when building or publishing a
         docker image.
@@ -227,10 +232,16 @@ def _get_logs(logs_generator, name):
     for line in logs_generator:
         try:
             unicode_line = line.decode('utf-8').strip()
+            logger.info(unicode_line)
         except UnicodeError:
-            logger.warn('Unable to decode logs.')
-        line = json.loads(unicode_line)
-        if line.get('error'):
+            logger.warning('Unable to decode logs.')
+        try:            
+            line = json.loads(unicode_line)
+            if line.get('error'):
+                raise RuntimeError(
+                    'Docker image {} failed: {}'.format(name, str(
+                        line.get('error'))))
+        except json.decoder.JSONDecodeError as err:
             raise RuntimeError(
-                'Docker image {} failed: {}'.format(
-                    name, str(line.get('error'))))
+            'There was an error decoding the logs. {}'.format(
+                err._get_reason()))            

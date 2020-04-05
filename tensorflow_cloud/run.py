@@ -45,6 +45,7 @@ def _set_running_remotely(value):
 
 def run(entry_point,
         requirements_txt=None,
+        pip_libraries=None,
         distribution_strategy='auto',
         docker_base_image=None,
         chief_config='auto',
@@ -63,6 +64,8 @@ def run(entry_point,
             containing aditionally pip dependencies if any.
             Note: This path must be in the current working directory tree.
             Example: 'requirements.txt', 'deps/reqs.txt'
+        pip_libraries: Optional list. Python packages to install from pypi.
+            Example: ['tensorflow==1.15.2', 'tensorflow-cloud', 'absl']
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
             'auto' means we will take care of creating a Tensorflow
             distribution strategy instance based on the machine configurations
@@ -125,7 +128,7 @@ def run(entry_point,
 
     # Run validations.
     validate.validate(
-        entry_point, requirements_txt, distribution_strategy,
+        entry_point, requirements_txt, pip_libraries, distribution_strategy,
         chief_config, worker_config, worker_count, region,
         entry_point_args, stream_logs)
 
@@ -145,6 +148,7 @@ def run(entry_point,
         docker_entry_point,
         chief_config,
         requirements_txt=requirements_txt,
+        pip_libraries=pip_libraries,
         destination_dir=destination_dir,
         docker_base_image=docker_base_image)
 

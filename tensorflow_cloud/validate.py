@@ -23,7 +23,7 @@ from . import machine_config
 
 
 def validate(
-        entry_point, requirements_txt, distribution_strategy,
+        entry_point, requirements_txt, pip_libraries, distribution_strategy,
         chief_config, worker_config, worker_count, region, args, stream_logs):
     """Validates the inputs.
 
@@ -31,7 +31,9 @@ def validate(
         entry_point: String. Python file path to the file that contains the
             TensorFlow code.
         requirements_txt: Optional string. File path to requirements.txt file
-            containing aditionally pip dependencies, if any.
+            containing additionally pip dependencies, if any.
+        pip_libraries: Optional list. List of libraries, comma separated.
+            containing additional pip libraries.
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
             'auto' means we will take care of creating a Tensorflow
             distribution strategy instance based on the machine configurations
@@ -54,6 +56,7 @@ def validate(
         ValueError: if any of the inputs is invalid.
     """
     _validate_files(entry_point, requirements_txt)
+    _validate_pip_libraries(pip_libraries)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
     _validate_other_args(region, args, stream_logs)
@@ -68,11 +71,35 @@ def _validate_files(entry_point, requirements_txt):
             'Expected a relative path in the current directory tree. '
             'Received: {}'.format(entry_point))
 
-    if not os.path.isfile(os.path.join(cwd, requirements_txt)):
+    if requirements_txt is not None:
+        if not os.path.isfile(os.path.join(cwd, requirements_txt)):
+            raise ValueError(
+                'Invalid `requirements_txt`. '
+                'Expected a relative path in the current directory tree. '
+                'Received: {}'.format(requirements_txt))
+
+
+def _validate_pip_libraries(pip_libraries):
+    """Validates pip libraries that are comma separated.
+
+    # Arguments:
+        pip_libraries: Optional List. Libraries comma separated.
+            containing additional pip libraries.
+            Example: ['tensorflow==1.15.2', 'cloudml-hypertune', 'absl']
+    """
+    if not isinstance(pip_libraries, (type(None), list)):
         raise ValueError(
-            'Invalid `requirements_txt`. '
-            'Expected a relative path in the current directory tree. '
-            'Received: {}'.format(requirements_txt))
+            'Invalid `pip_libraries` input. '
+            'Expected None or a List value. '
+            'Received {}.'.format(str(pip_libraries)))
+
+    if pip_libraries is not None:
+        if not all(
+            isinstance(pip_library, str) for pip_library in pip_libraries):
+            raise ValueError(
+                'Invalid `pip_libraries` input. '
+                'Expected List of strings. '
+                'Received {}.'.format(str(pip_libraries)))
 
 
 def _validate_distribution_strategy(distribution_strategy):

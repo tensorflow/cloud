@@ -81,6 +81,25 @@ class TestContainerize(unittest.TestCase):
         os.remove(req_file)
         self.cleanup()
 
+    def test_create_docker_with_pip_libraries(self):
+        self.setup()
+        pip_libraries = ['tensorflow-datasets', 'pandas']
+
+        self.docker_file = containerize.create_docker_file(
+            self.entry_point, self.chief_config,
+            pip_libraries=pip_libraries)
+
+        expected_docker_file_lines = [
+          'FROM tensorflow/tensorflow:{}-gpu\n'.format(VERSION),
+          'WORKDIR /app/\n',
+          'COPY /app/ /app/\n',
+          'RUN pip install tensorflow-datasets\n',
+          'RUN pip install pandas\n',
+          'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+        ]
+        self.assert_docker_file(expected_docker_file_lines)
+        self.cleanup()
+
     def test_create_docker_file_with_destination_dir(self):
         self.setup()
         self.docker_file = containerize.create_docker_file(
