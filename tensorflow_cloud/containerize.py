@@ -227,10 +227,15 @@ def _get_logs(logs_generator, name):
     for line in logs_generator:
         try:
             unicode_line = line.decode('utf-8').strip()
+            logger.info(unicode_line)
         except UnicodeError:
-            logger.warn('Unable to decode logs.')
-        line = json.loads(unicode_line)
-        if line.get('error'):
+            logger.warning('Unable to decode logs.')
+        try:            
+            line = json.loads(unicode_line)
+            if line.get('error'):
+                raise RuntimeError(
+                    'Docker image {} failed: {}'.format(name, str(
+                        line.get('error'))))
+        except json.decoder.JSONDecodeError:
             raise RuntimeError(
-                'Docker image {} failed: {}'.format(
-                    name, str(line.get('error'))))
+                'There was an error decoding the Docker logs')
