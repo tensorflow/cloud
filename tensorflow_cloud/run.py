@@ -95,7 +95,6 @@ def run(entry_point=None,
             the cloud job.
     """
     # If code is triggered in a cloud environment, do nothing.
-    print('ENVIRONMENT VARIABLE: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', os.environ.get('TF_KERAS_RUNNING_REMOTELY'))
     if os.environ.get('TF_KERAS_RUNNING_REMOTELY'):
         return
 
