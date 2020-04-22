@@ -29,21 +29,7 @@ from . import preprocess
 from . import validate
 
 
-# Flag which indicates whether current process is running in a cloud
-# environment created by the `cloud.run` API.
-_IS_RUNNING_REMOTELY = False
-
-
-def _is_running_remotely():
-    return _IS_RUNNING_REMOTELY
-
-
-def _set_running_remotely(value):
-    global _IS_RUNNING_REMOTELY
-    _IS_RUNNING_REMOTELY = value
-
-
-def run(entry_point,
+def run(entry_point=None,
         requirements_txt=None,
         distribution_strategy='auto',
         docker_base_image=None,
@@ -55,12 +41,15 @@ def run(entry_point,
     """Runs your Tensorflow code in Google Cloud Platform.
 
     Args:
-        entry_point: String. Python file path to the file that contains the
-            TensorFlow code.
+        entry_point: Optional string. Python file path to the file that
+            contains the TensorFlow code.
             Note: This path must be in the current working directory tree.
             Example: 'train.py', 'training/mnist.py'
+            If `entry_point` is not provided, then the current python script is
+            assumed to be the `entry_point`.
         requirements_txt: Optional string. File path to requirements.txt file
-            containing aditionally pip dependencies if any.
+            containing aditional pip dependencies if any. ie. a file with a
+            list of pip dependency package names.
             Note: This path must be in the current working directory tree.
             Example: 'requirements.txt', 'deps/reqs.txt'
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
@@ -106,11 +95,21 @@ def run(entry_point,
             the cloud job.
     """
     # If code is triggered in a cloud environment, do nothing.
-    if _is_running_remotely():
+    print('ENVIRONMENT VARIABLE: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', os.environ.get('TF_KERAS_RUNNING_REMOTELY'))
+    if os.environ.get('TF_KERAS_RUNNING_REMOTELY'):
         return
-    _set_running_remotely(True)
 
-    # Get defaults values for input params.
+    # Get defaults values for input param
+
+    # If `entry_point` is not provided it means that the `run` API call
+    # is embedded in the script that contains the Keras module. For this
+    # script to run successfully in the cloud env, `tensorflow-cloud` pip
+    # package is required to be installed in addition to the user provided
+    # packages.
+    install_tf_cloud = False
+    if entry_point is None:
+        entry_point = sys.argv[0]
+        install_tf_cloud = True
     if chief_config == 'auto':
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
     if worker_config == 'auto':
@@ -146,7 +145,8 @@ def run(entry_point,
         chief_config,
         requirements_txt=requirements_txt,
         destination_dir=destination_dir,
-        docker_base_image=docker_base_image)
+        docker_base_image=docker_base_image,
+        install_tf_cloud=install_tf_cloud)
 
     # Get all the files, that we need to package, mapped to the destination
     # location. This will include the wrapped_entry_point, requirements_txt,
@@ -180,3 +180,7 @@ def run(entry_point,
         worker_config,
         entry_point_args,
         stream_logs)
+
+    # Call `exit` to prevent training the Keras model in the local env.
+    # To stop execution after encountering a `run` API call in local env.
+    sys.exit(0)

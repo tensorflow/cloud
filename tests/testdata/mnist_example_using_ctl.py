@@ -45,7 +45,7 @@ test_images = test_images / np.float32(255)
 
 # Create strategy
 strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
-print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
 
 # Setup input pipeline
@@ -158,9 +158,9 @@ with strategy.scope():
 
         template = ("Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, "
                     "Test Accuracy: {}")
-        print (template.format(epoch+1, train_loss,
-                               train_accuracy.result()*100, test_loss.result(),
-                               test_accuracy.result()*100))
+        print(template.format(epoch+1, train_loss,
+                              train_accuracy.result()*100, test_loss.result(),
+                              test_accuracy.result()*100))
 
         test_loss.reset_states()
         train_accuracy.reset_states()
