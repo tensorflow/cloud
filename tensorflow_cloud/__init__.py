@@ -17,3 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 __version__ = '0.1.0'
+
+from .machine_config import AcceleratorType
+from .machine_config import MachineConfig
+from .run import run

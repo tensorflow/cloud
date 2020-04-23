@@ -17,14 +17,14 @@ from __future__ import print_function
 
 import argparse
 
-from tensorflow_cloud import run
+import tensorflow_cloud as tfc
 
 parser = argparse.ArgumentParser(description='Model save path arguments.')
 parser.add_argument(
     '--path', required=True, type=str, help='Keras model save path')
 args = parser.parse_args()
 
-run.run(
+tfc.run(
     entry_point='tests/testdata/save_and_load.py',
     distribution_strategy=None,
     requirements_txt='tests/testdata/requirements.txt',

@@ -24,22 +24,21 @@ import os
 import tensorflow_datasets as tfds
 import tensorflow as tf
 
-from tensorflow_cloud import machine_config
-from tensorflow_cloud import run
+import tensorflow_cloud as tfc
 
 tfds.disable_progress_bar()
 
 print(tf.__version__)
 
 # Calling `run` from within a script with contains the Keras model.
-run.run(
+tfc.run(
     entry_point=None,
     distribution_strategy='auto',
     requirements_txt='tests/testdata/requirements.txt',
-    chief_config=machine_config.MachineConfig(
+    chief_config=tfc.MachineConfig(
             cpu_cores=8,
             memory=30,
-            accelerator_type=machine_config.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
             accelerator_count=2),
     worker_count=0)
 
