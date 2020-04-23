@@ -68,7 +68,9 @@ def get_wrapped_entry_point(entry_point,
             'strategy = tf.distribute.OneDeviceStrategy('
             'device="/gpu:0")\n')
     script_lines = [
+        'import os\n',
         'import tensorflow as tf\n',
+        'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
         strategy,
         'tf.distribute.experimental_set_strategy(strategy)\n',
         # Add user's code.

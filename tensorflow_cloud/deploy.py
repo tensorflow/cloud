@@ -167,7 +167,8 @@ def _stream_logs(job_id):
     """
     try:
         print('Streaming job logs: ')
-        subprocess.run(["gcloud", "ai-platform", "jobs", "stream-logs", job_id])
+        subprocess.run(
+            ["gcloud", "ai-platform", "jobs", "stream-logs", job_id])
     except subprocess.SubprocessError as err:
         raise RuntimeError(
             'There was an error streaming the job logs. {}'.format(

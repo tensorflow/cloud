@@ -15,10 +15,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow_cloud import run
+import tensorflow_cloud as tfc
 
 # MultiWorkerMirroredStrategy
-run.run(
+tfc.run(
     entry_point='tests/testdata/mnist_example_using_ctl.py',
     distribution_strategy=None,
     worker_count=1,
