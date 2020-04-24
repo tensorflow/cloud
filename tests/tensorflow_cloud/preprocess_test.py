@@ -22,8 +22,12 @@ from tensorflow_cloud import preprocess
 
 class TestPreprocess(unittest.TestCase):
 
-    def setup(self):
+    def setup_py(self):
         self.entry_point = 'testdata/sample_compile_fit.py'
+        _, self.entry_point_name = os.path.split(self.entry_point)
+
+    def setup_ipython(self):
+        self.entry_point = 'tests/testdata/mnist_example_using_fit.ipynb'
         _, self.entry_point_name = os.path.split(self.entry_point)
 
     def get_wrapped_entry_point(
@@ -41,35 +45,56 @@ class TestPreprocess(unittest.TestCase):
         os.remove(self.wrapped_entry_point)
 
     def test_auto_one_device_strategy(self):
-        self.setup()
+        self.setup_py()
         script_lines = self.get_wrapped_entry_point()
         expected_lines = [
+            'import os\n',
             'import tensorflow as tf\n',
+            'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
             'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
             'tf.distribute.experimental_set_strategy(strategy)\n',
             'exec(open("{}").read())\n'.format(self.entry_point_name)]
         self.assert_and_cleanup(expected_lines, script_lines)
 
     def test_auto_mirrored_strategy(self):
-        self.setup()
+        self.setup_py()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
         script_lines = self.get_wrapped_entry_point(chief_config=chief_config)
         expected_lines = [
+            'import os\n',
             'import tensorflow as tf\n',
+            'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
             'strategy = tf.distribute.MirroredStrategy()\n',
             'tf.distribute.experimental_set_strategy(strategy)\n',
             'exec(open("{}").read())\n'.format(self.entry_point_name)]
         self.assert_and_cleanup(expected_lines, script_lines)
 
     def test_auto_multi_worker_strategy(self):
-        self.setup()
+        self.setup_py()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
         script_lines = self.get_wrapped_entry_point(
             chief_config=chief_config, worker_count=2)
         expected_lines = [
+            'import os\n',
             'import tensorflow as tf\n',
+            'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
             'strategy = tf.distribute.experimental.'
             'MultiWorkerMirroredStrategy()\n',
             'tf.distribute.experimental_set_strategy(strategy)\n',
             'exec(open("{}").read())\n'.format(self.entry_point_name)]
         self.assert_and_cleanup(expected_lines, script_lines)
+
+    def test_ipython_notebook(self):
+        self.setup_ipython()
+        script_lines = self.get_wrapped_entry_point()
+        expected_lines = [
+            'import os\n',
+            'import tensorflow as tf\n',
+            'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
+            'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
+            'tf.distribute.experimental_set_strategy(strategy)\n']
+        for l in expected_lines:
+            self.assertIn(l, script_lines)
+        self.assertIn(
+            'eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n',
+            script_lines)

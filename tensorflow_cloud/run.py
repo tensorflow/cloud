@@ -41,10 +41,10 @@ def run(entry_point=None,
     """Runs your Tensorflow code in Google Cloud Platform.
 
     Args:
-        entry_point: Optional string. Python file path to the file that
-            contains the TensorFlow code.
+        entry_point: Optional string. File path to the python file or iPython
+            notebook that contains the TensorFlow code.
             Note: This path must be in the current working directory tree.
-            Example: 'train.py', 'training/mnist.py'
+            Example: 'train.py', 'training/mnist.py', 'mnist.ipynb'
             If `entry_point` is not provided, then the current python script is
             assumed to be the `entry_point`.
         requirements_txt: Optional string. File path to requirements.txt file
@@ -132,8 +132,9 @@ def run(entry_point=None,
     # This contains the `entry_point` wrapped in distribution strategy.
     wrapped_entry_point = None
     if (distribution_strategy == 'auto' and
-        chief_config.accelerator_type !=
-            machine_config.AcceleratorType.NO_ACCELERATOR):
+            (chief_config.accelerator_type !=
+                machine_config.AcceleratorType.NO_ACCELERATOR) or
+            entry_point.endswith('ipynb')):
         wrapped_entry_point = preprocess.get_wrapped_entry_point(
             entry_point, chief_config, worker_count)
 
