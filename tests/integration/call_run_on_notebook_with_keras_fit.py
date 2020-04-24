@@ -11,14 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-__version__ = '0.1.0'
+import tensorflow_cloud as tfc
 
-from .machine_config import AcceleratorType
-from .machine_config import COMMON_MACHINE_CONFIGS
-from .machine_config import MachineConfig
-from .run import run
+# Automated MirroredStrategy: chief config with multiple GPUs
+tfc.run(
+    entry_point='tests/testdata/mnist_example_using_fit.ipynb',
+    distribution_strategy='auto',
+    requirements_txt='tests/testdata/requirements.txt',
+    chief_config=tfc.MachineConfig(
+            cpu_cores=8,
+            memory=30,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_count=2),
+    worker_count=0)

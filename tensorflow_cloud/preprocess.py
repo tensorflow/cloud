@@ -22,6 +22,11 @@ import tempfile
 
 from .machine_config import AcceleratorType
 
+try:
+    from nbconvert import PythonExporter
+except ImportError:
+    PythonExporter = None
+
 
 def get_wrapped_entry_point(entry_point,
                             chief_config,
@@ -73,12 +78,31 @@ def get_wrapped_entry_point(entry_point,
         'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
         strategy,
         'tf.distribute.experimental_set_strategy(strategy)\n',
+    ]
+
+    if entry_point.endswith('py'):
         # Add user's code.
         # We are using exec here to execute the user code object.
         # This will support use case where the user's program has a
         # main method.
-        'exec(open("{}").read())\n'.format(entry_point_file_name)
-    ]
+        script_lines.append(
+            'exec(open("{}").read())\n'.format(entry_point_file_name))
+    else:
+        if PythonExporter is None:
+            raise RuntimeError(
+                'Unable to access iPython notebook. '
+                'Please make sure you have installed `nbconvert` package.')
+
+        # Get the python code from the iPython notebook.
+        (py_content, _) = PythonExporter().from_filename(entry_point)
+        py_content = py_content.splitlines()
+
+        # Remove any iPython special commands and add the python code
+        # to script_lines.
+        for line in py_content:
+            if not (line.startswith('!') or line.startswith('%') or
+                    line.startswith('#')):
+                script_lines.append(line + '\n')
 
     # Create a tmp wrapped entry point script file.
     _, output_file = tempfile.mkstemp(suffix='.py')

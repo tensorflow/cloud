@@ -74,6 +74,12 @@ def _validate_files(entry_point, requirements_txt):
             'Expected a relative path in the current directory tree. '
             'Received: {}'.format(requirements_txt))
 
+    if not entry_point.endswith('py') and not entry_point.endswith('ipynb'):
+        raise ValueError(
+            'Invalid `entry_point`. '
+            'Expected a python file or an iPython notebook. '
+            'Received: {}'.format(entry_point))
+
 
 def _validate_distribution_strategy(distribution_strategy):
     """Validates distribution strategy param."""
