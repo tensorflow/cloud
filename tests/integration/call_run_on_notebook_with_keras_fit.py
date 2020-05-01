@@ -17,25 +17,9 @@ from __future__ import print_function
 
 import tensorflow_cloud as tfc
 
-# # Automated CPU strategy: CPU chief config and no workers
-# tfc.run(
-#     entry_point='tests/testdata/mnist_example_using_fit.py',
-#     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
-#     chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'],
-#     stream_logs=True)
-
-
-# # Automated OneDeviceStrategy: default 1 GPU chief config and no workers
-# tfc.run(
-#     entry_point='tests/testdata/mnist_example_using_fit.py',
-#     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
-#     stream_logs=True)
-
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point='tests/testdata/mnist_example_using_fit.py',
+    entry_point='tests/testdata/mnist_example_using_fit.ipynb',
     distribution_strategy='auto',
     requirements_txt='tests/testdata/requirements.txt',
     chief_config=tfc.MachineConfig(
@@ -43,5 +27,4 @@ tfc.run(
             memory=30,
             accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
             accelerator_count=2),
-    worker_count=0,
-    stream_logs=True)
+    worker_count=0)

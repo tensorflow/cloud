@@ -12,6 +12,7 @@ This repository provides APIs that will allow to easily go from debugging and tr
 - [Set up your Google Cloud Project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 - [Authenticate your GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
 - [Authenticate to your Docker Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-helper)
+- [nbconvert](https://nbconvert.readthedocs.io/en/latest/) - if you are using an iPython notebook
 
 
 ### Install latest release:

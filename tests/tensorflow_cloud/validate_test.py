@@ -64,6 +64,18 @@ class TestValidate(unittest.TestCase):
                 args=None,
                 stream_logs=True)
 
+        with pytest.raises(ValueError, match=r'Invalid `entry_point`'):
+            validate.validate(
+                entry_point='/mnist_example_using_fit.txt',
+                distribution_strategy='auto',
+                requirements_txt='tests/testdata/requirements.txt',
+                chief_config=TestValidate.VALID_MACHINE_CONFIG,
+                worker_config=TestValidate.VALID_MACHINE_CONFIG,
+                worker_count=1,
+                region='us-central1',
+                args=None,
+                stream_logs=True)
+
     def test_invalid_requirements_txt(self):
         with pytest.raises(ValueError, match=r'Invalid `requirements_txt`'):
             validate.validate(

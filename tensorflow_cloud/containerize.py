@@ -43,7 +43,8 @@ def create_docker_file(docker_entry_point,
                        chief_config,
                        requirements_txt=None,
                        destination_dir='/app/',
-                       docker_base_image=None):
+                       docker_base_image=None,
+                       install_tf_cloud=False):
     """Creates a Dockerfile.
 
     Args:
@@ -56,6 +57,9 @@ def create_docker_file(docker_entry_point,
         destination_dir: Optional working directory in the docker container
             filesystem.
         docker_base_image: Optional base docker image to use. Defaults to None.
+        install_tf_cloud: Boolean flag which indicates whether
+            `tensorflow-cloud` pip package should be installed in the cloud
+            environment.
 
     Returns:
         The generated docker file path.
@@ -83,6 +87,8 @@ def create_docker_file(docker_entry_point,
         lines.append('RUN if [ -e {} ]; '
                      'then pip install --no-cache -r {}; '
                      'fi'.format(dst_requirements_txt, dst_requirements_txt))
+        if install_tf_cloud:
+            lines.append('RUN pip install tensorflow-cloud')
 
     _, docker_entry_point_file_name = os.path.split(docker_entry_point)
 
@@ -227,10 +233,15 @@ def _get_logs(logs_generator, name):
     for line in logs_generator:
         try:
             unicode_line = line.decode('utf-8').strip()
+            logger.info(unicode_line)
         except UnicodeError:
-            logger.warn('Unable to decode logs.')
-        line = json.loads(unicode_line)
-        if line.get('error'):
+            logger.warning('Unable to decode logs.')
+        try:
+            line = json.loads(unicode_line)
+            if line.get('error'):
+                raise RuntimeError(
+                    'Docker image {} failed: {}'.format(name, str(
+                        line.get('error'))))
+        except json.decoder.JSONDecodeError:
             raise RuntimeError(
-                'Docker image {} failed: {}'.format(
-                    name, str(line.get('error'))))
+                'There was an error decoding the Docker logs')
