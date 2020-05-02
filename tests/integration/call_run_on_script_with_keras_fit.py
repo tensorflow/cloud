@@ -36,12 +36,13 @@ import tensorflow_cloud as tfc
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
     entry_point='tests/testdata/mnist_example_using_fit.py',
+    docker_base_image='gcr.io/deeplearning-platform-release/tf2-gpu',
     distribution_strategy='auto',
     requirements_txt='tests/testdata/requirements.txt',
     chief_config=tfc.MachineConfig(
             cpu_cores=8,
             memory=30,
-            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
             accelerator_count=2),
     worker_count=0,
     stream_logs=True)

@@ -19,7 +19,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 
 import tensorflow_datasets as tfds
 import tensorflow as tf
@@ -38,7 +37,7 @@ tfc.run(
     chief_config=tfc.MachineConfig(
             cpu_cores=8,
             memory=30,
-            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
             accelerator_count=2),
     worker_count=0)
 
