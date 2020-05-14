@@ -179,4 +179,4 @@ def _generate_job_id():
     """Returns a unique job id prefixed with 'tf_train'."""
     # CAIP job id can contains only numbers, letters and underscores.
     unique_tag = str(uuid.uuid4()).replace('-', '_')
-    return 'tf_train_{}'.format(unique_tag)
+    return 'tf_cloud_train_{}'.format(unique_tag)

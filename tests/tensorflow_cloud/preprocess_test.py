@@ -31,10 +31,17 @@ class TestPreprocess(unittest.TestCase):
         _, self.entry_point_name = os.path.split(self.entry_point)
 
     def get_wrapped_entry_point(
-            self, chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_1X'],
-            worker_count=0):
+            self,
+            chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_1X'],
+            worker_count=0,
+            distribution_strategy='auto',
+            is_run_from_notebook=False):
         self.wrapped_entry_point = preprocess.get_wrapped_entry_point(
-            self.entry_point, chief_config, worker_count)
+            self.entry_point,
+            chief_config,
+            worker_count,
+            distribution_strategy,
+            is_run_from_notebook)
 
         with open(self.wrapped_entry_point, 'r') as f:
             script_lines = f.readlines()

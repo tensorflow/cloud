@@ -24,12 +24,13 @@ from . import machine_config
 
 def validate(
         entry_point, requirements_txt, distribution_strategy,
-        chief_config, worker_config, worker_count, region, args, stream_logs):
+        chief_config, worker_config, worker_count, region, args, stream_logs,
+        cloud_bucket_name, is_run_from_notebook):
     """Validates the inputs.
 
     # Arguments:
-        entry_point: String. Python file path to the file that contains the
-            TensorFlow code.
+        entry_point: Optional string. File path to the python file or iPython
+            notebook that contains the TensorFlow code.
         requirements_txt: Optional string. File path to requirements.txt file
             containing aditionally pip dependencies, if any.
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
@@ -49,6 +50,9 @@ def validate(
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
             the cloud job.
+        cloud_bucket_name: Optional string. Cloud storage bucket name.
+        is_run_from_notebook: Boolean. True if the API is run in a
+            notebook environment.
 
     # Raises:
         ValueError: if any of the inputs is invalid.
@@ -56,25 +60,29 @@ def validate(
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
-    _validate_other_args(region, args, stream_logs)
+    _validate_other_args(
+        region, args, stream_logs, cloud_bucket_name, is_run_from_notebook)
 
 
 def _validate_files(entry_point, requirements_txt):
     """Validates all the file path params."""
     cwd = os.getcwd()
-    if not os.path.isfile(os.path.join(cwd, entry_point)):
+    if entry_point is not None and (
+            not os.path.isfile(os.path.join(cwd, entry_point))):
         raise ValueError(
             'Invalid `entry_point`. '
             'Expected a relative path in the current directory tree. '
             'Received: {}'.format(entry_point))
 
-    if not os.path.isfile(os.path.join(cwd, requirements_txt)):
+    if requirements_txt is not None and (
+            not os.path.isfile(os.path.join(cwd, requirements_txt))):
         raise ValueError(
             'Invalid `requirements_txt`. '
             'Expected a relative path in the current directory tree. '
             'Received: {}'.format(requirements_txt))
 
-    if not entry_point.endswith('py') and not entry_point.endswith('ipynb'):
+    if entry_point is not None and (
+            not (entry_point.endswith('py') or entry_point.endswith('ipynb'))):
         raise ValueError(
             'Invalid `entry_point`. '
             'Expected a python file or an iPython notebook. '
@@ -113,8 +121,12 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
     # TODO(psv): Incompatible chief and worker configs
 
 
-def _validate_other_args(region, args, stream_logs):
-    """Validates region, entry_point_args, stream_logs params."""
+def _validate_other_args(region,
+                         args,
+                         stream_logs,
+                         cloud_bucket_name,
+                         is_run_from_notebook):
+    """Validates all non-file/distribution strategy args."""
     if not isinstance(region, str):
         raise ValueError(
             'Invalid `region` input. '
@@ -132,3 +144,11 @@ def _validate_other_args(region, args, stream_logs):
             'Invalid `stream_logs` input. '
             'Expected a boolean. '
             'Received {}.'.format(str(stream_logs)))
+
+    if is_run_from_notebook and cloud_bucket_name is None:
+        raise ValueError(
+            'Invalid `cloud_bucket_name` input. '
+            'When `run` API is used within a python notebook, '
+            '`cloud_bucket_name` is expected to be specifed. We will use the '
+            'bucket name in Google Cloud Storage/Build services for docker '
+            'containerization. Received {}.'.format(str(cloud_bucket_name)))

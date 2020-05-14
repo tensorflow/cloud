@@ -38,7 +38,9 @@ class TestValidate(unittest.TestCase):
             worker_count=1,
             region='us-central1',
             args=None,
-            stream_logs=True)
+            stream_logs=True,
+            cloud_bucket_name=None,
+            is_run_from_notebook=False)
 
         validate.validate(
             entry_point='tests/testdata/mnist_example_using_fit.py',
@@ -49,7 +51,35 @@ class TestValidate(unittest.TestCase):
             worker_count=0,
             region='us-central1',
             args=['1000'],
-            stream_logs=False)
+            stream_logs=False,
+            cloud_bucket_name=None,
+            is_run_from_notebook=False)
+
+        validate.validate(
+            entry_point='tests/testdata/mnist_example_using_fit.ipynb',
+            distribution_strategy=None,
+            requirements_txt='tests/testdata/requirements.txt',
+            chief_config=TestValidate.VALID_MACHINE_CONFIG,
+            worker_config=None,
+            worker_count=0,
+            region='us-central1',
+            args=['1000'],
+            stream_logs=False,
+            cloud_bucket_name=None,
+            is_run_from_notebook=False)
+
+        validate.validate(
+            entry_point=None,
+            distribution_strategy=None,
+            requirements_txt='tests/testdata/requirements.txt',
+            chief_config=TestValidate.VALID_MACHINE_CONFIG,
+            worker_config=None,
+            worker_count=0,
+            region='us-central1',
+            args=['1000'],
+            stream_logs=False,
+            cloud_bucket_name='abc',
+            is_run_from_notebook=True)
 
     def test_invalid_entry_point(self):
         with pytest.raises(ValueError, match=r'Invalid `entry_point`'):
@@ -62,7 +92,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
         with pytest.raises(ValueError, match=r'Invalid `entry_point`'):
             validate.validate(
@@ -74,7 +106,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_requirements_txt(self):
         with pytest.raises(ValueError, match=r'Invalid `requirements_txt`'):
@@ -87,7 +121,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_distribution_strategy(self):
         with pytest.raises(
@@ -102,7 +138,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_chief_config(self):
         with pytest.raises(ValueError, match=r'Invalid `chief_config`'):
@@ -115,7 +153,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_worker_config(self):
         with pytest.raises(ValueError, match=r'Invalid `worker_config`'):
@@ -128,7 +168,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_worker_count(self):
         with pytest.raises(ValueError, match=r'Invalid `worker_count`'):
@@ -141,7 +183,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=-1,
                 region='us-central1',
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_region(self):
         with pytest.raises(ValueError, match=r'Invalid `region`'):
@@ -154,7 +198,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region=['us-region-a'],
                 args=None,
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_args(self):
         with pytest.raises(ValueError, match=r'Invalid `entry_point_args`'):
@@ -167,7 +213,9 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args='1000',
-                stream_logs=True)
+                stream_logs=True,
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
 
     def test_invalid_stream_logs(self):
         with pytest.raises(ValueError, match=r'Invalid `stream_logs`'):
@@ -180,4 +228,21 @@ class TestValidate(unittest.TestCase):
                 worker_count=1,
                 region='us-central1',
                 args=None,
-                stream_logs='True')
+                stream_logs='True',
+                cloud_bucket_name=None,
+                is_run_from_notebook=False)
+
+    def test_invalid_cloud_bucket_name(self):
+        with pytest.raises(ValueError, match=r'Invalid `cloud_bucket_name`'):
+            validate.validate(
+                entry_point='tests/testdata/mnist_example_using_fit.py',
+                distribution_strategy='auto',
+                requirements_txt='tests/testdata/requirements.txt',
+                chief_config=TestValidate.VALID_MACHINE_CONFIG,
+                worker_config=TestValidate.VALID_MACHINE_CONFIG,
+                worker_count=1,
+                region='us-central1',
+                args=None,
+                stream_logs=False,
+                cloud_bucket_name=None,
+                is_run_from_notebook=True)
