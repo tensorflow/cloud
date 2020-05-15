@@ -37,7 +37,8 @@ def run(entry_point=None,
         worker_count=0,
         entry_point_args=None,
         stream_logs=False,
-        docker_image_bucket_name=None):
+        docker_image_bucket_name=None,
+        **kwargs):
     """Runs your Tensorflow code in Google Cloud Platform.
 
     Args:
@@ -108,10 +109,21 @@ def run(entry_point=None,
             Note: When you are using this API from within an iPython notebook,
             we will default to using Google Cloud Build,
             so `docker_image_bucket_name` must be specified for this use case.
+        **kwargs: Additional keyword arguments.
     """
     # If code is triggered in a cloud environment, do nothing.
     if os.environ.get('TF_KERAS_RUNNING_REMOTELY'):
         return
+
+    if kwargs:
+      # We are using kwargs for forward compatibility in the cloud. For example,
+      # if a new param is added to `run` API, this will not exist in the latest
+      # tensorflow-cloud package installed in the cloud docker environments.
+      # So, if `run` is used inside a python script or notebook, this python
+      # code will fail to run in the cloud even before we can check
+      # `TF_KERAS_RUNNING_REMOTELY` env var because of an additional unknown
+      # param.
+      raise TypeError('Unknown keyword arguments: %s' % (kwargs.keys(),))
 
     # Get defaults values for input param
 
