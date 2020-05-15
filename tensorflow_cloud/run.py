@@ -24,7 +24,6 @@ from . import containerize
 from . import deploy
 from . import gcp
 from . import machine_config
-from . import package
 from . import preprocess
 from . import validate
 
@@ -37,7 +36,8 @@ def run(entry_point=None,
         worker_config='auto',
         worker_count=0,
         entry_point_args=None,
-        stream_logs=False):
+        stream_logs=False,
+        docker_image_bucket_name=None):
     """Runs your Tensorflow code in Google Cloud Platform.
 
     Args:
@@ -45,8 +45,11 @@ def run(entry_point=None,
             notebook that contains the TensorFlow code.
             Note: This path must be in the current working directory tree.
             Example: 'train.py', 'training/mnist.py', 'mnist.ipynb'
-            If `entry_point` is not provided, then the current python script is
-            assumed to be the `entry_point`.
+            If `entry_point` is not provided, then
+            - If you are in an iPython notebook environment, then the
+                current notebook is taken as the `entry_point`.
+            - Otherwise, the current python script is taken as the
+                `entry_point`.
         requirements_txt: Optional string. File path to requirements.txt file
             containing aditional pip dependencies if any. ie. a file with a
             list of pip dependency package names.
@@ -93,6 +96,18 @@ def run(entry_point=None,
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
             the cloud job.
+        docker_image_bucket_name: Optional string that specifies the docker
+            image cloud storage bucket name. If this parameter is set, then we
+            will be using Google Cloud Storage and Google Cloud Build for
+            docker containerization (https://cloud.google.com/cloud-build/).
+            If this parameter is not set, then we will use local docker daemon
+            process for containerization.
+            Cloud build request is queued and we make a maximum of 10 requests
+            with a delay of 30 secs in between these requests to inspect the
+            status of the build.
+            Note: When you are using this API from within an iPython notebook,
+            we will default to using Google Cloud Build,
+            so `docker_image_bucket_name` must be specified for this use case.
     """
     # If code is triggered in a cloud environment, do nothing.
     if os.environ.get('TF_KERAS_RUNNING_REMOTELY'):
@@ -101,14 +116,10 @@ def run(entry_point=None,
     # Get defaults values for input param
 
     # If `entry_point` is not provided it means that the `run` API call
-    # is embedded in the script that contains the Keras module. For this
-    # script to run successfully in the cloud env, `tensorflow-cloud` pip
+    # is embedded in the script/notebook that contains the Keras module.
+    # For this to run successfully in the cloud env, `tensorflow-cloud` pip
     # package is required to be installed in addition to the user provided
     # packages.
-    install_tf_cloud = False
-    if entry_point is None:
-        entry_point = sys.argv[0]
-        install_tf_cloud = True
     if chief_config == 'auto':
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['P100_1X']
     if worker_config == 'auto':
@@ -120,56 +131,55 @@ def run(entry_point=None,
         worker_count = int(worker_count)
     # Default location to which the docker image that is created is pushed.
     docker_registry = 'gcr.io/{}'.format(gcp.get_project_name())
+    called_from_notebook = _called_from_notebook()
 
     # Run validations.
     validate.validate(
         entry_point, requirements_txt, distribution_strategy,
         chief_config, worker_config, worker_count, region,
-        entry_point_args, stream_logs)
+        entry_point_args, stream_logs, docker_image_bucket_name,
+        called_from_notebook)
 
     # Make the `entry_point` cloud and distribution ready.
-    # A temporary script called `wrapped_entry_point` is created.
+    # A temporary script called `preprocessed_entry_point` is created.
     # This contains the `entry_point` wrapped in distribution strategy.
-    wrapped_entry_point = None
+    preprocessed_entry_point = None
     if (distribution_strategy == 'auto' and
             (chief_config.accelerator_type !=
                 machine_config.AcceleratorType.NO_ACCELERATOR) or
-            entry_point.endswith('ipynb')):
-        wrapped_entry_point = preprocess.get_wrapped_entry_point(
-            entry_point, chief_config, worker_count)
+            entry_point.endswith('ipynb') or
+            entry_point is None):
+        preprocessed_entry_point = preprocess.get_preprocessed_entry_point(
+            entry_point, chief_config, worker_count, distribution_strategy,
+            called_from_notebook=called_from_notebook)
 
-    # Create docker file.
-    docker_entry_point = wrapped_entry_point or entry_point
-    docker_file = containerize.create_docker_file(
-        docker_entry_point,
-        chief_config,
-        requirements_txt=requirements_txt,
-        destination_dir=destination_dir,
-        docker_base_image=docker_base_image,
-        install_tf_cloud=install_tf_cloud)
-
-    # Get all the files, that we need to package, mapped to the destination
-    # location. This will include the wrapped_entry_point, requirements_txt,
-    # dockerfile and the entry_point directory tree.
-    file_map = containerize.get_file_path_map(
-        entry_point,
-        docker_file,
-        wrapped_entry_point=wrapped_entry_point,
-        requirements_txt=requirements_txt,
-        destination_dir=destination_dir)
-
-    # Create a tarball with the files.
-    tar_file_path = package.get_tar_file_path(file_map)
-
-    # Build and push docker image.
-    docker_img_uri = containerize.get_docker_image(
-        docker_registry, tar_file_path)
+    # Create docker file, geenrate a tarball, build and push docker
+    # image using the tarball.
+    cb_args = (entry_point,
+               preprocessed_entry_point,
+               chief_config,
+               docker_registry,
+               gcp.get_project_name())
+    cb_kwargs = {
+        'requirements_txt': requirements_txt,
+        'destination_dir': destination_dir,
+        'docker_base_image': docker_base_image,
+        'docker_image_bucket_name': docker_image_bucket_name,
+        'called_from_notebook': called_from_notebook
+    }
+    if docker_image_bucket_name is None:
+        container_builder = containerize.LocalContainerBuilder(
+            *cb_args, **cb_kwargs)
+    else:
+        container_builder = containerize.CloudContainerBuilder(
+            *cb_args, **cb_kwargs)
+    docker_img_uri = container_builder.get_docker_image()
 
     # Delete all the temporary files we created.
-    if wrapped_entry_point is not None:
-        os.remove(wrapped_entry_point)
-    os.remove(docker_file)
-    os.remove(tar_file_path)
+    if preprocessed_entry_point is not None:
+        os.remove(preprocessed_entry_point)
+    for f in container_builder.get_generated_files():
+        os.remove(f)
 
     # Deploy docker image on the cloud.
     job_name = deploy.deploy_job(
@@ -183,4 +193,17 @@ def run(entry_point=None,
 
     # Call `exit` to prevent training the Keras model in the local env.
     # To stop execution after encountering a `run` API call in local env.
-    sys.exit(0)
+    if not called_from_notebook:
+        sys.exit(0)
+
+
+def _called_from_notebook():
+    """Detects if we are currently executing in a notebook environment."""
+    try:
+        shell = get_ipython().__class__.__name__
+        if 'Shell' in shell:
+            return True
+        else:
+            return False
+    except NameError:
+        return False

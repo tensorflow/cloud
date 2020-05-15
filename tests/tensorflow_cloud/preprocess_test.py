@@ -30,11 +30,18 @@ class TestPreprocess(unittest.TestCase):
         self.entry_point = 'tests/testdata/mnist_example_using_fit.ipynb'
         _, self.entry_point_name = os.path.split(self.entry_point)
 
-    def get_wrapped_entry_point(
-            self, chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_1X'],
-            worker_count=0):
-        self.wrapped_entry_point = preprocess.get_wrapped_entry_point(
-            self.entry_point, chief_config, worker_count)
+    def get_preprocessed_entry_point(
+            self,
+            chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_1X'],
+            worker_count=0,
+            distribution_strategy='auto',
+            called_from_notebook=False):
+        self.wrapped_entry_point = preprocess.get_preprocessed_entry_point(
+            self.entry_point,
+            chief_config,
+            worker_count,
+            distribution_strategy,
+            called_from_notebook)
 
         with open(self.wrapped_entry_point, 'r') as f:
             script_lines = f.readlines()
@@ -46,7 +53,7 @@ class TestPreprocess(unittest.TestCase):
 
     def test_auto_one_device_strategy(self):
         self.setup_py()
-        script_lines = self.get_wrapped_entry_point()
+        script_lines = self.get_preprocessed_entry_point()
         expected_lines = [
             'import os\n',
             'import tensorflow as tf\n',
@@ -59,7 +66,8 @@ class TestPreprocess(unittest.TestCase):
     def test_auto_mirrored_strategy(self):
         self.setup_py()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
-        script_lines = self.get_wrapped_entry_point(chief_config=chief_config)
+        script_lines = self.get_preprocessed_entry_point(
+            chief_config=chief_config)
         expected_lines = [
             'import os\n',
             'import tensorflow as tf\n',
@@ -72,7 +80,7 @@ class TestPreprocess(unittest.TestCase):
     def test_auto_multi_worker_strategy(self):
         self.setup_py()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
-        script_lines = self.get_wrapped_entry_point(
+        script_lines = self.get_preprocessed_entry_point(
             chief_config=chief_config, worker_count=2)
         expected_lines = [
             'import os\n',
@@ -86,7 +94,7 @@ class TestPreprocess(unittest.TestCase):
 
     def test_ipython_notebook(self):
         self.setup_ipython()
-        script_lines = self.get_wrapped_entry_point()
+        script_lines = self.get_preprocessed_entry_point()
         expected_lines = [
             'import os\n',
             'import tensorflow as tf\n',

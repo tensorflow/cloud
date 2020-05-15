@@ -23,7 +23,6 @@ import unittest
 
 from tensorflow_cloud import deploy
 from tensorflow_cloud import machine_config
-from tensorflow_cloud import package
 
 from mock import call, patch
 
