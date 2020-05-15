@@ -39,8 +39,8 @@ class TestValidate(unittest.TestCase):
             region='us-central1',
             args=None,
             stream_logs=True,
-            cloud_bucket_name=None,
-            is_run_from_notebook=False)
+            docker_image_bucket_name=None,
+            called_from_notebook=False)
 
         validate.validate(
             entry_point='tests/testdata/mnist_example_using_fit.py',
@@ -52,8 +52,8 @@ class TestValidate(unittest.TestCase):
             region='us-central1',
             args=['1000'],
             stream_logs=False,
-            cloud_bucket_name=None,
-            is_run_from_notebook=False)
+            docker_image_bucket_name=None,
+            called_from_notebook=False)
 
         validate.validate(
             entry_point='tests/testdata/mnist_example_using_fit.ipynb',
@@ -65,8 +65,8 @@ class TestValidate(unittest.TestCase):
             region='us-central1',
             args=['1000'],
             stream_logs=False,
-            cloud_bucket_name=None,
-            is_run_from_notebook=False)
+            docker_image_bucket_name=None,
+            called_from_notebook=False)
 
         validate.validate(
             entry_point=None,
@@ -78,8 +78,8 @@ class TestValidate(unittest.TestCase):
             region='us-central1',
             args=['1000'],
             stream_logs=False,
-            cloud_bucket_name='abc',
-            is_run_from_notebook=True)
+            docker_image_bucket_name='abc',
+            called_from_notebook=True)
 
     def test_invalid_entry_point(self):
         with pytest.raises(ValueError, match=r'Invalid `entry_point`'):
@@ -93,8 +93,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
         with pytest.raises(ValueError, match=r'Invalid `entry_point`'):
             validate.validate(
@@ -107,8 +107,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_requirements_txt(self):
         with pytest.raises(ValueError, match=r'Invalid `requirements_txt`'):
@@ -122,8 +122,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_distribution_strategy(self):
         with pytest.raises(
@@ -139,8 +139,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_chief_config(self):
         with pytest.raises(ValueError, match=r'Invalid `chief_config`'):
@@ -154,8 +154,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_worker_config(self):
         with pytest.raises(ValueError, match=r'Invalid `worker_config`'):
@@ -169,8 +169,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_worker_count(self):
         with pytest.raises(ValueError, match=r'Invalid `worker_count`'):
@@ -184,8 +184,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_region(self):
         with pytest.raises(ValueError, match=r'Invalid `region`'):
@@ -199,8 +199,8 @@ class TestValidate(unittest.TestCase):
                 region=['us-region-a'],
                 args=None,
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_args(self):
         with pytest.raises(ValueError, match=r'Invalid `entry_point_args`'):
@@ -214,8 +214,8 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args='1000',
                 stream_logs=True,
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_stream_logs(self):
         with pytest.raises(ValueError, match=r'Invalid `stream_logs`'):
@@ -229,11 +229,12 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs='True',
-                cloud_bucket_name=None,
-                is_run_from_notebook=False)
+                docker_image_bucket_name=None,
+                called_from_notebook=False)
 
     def test_invalid_cloud_bucket_name(self):
-        with pytest.raises(ValueError, match=r'Invalid `cloud_bucket_name`'):
+        with pytest.raises(
+                ValueError, match=r'Invalid `docker_image_bucket_name`'):
             validate.validate(
                 entry_point='tests/testdata/mnist_example_using_fit.py',
                 distribution_strategy='auto',
@@ -244,5 +245,5 @@ class TestValidate(unittest.TestCase):
                 region='us-central1',
                 args=None,
                 stream_logs=False,
-                cloud_bucket_name=None,
-                is_run_from_notebook=True)
+                docker_image_bucket_name=None,
+                called_from_notebook=True)

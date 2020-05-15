@@ -25,7 +25,7 @@ from . import machine_config
 def validate(
         entry_point, requirements_txt, distribution_strategy,
         chief_config, worker_config, worker_count, region, args, stream_logs,
-        cloud_bucket_name, is_run_from_notebook):
+        docker_image_bucket_name, called_from_notebook):
     """Validates the inputs.
 
     # Arguments:
@@ -50,8 +50,8 @@ def validate(
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
             the cloud job.
-        cloud_bucket_name: Optional string. Cloud storage bucket name.
-        is_run_from_notebook: Boolean. True if the API is run in a
+        docker_image_bucket_name: Optional string. Cloud storage bucket name.
+        called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
 
     # Raises:
@@ -61,7 +61,8 @@ def validate(
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
     _validate_other_args(
-        region, args, stream_logs, cloud_bucket_name, is_run_from_notebook)
+        region, args, stream_logs, docker_image_bucket_name,
+        called_from_notebook)
 
 
 def _validate_files(entry_point, requirements_txt):
@@ -124,8 +125,8 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
 def _validate_other_args(region,
                          args,
                          stream_logs,
-                         cloud_bucket_name,
-                         is_run_from_notebook):
+                         docker_image_bucket_name,
+                         called_from_notebook):
     """Validates all non-file/distribution strategy args."""
     if not isinstance(region, str):
         raise ValueError(
@@ -145,10 +146,11 @@ def _validate_other_args(region,
             'Expected a boolean. '
             'Received {}.'.format(str(stream_logs)))
 
-    if is_run_from_notebook and cloud_bucket_name is None:
+    if called_from_notebook and docker_image_bucket_name is None:
         raise ValueError(
-            'Invalid `cloud_bucket_name` input. '
+            'Invalid `docker_image_bucket_name` input. '
             'When `run` API is used within a python notebook, '
-            '`cloud_bucket_name` is expected to be specifed. We will use the '
-            'bucket name in Google Cloud Storage/Build services for docker '
-            'containerization. Received {}.'.format(str(cloud_bucket_name)))
+            '`docker_image_bucket_name` is expected to be specifed. We will '
+            'use the bucket name in Google Cloud Storage/Build services for '
+            'docker containerization. Received {}.'.format(
+                str(docker_image_bucket_name)))

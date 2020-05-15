@@ -56,8 +56,8 @@ class ContainerBuilder(object):
                 current notebook is taken as the `entry_point`.
             - Otherwise, the current python script is taken as the
                 `entry_point`.
-        wrapped_entry_point: Optional `wrapped_entry_point` file path. This is
-            the `entry_point` wrapped in distribution strategy.
+        preprocessed_entry_point: Optional `preprocessed_entry_point`
+            file path.
         chief_config: `MachineConfig` that represents the configuration for
             the chief worker in a distribution cluster.
         docker_registry: The docker registry name.
@@ -67,36 +67,45 @@ class ContainerBuilder(object):
         destination_dir: Optional working directory in the docker container
             filesystem.
         docker_base_image: Optional base docker image to use. Defaults to None.
-        cloud_bucket_name: Optional string that specifies the cloud storage
-            bucket name.
-        is_run_from_notebook: Optional boolean which indicates whether run has
+        docker_image_bucket_name: Optional string that specifies the docker
+            image cloud storage bucket name.
+        called_from_notebook: Optional boolean which indicates whether run has
             been called in a notebook environment.
     """
 
     def __init__(self,
                  entry_point,
-                 wrapped_entry_point,
+                 preprocessed_entry_point,
                  chief_config,
                  docker_registry,
                  project_id,
                  requirements_txt=None,
                  destination_dir='/app/',
                  docker_base_image=None,
-                 cloud_bucket_name=None,
-                 is_run_from_notebook=False):
+                 docker_image_bucket_name=None,
+                 called_from_notebook=False):
         self.entry_point = entry_point
-        self.wrapped_entry_point = wrapped_entry_point
+        self.preprocessed_entry_point = preprocessed_entry_point
         self.chief_config = chief_config
         self.docker_registry = docker_registry
         self.requirements_txt = requirements_txt
         self.destination_dir = destination_dir
         self.docker_base_image = docker_base_image
-        self.cloud_bucket_name = cloud_bucket_name
-        self.is_run_from_notebook = is_run_from_notebook
+        self.docker_image_bucket_name = docker_image_bucket_name
+        self.called_from_notebook = called_from_notebook
         self.project_id = project_id
 
-    def get_docker_image(self):
-        """Builds, publishes and returns a docker image."""
+    def get_docker_image(self,
+                         max_status_check_attempts=None,
+                         delay_between_status_checks=None):
+        """Builds, publishes and returns a docker image.
+
+        Args:
+            max_status_check_attempts: Maximum number of times allowed to check
+                build status. Applicable only to cloud container builder.
+            delay_between_status_checks: Time is seconds to wait between status
+                checks.
+        """
         raise NotImplementedError
 
     def get_generated_files(self):
@@ -141,7 +150,7 @@ class ContainerBuilder(object):
         if self.entry_point is None:
             lines.append('RUN pip install tensorflow-cloud')
 
-        docker_entry_point = self.wrapped_entry_point or self.entry_point
+        docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
 
         # Using `ENTRYPOINT` here instead of `CMD` specifically because
@@ -173,18 +182,18 @@ class ContainerBuilder(object):
             self.entry_point = sys.argv[0]
 
         # Map entry_point directory to the dst directory.
-        if not self.is_run_from_notebook:
+        if not self.called_from_notebook:
             entry_point_dir, _ = os.path.split(self.entry_point)
             if entry_point_dir == '':  # Current directory
                 entry_point_dir = '.'
             location_map[entry_point_dir] = self.destination_dir
 
-        # Place wrapped_entry_point in the dst directory.
-        if self.wrapped_entry_point is not None:
-            _, wrapped_entry_point_file_name = os.path.split(
-                self.wrapped_entry_point)
-            location_map[self.wrapped_entry_point] = os.path.join(
-                self.destination_dir, wrapped_entry_point_file_name)
+        # Place preprocessed_entry_point in the dst directory.
+        if self.preprocessed_entry_point is not None:
+            _, preprocessed_entry_point_file_name = os.path.split(
+                self.preprocessed_entry_point)
+            location_map[self.preprocessed_entry_point] = os.path.join(
+                self.destination_dir, preprocessed_entry_point_file_name)
 
         # Place requirements_txt in the dst directory.
         if self.requirements_txt is not None:
@@ -208,8 +217,17 @@ class ContainerBuilder(object):
 class LocalContainerBuilder(ContainerBuilder):
     """Container builder that uses local docker daemon process."""
 
-    def get_docker_image(self):
-        """Builds, publishes and returns a docker image."""
+    def get_docker_image(self,
+                         max_status_check_attempts=None,
+                         delay_between_status_checks=None):
+        """Builds, publishes and returns a docker image.
+
+        Args:
+            max_status_check_attempts: Maximum number of times allowed to check
+                build status. Not applicable to this builder.
+            delay_between_status_checks: Time is seconds to wait between status
+                checks. Not applicable to this builder.
+        """
         self.docker_client = APIClient(version='auto')
         self._get_tar_file_path()
 
@@ -276,11 +294,20 @@ class LocalContainerBuilder(ContainerBuilder):
                     'There was an error decoding the Docker logs')
 
 
-class GcloudContainerBuilder(ContainerBuilder):
+class CloudContainerBuilder(ContainerBuilder):
     """Container builder that uses Google cloud build."""
 
-    def get_docker_image(self):
-        """Builds, publishes and returns a docker image."""
+    def get_docker_image(self,
+                         max_status_check_attempts=10,
+                         delay_between_status_checks=30):
+        """Builds, publishes and returns a docker image.
+
+        Args:
+            max_status_check_attempts: Maximum number of times allowed to check
+                build status. Applicable only to cloud container builder.
+            delay_between_status_checks: Time is seconds to wait between status
+                checks.
+        """
         self._get_tar_file_path()
         storage_object_name = self._upload_tar_to_gcs()
         image_uri = self._generate_name()
@@ -299,27 +326,27 @@ class GcloudContainerBuilder(ContainerBuilder):
                 body=request_dict
             ).execute()
 
-            # Create returns a long-running Operation
+            # `create` returns a long-running `Operation`.
             # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/operations#Operation
             # This contains the build id, which we can use to get the status.
 
-            timeout = time.time() + 60*5   # 5 minutes from now
-            while True:
+            attempts = 1
+            while attempts <= max_status_check_attempts:
                 # Call to check on the status of the queued request.
                 get_response = build_service.projects().builds().get(
                     projectId=self.project_id,
                     id=create_response['metadata']['build']['id']
                 ).execute()
 
-                # Get response is a `Build` object which contains status
+                # `get` response is a `Build` object which contains `Status`.
                 # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#Build.Status
                 status = get_response['status']
                 if status != 'WORKING' and status != 'QUEUED':
                     break
-                if time.time() > timeout:
-                    break
+
+                attempts += 1
                 # Wait for 30 seconds before we check on status again.
-                time.sleep(30)
+                time.sleep(delay_between_status_checks)
             if status != 'SUCCESS':
                 raise RuntimeError(
                     'There was an error executing the cloud build job. '
@@ -336,9 +363,10 @@ class GcloudContainerBuilder(ContainerBuilder):
         logger.info('Uploading files to GCS.')
         storage_client = storage.Client()
         try:
-            bucket = storage_client.get_bucket(self.cloud_bucket_name)
+            bucket = storage_client.get_bucket(self.docker_image_bucket_name)
         except NotFound:
-            bucket = storage_client.create_bucket(self.cloud_bucket_name)
+            bucket = storage_client.create_bucket(
+                self.docker_image_bucket_name)
 
         unique_tag = str(uuid.uuid4()).replace('-', '_')
         storage_object_name = "tf_cloud_train_tar_{}".format(unique_tag)
@@ -369,7 +397,7 @@ class GcloudContainerBuilder(ContainerBuilder):
         }
         request_dict['source'] = {
             'storageSource': {
-                'bucket': self.cloud_bucket_name,
+                'bucket': self.docker_image_bucket_name,
                 'object': storage_object_name,
             }
         }

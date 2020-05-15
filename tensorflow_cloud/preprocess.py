@@ -35,20 +35,34 @@ except ImportError:
     _message = None
 
 
-def get_wrapped_entry_point(entry_point,
-                            chief_config,
-                            worker_count,
-                            distribution_strategy,
-                            is_run_from_notebook=False):
-    """Makes the `entry_point` distribution ready.
+def get_preprocessed_entry_point(entry_point,
+                                 chief_config,
+                                 worker_count,
+                                 distribution_strategy,
+                                 called_from_notebook=False):
+    """Creates python script for distribution based on the given `entry_point`.
 
-    Use this utility only when `distribution_strategy` input to the `run` API
-    is `auto`. Otherwise, `entry_point` can be directly used as the docker
-    entry point python program.
+    This utility creates a new python script called `preprocessed_entry_point`
+    based on the given `entry_point` and `distribution_strategy` inputs. This
+    script will become the new docker entry point python program.
 
-    This utility creates a new script called `wrapped_entry_point` that has the
-    user given `entry_point` code wrapped in a Tensorflow distribution
-    strategy. This will now become the new docker entry point python program.
+    1. If `entry_point` is a python file name and `distribution_strategy` is
+    auto, then `preprocessed_entry_point` will have the user given
+    `entry_point` code wrapped in a Tensorflow distribution strategy.
+
+    2. If `entry_point` is None and `run` is invoked inside of a python script,
+    then `preprocessed_entry_point` will be this python script (sys.args[0]).
+
+    3. If `entry_point` is an `ipynb` file, then `preprocessed_entry_point`
+    will be the code from the notebook. This utility uses `nbconvert`
+    to get the code from notebook.
+
+    4. If `entry_point` is None and `run` is invoked inside of an `ipynb`
+    notebook, then `preprocessed_entry_point` will be the code from the
+    notebook. This urility uses `google.colab` client API to fetch the code.
+
+    For cases 2, 3 & 4, if `distribution_strategy` is auto, then this script
+    will be wrapped in a Tensorflow distribution strategy.
 
     The distribution strategy instance created is based on the machine
     configurations provided using the `chief_config`, `worker_count` params.
@@ -77,11 +91,11 @@ def get_wrapped_entry_point(entry_point,
             distribution strategy instance based on the machine configurations
             provided using the `chief_config`, `worker_config` and
             `worker_count` params.
-        is_run_from_notebook: Boolean. True if the API is run in a
+        called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
 
     Returns:
-        The `wrapped_entry_point` file path.
+        The `preprocessed_entry_point` file path.
     """
 
     # Set `TF_KERAS_RUNNING_REMOTELY` env variable. This is required in order
@@ -113,7 +127,7 @@ def get_wrapped_entry_point(entry_point,
 
     # If `entry_point` is not provided, detect if we are in a notebook
     # or a python script. Fetch the `entry_point`.
-    if entry_point is None and not is_run_from_notebook:
+    if entry_point is None and not called_from_notebook:
         # Current python script is assumed to be the entry_point.
         entry_point = sys.argv[0]
 
@@ -126,7 +140,7 @@ def get_wrapped_entry_point(entry_point,
         script_lines.append(
             'exec(open("{}").read())\n'.format(entry_point_file_name))
     else:
-        if is_run_from_notebook:
+        if called_from_notebook:
             py_content = _get_colab_notebook_content()
         else:
             if PythonExporter is None:

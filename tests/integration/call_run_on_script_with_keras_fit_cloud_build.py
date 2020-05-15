@@ -36,4 +36,4 @@ tfc.run(
             accelerator_count=2),
     worker_count=0,
     stream_logs=True,
-    cloud_bucket_name=args.bucket_name)
+    docker_image_bucket_name=args.bucket_name)
