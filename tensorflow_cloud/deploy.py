@@ -176,7 +176,7 @@ def _stream_logs(job_id):
             if process.poll() is not None:
                 break
             if output:
-                print(output.decode().replace('\x08', '', 10000))
+                print(output.decode().replace('\x08', ''))
     except subprocess.SubprocessError as err:
         raise RuntimeError(
             'There was an error streaming the job logs. {}'.format(
