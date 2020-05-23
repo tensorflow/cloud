@@ -116,14 +116,14 @@ def run(entry_point=None,
         return
 
     if kwargs:
-      # We are using kwargs for forward compatibility in the cloud. For example,
-      # if a new param is added to `run` API, this will not exist in the latest
-      # tensorflow-cloud package installed in the cloud docker environments.
-      # So, if `run` is used inside a python script or notebook, this python
-      # code will fail to run in the cloud even before we can check
-      # `TF_KERAS_RUNNING_REMOTELY` env var because of an additional unknown
-      # param.
-      raise TypeError('Unknown keyword arguments: %s' % (kwargs.keys(),))
+        # We are using kwargs for forward compatibility in the cloud. For eg.,
+        # if a new param is added to `run` API, this will not exist in the
+        # latest tensorflow-cloud package installed in the cloud docker envs.
+        # So, if `run` is used inside a python script or notebook, this python
+        # code will fail to run in the cloud even before we can check
+        # `TF_KERAS_RUNNING_REMOTELY` env var because of an additional unknown
+        # param.
+        raise TypeError('Unknown keyword arguments: %s' % (kwargs.keys(),))
 
     # Get defaults values for input param
 

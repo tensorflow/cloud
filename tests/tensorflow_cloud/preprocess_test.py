@@ -101,8 +101,8 @@ class TestPreprocess(unittest.TestCase):
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
             'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
             'tf.distribute.experimental_set_strategy(strategy)\n']
-        for l in expected_lines:
-            self.assertIn(l, script_lines)
+        for el in expected_lines:
+            self.assertIn(el, script_lines)
         self.assertIn(
             'eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n',
             script_lines)
