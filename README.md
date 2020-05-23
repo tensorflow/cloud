@@ -218,14 +218,16 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import tensorflow_cloud as tfc
 
-tfc.run(entry_point=None,
-	    distribution_strategy='auto',
-	    requirements_txt='tests/testdata/requirements.txt',
-	    chief_config=tfc.MachineConfig(cpu_cores=8,
-							           memory=30,
-							           accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
-							           accelerator_count=2),
-	    worker_count=0)
+tfc.run(
+    entry_point=None,
+    distribution_strategy='auto',
+    requirements_txt='requirements.txt',
+    chief_config=tfc.MachineConfig(
+            cpu_cores=8,
+            memory=30,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_count=2),
+    worker_count=0)
 
 datasets, info = tfds.load(name='mnist', with_info=True, as_supervised=True)
 mnist_train, mnist_test = datasets['train'], datasets['test']
@@ -236,11 +238,12 @@ num_test_examples = info.splits['test'].num_examples
 BUFFER_SIZE = 10000
 BATCH_SIZE = 64
 
+
 def scale(image, label):
     image = tf.cast(image, tf.float32)
     image /= 255
-
     return image, label
+
 
 train_dataset = mnist_train.map(scale).cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
