@@ -15,7 +15,7 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 - Please make sure `docker` is installed and running if you want to use local docker process for docker build, otherwise [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
 - Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
 
-For detailed end to end setup instructions, please scroll down to [Setup instructions](#setup-instructions) section.
+For detailed end to end setup instructions, please see [Setup instructions](#setup-instructions) section.
 
 ### Install latest release
 
@@ -65,7 +65,7 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.py')
 ```
 
-Running this script will automatically apply TensorFlow [Mirrored distribution strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions on how to use the API.
+Running this script will automatically apply TensorFlow [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions on how to use the API.
 
 3. You will see an output similar to the following on your console. The information from the output can be used to track the training job status. 
 
@@ -148,7 +148,7 @@ To use local [docker daemon process](https://docs.docker.com/config/daemon/#star
 dockerd
 ```
 
-*or*
+**or**
 
 [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
 
@@ -158,7 +158,7 @@ REGION="us-central1"
 gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
-7. [Optional] Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/).
+7. [Optional] Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/)
 
 This is required only if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
 
@@ -344,6 +344,18 @@ Please see `run` API documentation for detailed information on the parameters an
 - [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_notebook_with_keras_fit.py).
 - [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_keras_fit.py).
 - [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit_cloud_build.py).
+
+## Local vs remote training
+
+Things to keep in mind when running your jobs remotely:
+
+[Coming soon]
+
+## Debugging workflow
+
+Here are some tips for fixing unexpected issues occurring remotely.
+
+[Coming soon]
 
 ## Coming up
 
