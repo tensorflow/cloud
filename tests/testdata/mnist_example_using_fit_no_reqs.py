@@ -18,34 +18,21 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+import tensorflow as tf
 
-mnist_train = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-mnist_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+(x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
 
-BUFFER_SIZE = 10000
-BATCH_SIZE = 64
-
-
-def scale(image, label):
-    image = tf.cast(image, tf.float32)
-    image /= 255
-    return image, label
-
-
-train_dataset = mnist_train.map(scale).cache().shuffle(
-    BUFFER_SIZE).batch(BATCH_SIZE)
-eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
+x_train = x_train.reshape((60000, 28 * 28))
+x_train = x_train.astype('float32') / 255
 
 model = tf.keras.Sequential([
-      tf.keras.layers.Flatten(input_shape=(28, 28)),
-      tf.keras.layers.Dense(512, activation='relu'),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.Dense(10, activation='softmax')
-    ])
+  tf.keras.layers.Dense(512, activation='relu', input_shape=(28 * 28,)),
+  tf.keras.layers.Dropout(0.2),
+  tf.keras.layers.Dense(10, activation='softmax')
+])
 
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer=tf.keras.optimizers.Adam(),
               metrics=['accuracy'])
 
-model.fit(train_dataset, epochs=12)
+model.fit(x_train, y_train, epochs=10, batch_size=128)
