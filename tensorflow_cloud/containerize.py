@@ -36,7 +36,7 @@ try:
     from tensorflow.python.framework.versions import VERSION
 except ImportError:
     # Use the latest TF docker image if a local installation is not available.
-    VERSION = 'latest'
+    VERSION = "latest"
 
 
 logger = logging.getLogger(__name__)
@@ -73,17 +73,19 @@ class ContainerBuilder(object):
             been called in a notebook environment.
     """
 
-    def __init__(self,
-                 entry_point,
-                 preprocessed_entry_point,
-                 chief_config,
-                 docker_registry,
-                 project_id,
-                 requirements_txt=None,
-                 destination_dir='/app/',
-                 docker_base_image=None,
-                 docker_image_bucket_name=None,
-                 called_from_notebook=False):
+    def __init__(
+        self,
+        entry_point,
+        preprocessed_entry_point,
+        chief_config,
+        docker_registry,
+        project_id,
+        requirements_txt=None,
+        destination_dir="/app/",
+        docker_base_image=None,
+        docker_image_bucket_name=None,
+        called_from_notebook=False,
+    ):
         self.entry_point = entry_point
         self.preprocessed_entry_point = preprocessed_entry_point
         self.chief_config = chief_config
@@ -95,9 +97,9 @@ class ContainerBuilder(object):
         self.called_from_notebook = called_from_notebook
         self.project_id = project_id
 
-    def get_docker_image(self,
-                         max_status_check_attempts=None,
-                         delay_between_status_checks=None):
+    def get_docker_image(
+        self, max_status_check_attempts=None, delay_between_status_checks=None
+    ):
         """Builds, publishes and returns a docker image.
 
         Args:
@@ -117,7 +119,7 @@ class ContainerBuilder(object):
         file_path_map = self._get_file_path_map()
 
         _, self.tar_file_path = tempfile.mkstemp()
-        with tarfile.open(self.tar_file_path, 'w:gz', dereference=True) as tar:
+        with tarfile.open(self.tar_file_path, "w:gz", dereference=True) as tar:
             for source, destination in file_path_map.items():
                 tar.add(source, arcname=destination)
 
@@ -126,42 +128,46 @@ class ContainerBuilder(object):
         if self.docker_base_image is None:
             # Get the TF docker base image to use based on the current
             # TF version.
-            self.docker_base_image = 'tensorflow/tensorflow:{}'.format(VERSION)
-            if (self.chief_config.accelerator_type !=
-                    machine_config.AcceleratorType.NO_ACCELERATOR):
-                self.docker_base_image += '-gpu'
+            self.docker_base_image = "tensorflow/tensorflow:{}".format(VERSION)
+            if (
+                self.chief_config.accelerator_type
+                != machine_config.AcceleratorType.NO_ACCELERATOR
+            ):
+                self.docker_base_image += "-gpu"
 
-        lines = ['FROM {}'.format(self.docker_base_image),
-                 'WORKDIR {}'.format(self.destination_dir)]
+        lines = [
+            "FROM {}".format(self.docker_base_image),
+            "WORKDIR {}".format(self.destination_dir),
+        ]
 
         # Copies the files from the `destination_dir` in docker daemon location
         # to the `destination_dir` in docker container filesystem.
-        lines.append('COPY {} {}'.format(
-            self.destination_dir, self.destination_dir))
+        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
 
         if self.requirements_txt is not None:
             _, requirements_txt_name = os.path.split(self.requirements_txt)
             dst_requirements_txt = os.path.join(requirements_txt_name)
             # install pip requirements from requirements_txt if it exists.
-            lines.append('RUN if [ -e {} ]; '
-                         'then pip install --no-cache -r {}; '
-                         'fi'.format(
-                            dst_requirements_txt, dst_requirements_txt))
+            lines.append(
+                "RUN if [ -e {} ]; "
+                "then pip install --no-cache -r {}; "
+                "fi".format(dst_requirements_txt, dst_requirements_txt)
+            )
         if self.entry_point is None:
-            lines.append('RUN pip install tensorflow-cloud')
+            lines.append("RUN pip install tensorflow-cloud")
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
 
         # Using `ENTRYPOINT` here instead of `CMD` specifically because
         # we want to support passing user code flags.
-        lines.extend([
-            'ENTRYPOINT ["python", "{}"]'.format(docker_entry_point_file_name)
-        ])
+        lines.extend(
+            ['ENTRYPOINT ["python", "{}"]'.format(docker_entry_point_file_name)]
+        )
 
-        content = '\n'.join(lines)
+        content = "\n".join(lines)
         _, self.docker_file_path = tempfile.mkstemp()
-        with open(self.docker_file_path, 'w') as f:
+        with open(self.docker_file_path, "w") as f:
             f.write(content)
 
     def _get_file_path_map(self):
@@ -178,48 +184,49 @@ class ContainerBuilder(object):
             A file path map.
         """
         location_map = {}
-        if self.entry_point is None and sys.argv[0].endswith('py'):
+        if self.entry_point is None and sys.argv[0].endswith("py"):
             self.entry_point = sys.argv[0]
 
         # Map entry_point directory to the dst directory.
         if not self.called_from_notebook:
             entry_point_dir, _ = os.path.split(self.entry_point)
-            if entry_point_dir == '':  # Current directory
-                entry_point_dir = '.'
+            if entry_point_dir == "":  # Current directory
+                entry_point_dir = "."
             location_map[entry_point_dir] = self.destination_dir
 
         # Place preprocessed_entry_point in the dst directory.
         if self.preprocessed_entry_point is not None:
             _, preprocessed_entry_point_file_name = os.path.split(
-                self.preprocessed_entry_point)
+                self.preprocessed_entry_point
+            )
             location_map[self.preprocessed_entry_point] = os.path.join(
-                self.destination_dir, preprocessed_entry_point_file_name)
+                self.destination_dir, preprocessed_entry_point_file_name
+            )
 
         # Place requirements_txt in the dst directory.
         if self.requirements_txt is not None:
-            _, requirements_txt_name = os.path.split(
-                self.requirements_txt)
+            _, requirements_txt_name = os.path.split(self.requirements_txt)
             location_map[self.requirements_txt] = os.path.join(
-                self.destination_dir, requirements_txt_name)
+                self.destination_dir, requirements_txt_name
+            )
 
         # Place docker file in the root directory.
-        location_map[self.docker_file_path] = 'Dockerfile'
+        location_map[self.docker_file_path] = "Dockerfile"
         return location_map
 
     def _generate_name(self):
         """Returns unique name+tag for the docker image."""
         # Keeping this name format uniform with the job id.
-        unique_tag = str(uuid.uuid4()).replace('-', '_')
-        return '{}/{}:{}'.format(
-            self.docker_registry, 'tf_cloud_train', unique_tag)
+        unique_tag = str(uuid.uuid4()).replace("-", "_")
+        return "{}/{}:{}".format(self.docker_registry, "tf_cloud_train", unique_tag)
 
 
 class LocalContainerBuilder(ContainerBuilder):
     """Container builder that uses local docker daemon process."""
 
-    def get_docker_image(self,
-                         max_status_check_attempts=None,
-                         delay_between_status_checks=None):
+    def get_docker_image(
+        self, max_status_check_attempts=None, delay_between_status_checks=None
+    ):
         """Builds, publishes and returns a docker image.
 
         Args:
@@ -228,7 +235,7 @@ class LocalContainerBuilder(ContainerBuilder):
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
         """
-        self.docker_client = APIClient(version='auto')
+        self.docker_client = APIClient(version="auto")
         self._get_tar_file_path()
 
         # create docker image from tarball
@@ -240,19 +247,20 @@ class LocalContainerBuilder(ContainerBuilder):
     def _build_docker_image(self):
         """Builds docker image."""
         image_uri = self._generate_name()
-        logger.info('Building docker image: {}'.format(image_uri))
+        logger.info("Building docker image: {}".format(image_uri))
 
         # `fileobj` is generally set to the Dockerfile file path. If a tar file
         # is used for docker build context (ones that includes a Dockerfile)
         # then `custom_context` should be enabled.
-        with open(self.tar_file_path, 'rb') as fileobj:
+        with open(self.tar_file_path, "rb") as fileobj:
             bld_logs_generator = self.docker_client.build(
-                path='.',
+                path=".",
                 custom_context=True,
                 fileobj=fileobj,
                 tag=image_uri,
-                encoding='utf-8')
-        self._get_logs(bld_logs_generator, 'build')
+                encoding="utf-8",
+            )
+        self._get_logs(bld_logs_generator, "build")
         return image_uri
 
     def _publish_docker_image(self, image_uri):
@@ -261,9 +269,9 @@ class LocalContainerBuilder(ContainerBuilder):
         Args:
             image_uri: String, the registry name and tag.
         """
-        logger.info('Publishing docker image: {}'.format(image_uri))
+        logger.info("Publishing docker image: {}".format(image_uri))
         pb_logs_generator = self.docker_client.push(image_uri, stream=True)
-        self._get_logs(pb_logs_generator, 'publish')
+        self._get_logs(pb_logs_generator, "publish")
 
     def _get_logs(self, logs_generator, name):
         """Decodes logs from docker and generates user friendly logs.
@@ -279,27 +287,28 @@ class LocalContainerBuilder(ContainerBuilder):
         """
         for line in logs_generator:
             try:
-                unicode_line = line.decode('utf-8').strip()
+                unicode_line = line.decode("utf-8").strip()
                 logger.info(unicode_line)
             except UnicodeError:
-                logger.warning('Unable to decode logs.')
+                logger.warning("Unable to decode logs.")
             try:
                 line = json.loads(unicode_line)
-                if line.get('error'):
+                if line.get("error"):
                     raise RuntimeError(
-                        'Docker image {} failed: {}'.format(name, str(
-                            line.get('error'))))
+                        "Docker image {} failed: {}".format(
+                            name, str(line.get("error"))
+                        )
+                    )
             except json.decoder.JSONDecodeError:
-                raise RuntimeError(
-                    'There was an error decoding the Docker logs')
+                raise RuntimeError("There was an error decoding the Docker logs")
 
 
 class CloudContainerBuilder(ContainerBuilder):
     """Container builder that uses Google cloud build."""
 
-    def get_docker_image(self,
-                         max_status_check_attempts=10,
-                         delay_between_status_checks=30):
+    def get_docker_image(
+        self, max_status_check_attempts=10, delay_between_status_checks=30
+    ):
         """Builds, publishes and returns a docker image.
 
         Args:
@@ -312,19 +321,23 @@ class CloudContainerBuilder(ContainerBuilder):
         storage_object_name = self._upload_tar_to_gcs()
         image_uri = self._generate_name()
 
-        logger.info('Building and publishing docker image using Google '
-                    'Cloud Build: {}'.format(image_uri))
-        build_service = discovery.build(
-            'cloudbuild', 'v1', cache_discovery=False)
+        logger.info(
+            "Building and publishing docker image using Google "
+            "Cloud Build: {}".format(image_uri)
+        )
+        build_service = discovery.build("cloudbuild", "v1", cache_discovery=False)
         request_dict = self._create_cloud_build_request_dict(
-            image_uri, storage_object_name)
+            image_uri, storage_object_name
+        )
 
         try:
             # Call to queue request to build and push docker image.
-            create_response = build_service.projects().builds().create(
-                projectId=self.project_id,
-                body=request_dict
-            ).execute()
+            create_response = (
+                build_service.projects()
+                .builds()
+                .create(projectId=self.project_id, body=request_dict)
+                .execute()
+            )
 
             # `create` returns a long-running `Operation`.
             # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/operations#Operation
@@ -333,42 +346,48 @@ class CloudContainerBuilder(ContainerBuilder):
             attempts = 1
             while attempts <= max_status_check_attempts:
                 # Call to check on the status of the queued request.
-                get_response = build_service.projects().builds().get(
-                    projectId=self.project_id,
-                    id=create_response['metadata']['build']['id']
-                ).execute()
+                get_response = (
+                    build_service.projects()
+                    .builds()
+                    .get(
+                        projectId=self.project_id,
+                        id=create_response["metadata"]["build"]["id"],
+                    )
+                    .execute()
+                )
 
                 # `get` response is a `Build` object which contains `Status`.
                 # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#Build.Status
-                status = get_response['status']
-                if status != 'WORKING' and status != 'QUEUED':
+                status = get_response["status"]
+                if status != "WORKING" and status != "QUEUED":
                     break
 
                 attempts += 1
                 # Wait for 30 seconds before we check on status again.
                 time.sleep(delay_between_status_checks)
-            if status != 'SUCCESS':
+            if status != "SUCCESS":
                 raise RuntimeError(
-                    'There was an error executing the cloud build job. '
-                    'Job status: ' + status)
+                    "There was an error executing the cloud build job. "
+                    "Job status: " + status
+                )
 
         except errors.HttpError as err:
             raise RuntimeError(
-                'There was an error submitting the cloud build job. ' +
-                err._get_reason())
+                "There was an error submitting the cloud build job. "
+                + err._get_reason()
+            )
         return image_uri
 
     def _upload_tar_to_gcs(self):
         """Uploads tarfile to GCS and returns the GCS object name."""
-        logger.info('Uploading files to GCS.')
+        logger.info("Uploading files to GCS.")
         storage_client = storage.Client()
         try:
             bucket = storage_client.get_bucket(self.docker_image_bucket_name)
         except NotFound:
-            bucket = storage_client.create_bucket(
-                self.docker_image_bucket_name)
+            bucket = storage_client.create_bucket(self.docker_image_bucket_name)
 
-        unique_tag = str(uuid.uuid4()).replace('-', '_')
+        unique_tag = str(uuid.uuid4()).replace("-", "_")
         storage_object_name = "tf_cloud_train_tar_{}".format(unique_tag)
 
         blob = bucket.blob(storage_object_name)
@@ -389,16 +408,16 @@ class CloudContainerBuilder(ContainerBuilder):
             Build request dictionary.
         """
         request_dict = {}
-        request_dict['projectId'] = self.project_id
-        request_dict['images'] = [[image_uri]]
-        request_dict['steps'] = {
-            'name': 'gcr.io/cloud-builders/docker',
-            'args': ['build',  '-t', image_uri, '.'],
+        request_dict["projectId"] = self.project_id
+        request_dict["images"] = [[image_uri]]
+        request_dict["steps"] = {
+            "name": "gcr.io/cloud-builders/docker",
+            "args": ["build", "-t", image_uri, "."],
         }
-        request_dict['source'] = {
-            'storageSource': {
-                'bucket': self.docker_image_bucket_name,
-                'object': storage_object_name,
+        request_dict["source"] = {
+            "storageSource": {
+                "bucket": self.docker_image_bucket_name,
+                "object": storage_object_name,
             }
         }
         return request_dict
