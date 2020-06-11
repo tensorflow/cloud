@@ -19,34 +19,26 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-VERSION = '0.1.2'
+VERSION = "0.1.2"
 
 
 setup(
-    name='tensorflow-cloud',
+    name="tensorflow-cloud",
     version=VERSION,
-    description='',
-    url='https://github.com/tensorflow/cloud',
-    author='The tensorflow cloud authors',
-    author_email='tensorflow-cloud@google.com',
-    license='Apache License 2.0',
-    install_requires=[
-        'docker',
-        'google-api-python-client',
-        'google-cloud-storage',
-    ],
-    extras_require={
-        'tests': ['pytest',
-                  'flake8',
-                  'mock'],
-    },
+    description="",
+    url="https://github.com/tensorflow/cloud",
+    author="The tensorflow cloud authors",
+    author_email="tensorflow-cloud@google.com",
+    license="Apache License 2.0",
+    install_requires=["docker", "google-api-python-client", "google-cloud-storage",],
+    extras_require={"tests": ["pytest", "flake8", "mock"],},
     classifiers=[
-        'Programming Language :: Python',
-        'Operating System :: Unix',
-        'Operating System :: MacOS',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Software Development'
+        "Programming Language :: Python",
+        "Operating System :: Unix",
+        "Operating System :: MacOS",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development",
     ],
-    packages=find_packages(exclude=('tests',))
+    packages=find_packages(exclude=("tests",)),
 )

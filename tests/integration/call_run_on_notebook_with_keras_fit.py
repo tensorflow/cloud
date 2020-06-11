@@ -19,12 +19,14 @@ import tensorflow_cloud as tfc
 
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point='tests/testdata/mnist_example_using_fit.ipynb',
-    distribution_strategy='auto',
-    requirements_txt='tests/testdata/requirements.txt',
+    entry_point="tests/testdata/mnist_example_using_fit.ipynb",
+    distribution_strategy="auto",
+    requirements_txt="tests/testdata/requirements.txt",
     chief_config=tfc.MachineConfig(
-            cpu_cores=8,
-            memory=30,
-            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
-            accelerator_count=2),
-    worker_count=0)
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+        accelerator_count=2,
+    ),
+    worker_count=0,
+)
