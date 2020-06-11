@@ -25,12 +25,12 @@ from . import gcp
 class AcceleratorType(Enum):
     """Types of accelerators."""
 
-    NO_ACCELERATOR = 'CPU'
-    NVIDIA_TESLA_K80 = 'K80'
-    NVIDIA_TESLA_P100 = 'P100'
-    NVIDIA_TESLA_V100 = 'V100'
-    NVIDIA_TESLA_P4 = 'P4'
-    NVIDIA_TESLA_T4 = 'T4'
+    NO_ACCELERATOR = "CPU"
+    NVIDIA_TESLA_K80 = "K80"
+    NVIDIA_TESLA_P100 = "P100"
+    NVIDIA_TESLA_V100 = "V100"
+    NVIDIA_TESLA_P4 = "P4"
+    NVIDIA_TESLA_T4 = "T4"
     # NOTE: When making changes here, please make sure to update the list of
     # supported `accelerator_type`s in `MachineConfig`.
 
@@ -42,12 +42,13 @@ class AcceleratorType(Enum):
             cls.NVIDIA_TESLA_P100,
             cls.NVIDIA_TESLA_V100,
             cls.NVIDIA_TESLA_P4,
-            cls.NVIDIA_TESLA_T4)
+            cls.NVIDIA_TESLA_T4,
+        )
 
     @classmethod
     def validate(cls, key):
         if key not in cls.all():
-            raise ValueError('Invalid accelerator key provided: %s.' % key)
+            raise ValueError("Invalid accelerator key provided: %s." % key)
 
 
 class MachineConfig(object):
@@ -63,17 +64,15 @@ class MachineConfig(object):
       accelerator_count: Number of accelerators. Defaults to 1.
     """
 
-    def __init__(self,
-                 cpu_cores=8,
-                 memory=30,
-                 accelerator_type='auto',
-                 accelerator_count=1):
+    def __init__(
+        self, cpu_cores=8, memory=30, accelerator_type="auto", accelerator_count=1
+    ):
         self.cpu_cores = cpu_cores
         self.memory = memory
         self.accelerator_type = accelerator_type
         self.accelerator_count = accelerator_count
 
-        if self.accelerator_type == 'auto':
+        if self.accelerator_type == "auto":
             self.accelerator_type = AcceleratorType.NVIDIA_TESLA_P100
 
         self.validate()
@@ -82,66 +81,64 @@ class MachineConfig(object):
         """Checks that the machine configuration created is valid for GCP."""
         AcceleratorType.validate(self.accelerator_type)
         gcp.validate_machine_configuration(
-            self.cpu_cores,
-            self.memory,
-            self.accelerator_type,
-            self.accelerator_count)
+            self.cpu_cores, self.memory, self.accelerator_type, self.accelerator_count
+        )
 
 
 # Dictionary with common machine configurations.
 COMMON_MACHINE_CONFIGS = {
-    'CPU':
-        MachineConfig(
-            cpu_cores=4,
-            memory=15,
-            accelerator_type=AcceleratorType.NO_ACCELERATOR,
-            accelerator_count=0),
-    'K80_1X':
-        MachineConfig(
-            cpu_cores=8,
-            memory=30,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
-            accelerator_count=1),
-    'K80_4X':
-        MachineConfig(
-            cpu_cores=16,
-            memory=60,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
-            accelerator_count=4),
-    'K80_8X':
-        MachineConfig(
-            cpu_cores=32,
-            memory=120,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
-            accelerator_count=8),
-    'P100_1X':
-        MachineConfig(
-            cpu_cores=8,
-            memory=30,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_P100,
-            accelerator_count=1),
-    'P100_4X':
-        MachineConfig(
-            cpu_cores=16,
-            memory=60,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_P100,
-            accelerator_count=4),
-    'V100_1X':
-        MachineConfig(
-            cpu_cores=8,
-            memory=30,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
-            accelerator_count=1),
-    'V100_4X':
-        MachineConfig(
-            cpu_cores=16,
-            memory=60,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
-            accelerator_count=4),
-    'V100_8X':
-        MachineConfig(
-            cpu_cores=32,
-            memory=120,
-            accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
-            accelerator_count=8),
+    "CPU": MachineConfig(
+        cpu_cores=4,
+        memory=15,
+        accelerator_type=AcceleratorType.NO_ACCELERATOR,
+        accelerator_count=0,
+    ),
+    "K80_1X": MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
+        accelerator_count=1,
+    ),
+    "K80_4X": MachineConfig(
+        cpu_cores=16,
+        memory=60,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
+        accelerator_count=4,
+    ),
+    "K80_8X": MachineConfig(
+        cpu_cores=32,
+        memory=120,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_K80,
+        accelerator_count=8,
+    ),
+    "P100_1X": MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_P100,
+        accelerator_count=1,
+    ),
+    "P100_4X": MachineConfig(
+        cpu_cores=16,
+        memory=60,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_P100,
+        accelerator_count=4,
+    ),
+    "V100_1X": MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
+        accelerator_count=1,
+    ),
+    "V100_4X": MachineConfig(
+        cpu_cores=16,
+        memory=60,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
+        accelerator_count=4,
+    ),
+    "V100_8X": MachineConfig(
+        cpu_cores=32,
+        memory=120,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
+        accelerator_count=8,
+    ),
 }

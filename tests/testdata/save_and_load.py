@@ -24,11 +24,11 @@ import argparse
 
 import tensorflow_datasets as tfds
 import tensorflow as tf
+
 tfds.disable_progress_bar()
 
-parser = argparse.ArgumentParser(description='A tutorial of argparse!')
-parser.add_argument(
-    '--path', required=True, type=str, help='Keras model save path')
+parser = argparse.ArgumentParser(description="A tutorial of argparse!")
+parser.add_argument("--path", required=True, type=str, help="Keras model save path")
 args = parser.parse_args()
 model_save_path = args.path
 
@@ -37,9 +37,8 @@ mirrored_strategy = tf.distribute.MirroredStrategy()
 
 
 def get_data():
-    datasets, ds_info = tfds.load(
-        name='mnist', with_info=True, as_supervised=True)
-    mnist_train, mnist_test = datasets['train'], datasets['test']
+    datasets, ds_info = tfds.load(name="mnist", with_info=True, as_supervised=True)
+    mnist_train, mnist_test = datasets["train"], datasets["test"]
 
     BUFFER_SIZE = 10000
 
@@ -62,55 +61,59 @@ def get_data():
 
 def get_model():
     with mirrored_strategy.scope():
-        model = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(
-                32, 3, activation='relu', input_shape=(28, 28, 1)),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(64, activation='relu'),
-            tf.keras.layers.Dense(10)
-        ])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Conv2D(
+                    32, 3, activation="relu", input_shape=(28, 28, 1)
+                ),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(64, activation="relu"),
+                tf.keras.layers.Dense(10),
+            ]
+        )
 
     model.compile(
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        optimizer='adam',
-        metrics=['accuracy'])
+        optimizer="adam",
+        metrics=["accuracy"],
+    )
     return model
 
 
-print('Initial training + saving model weights')
+print("Initial training + saving model weights")
 model = get_model()
 train_dataset, eval_dataset = get_data()
-checkpoint_path = '{}/cp.ckpt'.format(model_save_path)
-cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                 save_weights_only=True,
-                                                 verbose=1)
+checkpoint_path = "{}/cp.ckpt".format(model_save_path)
+cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath=checkpoint_path, save_weights_only=True, verbose=1
+)
 model.fit(train_dataset, epochs=10, callbacks=[cp_callback])
 
-print('Creating new model instance')
+print("Creating new model instance")
 model = get_model()
 
-print('Evaluating untrained model')
+print("Evaluating untrained model")
 loss, acc = model.evaluate(eval_dataset, verbose=2)
-print("Untrained model, accuracy: {:5.2f}%".format(100*acc))
+print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
 
-print('Loading model weights')
+print("Loading model weights")
 another_strategy = tf.distribute.OneDeviceStrategy("/cpu:0")
 with another_strategy.scope():
     model.load_weights(checkpoint_path)
 
-print('Evaluating model with loaded weights')
+print("Evaluating model with loaded weights")
 loss, acc = model.evaluate(eval_dataset, verbose=2)
-print("Restored model, accuracy: {:5.2f}%".format(100*acc))
+print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
 
-print('Saving model')
+print("Saving model")
 model.save(model_save_path)  # save() should be called out of strategy scope
 
-print('Restore model and train without dist strat')
+print("Restore model and train without dist strat")
 restored_keras_model = tf.keras.models.load_model(model_save_path)
 restored_keras_model.fit(train_dataset, epochs=2)
 
-print('Restore model and training using a different strategy')
+print("Restore model and training using a different strategy")
 another_strategy = tf.distribute.OneDeviceStrategy("/cpu:0")
 with another_strategy.scope():
     restored_keras_model_ds = tf.keras.models.load_model(model_save_path)

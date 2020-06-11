@@ -29,12 +29,12 @@ tfds.disable_progress_bar()
 print(tf.__version__)
 
 # Download the dataset
-datasets, info = tfds.load(name='mnist', with_info=True, as_supervised=True)
-mnist_train, mnist_test = datasets['train'], datasets['test']
+datasets, info = tfds.load(name="mnist", with_info=True, as_supervised=True)
+mnist_train, mnist_test = datasets["train"], datasets["test"]
 
 # Setup input pipeline
-num_train_examples = info.splits['train'].num_examples
-num_test_examples = info.splits['test'].num_examples
+num_train_examples = info.splits["train"].num_examples
+num_test_examples = info.splits["test"].num_examples
 
 BUFFER_SIZE = 10000
 BATCH_SIZE = 64
@@ -52,18 +52,21 @@ train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
 
 # Create the model
-model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(32, 3, activation='relu', input_shape=(
-        28, 28, 1)),
-    tf.keras.layers.MaxPooling2D(),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(64, activation='relu'),
-    tf.keras.layers.Dense(10, activation='softmax')
-])
+model = tf.keras.Sequential(
+    [
+        tf.keras.layers.Conv2D(32, 3, activation="relu", input_shape=(28, 28, 1)),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(64, activation="relu"),
+        tf.keras.layers.Dense(10, activation="softmax"),
+    ]
+)
 
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer=tf.keras.optimizers.Adam(),
-              metrics=['accuracy'])
+model.compile(
+    loss="sparse_categorical_crossentropy",
+    optimizer=tf.keras.optimizers.Adam(),
+    metrics=["accuracy"],
+)
 
 
 # Function for decaying the learning rate.
@@ -80,14 +83,13 @@ def decay(epoch):
 # Callback for printing the LR at the end of each epoch.
 class PrintLR(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
-        print('\nLearning rate for epoch {} is {}'.format(
-            epoch + 1,
-            model.optimizer.lr.numpy()))
+        print(
+            "\nLearning rate for epoch {} is {}".format(
+                epoch + 1, model.optimizer.lr.numpy()
+            )
+        )
 
 
-callbacks = [
-    tf.keras.callbacks.LearningRateScheduler(decay),
-    PrintLR()
-]
+callbacks = [tf.keras.callbacks.LearningRateScheduler(decay), PrintLR()]
 
 model.fit(train_dataset, epochs=12, callbacks=callbacks)
