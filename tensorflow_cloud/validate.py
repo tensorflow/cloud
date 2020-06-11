@@ -135,7 +135,20 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             'Expected "auto" or `MachineConfig` instance. '
             "Received {}.".format(worker_config)
         )
-    # TODO(psv): Incompatible chief and worker configs
+
+    if machine_config.is_tpu_config(chief_config):
+        raise ValueError(
+            "Invalid `chief_config` input. "
+            "`chief_config` cannot be a TPU config. "
+            "Received {}.".format(chief_config)
+        )
+
+    if worker_count > 1 and machine_config.is_tpu_config(worker_config):
+        raise ValueError(
+            "Invalid `worker_count` input. "
+            "Expected worker_count=1 for TPU `worker_config`. "
+            "Received {}.".format(worker_count)
+        )
 
 
 def _validate_other_args(

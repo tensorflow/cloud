@@ -38,13 +38,20 @@ def validate_machine_configuration(
     Args:
         cpu_cores: Number of virtual CPU cores.
         memory: Amount of memory in GB.
-        accelerator_type: 'MachineConfig.AcceleratorType'
+        accelerator_type: 'MachineConfig.AcceleratorType'.
       accelerator_count: Number of accelerators. Defaults to 1.
 
     Raises:
         ValueError, if machine configuration is not a valid GCP configuration.
     """
     valid_configurations = _get_valid_machine_configurations()
+
+    # For TPU workers created using AI platform CPU/memory specification is not
+    # required.
+    if accelerator_type.value == "TPU_V2" or accelerator_type.value == "TPU_V3":
+        cpu_cores = None
+        memory = None
+
     current_config = (cpu_cores, memory, accelerator_type.value, accelerator_count)
     if current_config not in valid_configurations:
         raise ValueError(
@@ -53,7 +60,8 @@ def validate_machine_configuration(
             "following AI platform comptibility table for all valid "
             "configurations: "
             "https://cloud.google.com/ml-engine/docs/using-gpus#"
-            "compute-engine-machine-types-with-gpu".format(
+            "compute-engine-machine-types-with-gpu. If you are using TPU "
+            "accelerator, please specify accelerator count as 8.".format(
                 cpu_cores, memory, str(accelerator_type), accelerator_count
             )
         )
@@ -73,12 +81,16 @@ def get_accelerator_type(accl_type):
         "V100": "NVIDIA_TESLA_V100",
         "P4": "NVIDIA_TESLA_P4",
         "T4": "NVIDIA_TESLA_T4",
+        "TPU_V2": "TPU_V2",
+        "TPU_V3": "TPU_V3",
     }
     return accl_type_map[accl_type]
 
 
-def get_machine_type(cpu_cores, memory):
+def get_machine_type(cpu_cores, memory, accelerator_type):
     """Returns the GCP AI Platform machine type."""
+    if accelerator_type.value == "TPU_V2" or accelerator_type.value == "TPU_V3":
+        return "cloud_tpu"
     machine_type_map = {
         (4, 15): "n1-standard-4",
         (8, 30): "n1-standard-8",
@@ -380,4 +392,8 @@ def _get_valid_machine_configurations():
         (96, 86.4, "T4", 4),
         # 'n1-highcpu-96', 'V100'
         (96, 86.4, "V100", 8),
+        # 'cloud_tpu', 'TPU_V2'
+        (None, None, "TPU_V2", 8),
+        # 'cloud_tpu', 'TPU_V3'
+        (None, None, "TPU_V3", 8),
     ]

@@ -183,3 +183,52 @@ class TestDeploy(unittest.TestCase):
                 "body": self.expected_request_dict,
             },
         )
+
+    @patch("tensorflow_cloud.deploy.discovery")
+    def test_request_dict_with_TPU_worker(self, MockDiscovery):
+        self.setup(MockDiscovery)
+        chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
+        worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
+        worker_count = 1
+
+        job_name = deploy.deploy_job(
+            self.region,
+            self.docker_img,
+            chief_config,
+            worker_count,
+            worker_config,
+            self.entry_point_args,
+            self.stream_logs,
+        )
+        build_ret_val = MockDiscovery.build.return_value
+        proj_ret_val = build_ret_val.projects.return_value
+        jobs_ret_val = proj_ret_val.jobs.return_value
+
+        self.expected_request_dict["trainingInput"]["workerCount"] = "1"
+        self.expected_request_dict["trainingInput"]["workerType"] = "cloud_tpu"
+        self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
+        self.expected_request_dict["trainingInput"]["workerConfig"][
+            "acceleratorConfig"
+        ]["type"] = "TPU_V3"
+        self.expected_request_dict["trainingInput"]["workerConfig"][
+            "acceleratorConfig"
+        ]["count"] = "8"
+        self.expected_request_dict["trainingInput"]["workerConfig"][
+            "tpuTfVersion"
+        ] = "2.1"
+        self.expected_request_dict["trainingInput"]["masterConfig"][
+            "acceleratorConfig"
+        ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
+        self.expected_request_dict["trainingInput"]["masterConfig"][
+            "acceleratorConfig"
+        ]["count"] = "0"
+
+        # Verify job creation args
+        _, kwargs = jobs_ret_val.create.call_args
+        self.assertDictEqual(
+            kwargs,
+            {
+                "parent": "projects/" + self.mock_project_name,
+                "body": self.expected_request_dict,
+            },
+        )

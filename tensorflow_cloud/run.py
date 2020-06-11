@@ -64,7 +64,9 @@ def run(
             you have provided using the `chief_config`, `worker_config` and
             `worker_count` params.
             - If the number of workers > 0, we will use
-                `tf.distribute.experimental.MultiWorkerMirroredStrategy`.
+                `tf.distribute.experimental.MultiWorkerMirroredStrategy` or
+                `tf.distribute.experimental.TPUStrategy` based on the
+                accelerator type.
             - If number of GPUs > 0, we will use
                 `tf.distribute.MirroredStrategy`
             - Otherwise, we will use `tf.distribute.OneDeviceStrategy`
@@ -87,14 +89,19 @@ def run(
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
             `COMMON_MACHINE_CONFIGS.P100_1X` (8 cpu cores, 30GB memory,
             1 Nvidia Tesla P100).
+            For TPU strategy, `chief_config` refers to the config of the host
+            that controls the TPU workers.
         worker_config: Optional `MachineConfig` that represents the
             configuration for the general workers in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
             `COMMON_MACHINE_CONFIGS.P100_1X` (8 cpu cores, 30GB memory,
             1 Nvidia Tesla P100).
+            For TPU strategy, `worker_config` should be a TPU config with 
+            8 TPU cores (eg. `COMMON_MACHINE_CONFIGS.TPU`).
         worker_count: Optional integer that represents the number of general
             workers in a distribution cluster. Defaults to 0. This count does
             not include the chief worker.
+            For TPU strategy, `worker_count` should be set to 1.
         entry_point_args: Optional list of strings. Defaults to None.
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
@@ -168,16 +175,13 @@ def run(
     preprocessed_entry_point = None
     if (
         distribution_strategy == "auto"
-        and (
-            chief_config.accelerator_type
-            != machine_config.AcceleratorType.NO_ACCELERATOR
-        )
         or entry_point.endswith("ipynb")
         or entry_point is None
     ):
         preprocessed_entry_point = preprocess.get_preprocessed_entry_point(
             entry_point,
             chief_config,
+            worker_config,
             worker_count,
             distribution_strategy,
             called_from_notebook=called_from_notebook,
@@ -189,6 +193,7 @@ def run(
         entry_point,
         preprocessed_entry_point,
         chief_config,
+        worker_config,
         docker_registry,
         gcp.get_project_name(),
     )

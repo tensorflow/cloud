@@ -31,6 +31,8 @@ class AcceleratorType(Enum):
     NVIDIA_TESLA_V100 = "V100"
     NVIDIA_TESLA_P4 = "P4"
     NVIDIA_TESLA_T4 = "T4"
+    TPU_V2 = "TPU_V2"
+    TPU_V3 = "TPU_V3"
     # NOTE: When making changes here, please make sure to update the list of
     # supported `accelerator_type`s in `MachineConfig`.
 
@@ -43,6 +45,8 @@ class AcceleratorType(Enum):
             cls.NVIDIA_TESLA_V100,
             cls.NVIDIA_TESLA_P4,
             cls.NVIDIA_TESLA_T4,
+            cls.TPU_V2,
+            cls.TPU_V3,
         )
 
     @classmethod
@@ -58,8 +62,8 @@ class MachineConfig(object):
       cpu_cores: Number of virtual CPU cores. Defaults to 8.
       memory: Amount of memory in GB. Defaults to 30GB.
       accelerator_type: Type of the accelerator to be used
-        ('K80', 'P100', 'V100', 'P4', 'T4') or 'CPU' for no
-        accelerator. Defaults to `auto`, which maps to a standard
+        ('K80', 'P100', 'V100', 'P4', 'T4', 'TPU_V2', 'TPU_V3') or 'CPU'
+        for no accelerator. Defaults to `auto`, which maps to a standard
         gpu config such as 'P100'.
       accelerator_count: Number of accelerators. Defaults to 1.
     """
@@ -123,6 +127,18 @@ COMMON_MACHINE_CONFIGS = {
         accelerator_type=AcceleratorType.NVIDIA_TESLA_P100,
         accelerator_count=4,
     ),
+    "P4_1X": MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_P4,
+        accelerator_count=1,
+    ),
+    "P4_4X": MachineConfig(
+        cpu_cores=16,
+        memory=60,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_P4,
+        accelerator_count=4,
+    ),
     "V100_1X": MachineConfig(
         cpu_cores=8,
         memory=30,
@@ -141,4 +157,29 @@ COMMON_MACHINE_CONFIGS = {
         accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
         accelerator_count=8,
     ),
+    "T4_1X": MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_T4,
+        accelerator_count=1,
+    ),
+    "T4_4X": MachineConfig(
+        cpu_cores=16,
+        memory=60,
+        accelerator_type=AcceleratorType.NVIDIA_TESLA_T4,
+        accelerator_count=4,
+    ),
+    "TPU": MachineConfig(
+        cpu_cores=None,
+        memory=None,
+        accelerator_type=AcceleratorType.TPU_V3,
+        accelerator_count=8,
+    ),
 }
+
+
+def is_tpu_config(config):
+    return (
+        config.accelerator_type == AcceleratorType.TPU_V2
+        or config.accelerator_type == AcceleratorType.TPU_V3
+    )

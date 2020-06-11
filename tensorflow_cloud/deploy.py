@@ -23,6 +23,14 @@ from googleapiclient import discovery
 from googleapiclient import errors
 
 from . import gcp
+from . import machine_config
+
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use TF runtime version 2.1 (latest supported) as the default.
+    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
+    VERSION = "2.1"
 
 
 def deploy_job(
@@ -114,7 +122,7 @@ def _create_request_dict(
     training_input["region"] = region
     training_input["scaleTier"] = "custom"
     training_input["masterType"] = gcp.get_machine_type(
-        chief_config.cpu_cores, chief_config.memory
+        chief_config.cpu_cores, chief_config.memory, chief_config.accelerator_type
     )
 
     # Set master config
@@ -133,7 +141,9 @@ def _create_request_dict(
 
     if worker_count > 0:
         training_input["workerType"] = gcp.get_machine_type(
-            worker_config.cpu_cores, worker_config.memory
+            worker_config.cpu_cores,
+            worker_config.memory,
+            worker_config.accelerator_type,
         )
 
         worker_machine_config = {}
@@ -145,6 +155,12 @@ def _create_request_dict(
         worker_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
             worker_config.accelerator_type.value
         )
+
+        if machine_config.is_tpu_config(worker_config):
+            # AI Platform runtime version spec is required for training
+            # on cloud TPUs.
+            v = VERSION.split(".")
+            worker_machine_config["tpuTfVersion"] = v[0] + "." + v[1]
         training_input["workerConfig"] = worker_machine_config
 
     if entry_point_args is not None:
