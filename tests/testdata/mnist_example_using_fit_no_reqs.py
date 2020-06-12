@@ -18,12 +18,11 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-import tensorflow as tf
-
 (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
 
 x_train = x_train.reshape((60000, 28 * 28))
 x_train = x_train.astype("float32") / 255
+y_train = y_train.astype("float32")
 
 model = tf.keras.Sequential(
     [
@@ -39,4 +38,4 @@ model.compile(
     metrics=["accuracy"],
 )
 
-model.fit(x_train, y_train, epochs=10, batch_size=128)
+model.fit(x_train, y_train, epochs=10, batch_size=32)

@@ -61,7 +61,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
+            "strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -141,7 +141,8 @@ class TestPreprocess(unittest.TestCase):
             "resolver = wait_for_tpu_cluster_resolver_ready()\n",
             "tf.config.experimental_connect_to_cluster(resolver)\n",
             "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
-            ("strategy = tf.distribute.experimental.TPUStrategy(" "resolver)\n"),
+            "strategy = tf.distribute.experimental.TPUStrategy(" "resolver)\n",
+            "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
         self.assert_and_cleanup(expected_lines, script_lines)
@@ -153,7 +154,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
+            "strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
         ]
         for el in expected_lines:

@@ -126,31 +126,21 @@ def get_preprocessed_entry_point(
                         "resolver = wait_for_tpu_cluster_resolver_ready()\n",
                         "tf.config.experimental_connect_to_cluster(resolver)\n",
                         "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
-                        (
-                            "strategy = tf.distribute.experimental.TPUStrategy("
-                            "resolver)\n"
-                        ),
+                        "strategy = tf.distribute.experimental.TPUStrategy("
+                        "resolver)\n",
                     ]
                 )
             else:
                 strategy = [
-                    (
-                        "strategy = tf.distribute.experimental."
-                        "MultiWorkerMirroredStrategy()\n"
-                    ),
-                    "tf.distribute.experimental_set_strategy(strategy)\n",
+                    "strategy = tf.distribute.experimental."
+                    "MultiWorkerMirroredStrategy()\n"
                 ]
         elif chief_config.accelerator_count > 1:
-            strategy = [
-                "strategy = tf.distribute.MirroredStrategy()\n",
-                "tf.distribute.experimental_set_strategy(strategy)\n",
-            ]
+            strategy = ["strategy = tf.distribute.MirroredStrategy()\n"]
         else:
-            strategy = [
-                ("strategy = tf.distribute.OneDeviceStrategy(" 'device="/gpu:0")\n'),
-                "tf.distribute.experimental_set_strategy(strategy)\n",
-            ]
+            strategy = ["strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n"]
         script_lines.extend(strategy)
+        script_lines.append("tf.distribute.experimental_set_strategy(strategy)\n")
 
     # If `entry_point` is not provided, detect if we are in a notebook
     # or a python script. Fetch the `entry_point`.
