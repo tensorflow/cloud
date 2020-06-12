@@ -21,7 +21,7 @@ import os
 import sys
 import tempfile
 
-from .machine_config import AcceleratorType
+from . import machine_config
 
 try:
     from nbconvert import PythonExporter
@@ -38,6 +38,7 @@ except ImportError:
 def get_preprocessed_entry_point(
     entry_point,
     chief_config,
+    worker_config,
     worker_count,
     distribution_strategy,
     called_from_notebook=False,
@@ -68,7 +69,10 @@ def get_preprocessed_entry_point(
 
     The distribution strategy instance created is based on the machine
     configurations provided using the `chief_config`, `worker_count` params.
-    - If the number of workers > 0, we will create a default instance of
+    - If the number of workers > 0, 
+        - If accelerator type is TPU, we will create an instance of
+        `tf.distribute.experimental.TPUStrategy`.
+        - Otherwise, we will create a default instance of
         `tf.distribute.experimental.MultiWorkerMirroredStrategy`.
     - If number of GPUs > 0, we will create a default instance of
         `tf.distribute.MirroredStrategy`
@@ -88,6 +92,9 @@ def get_preprocessed_entry_point(
             for the chief worker in a distribution cluster.
         worker_config: `MachineConfig` that represents the configuration
             for the workers in a distribution cluster.
+        worker_count: Integer that represents the number of general workers
+            in a distribution cluster. This count does not include the chief
+            worker.
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
             'auto' means we will take care of creating a Tensorflow
             distribution strategy instance based on the machine configurations
@@ -110,23 +117,30 @@ def get_preprocessed_entry_point(
     ]
 
     # Auto wrap in distribution strategy.
-    if (
-        chief_config.accelerator_type != AcceleratorType.NO_ACCELERATOR
-    ) and distribution_strategy == "auto":
+    if distribution_strategy == "auto":
         if worker_count > 0:
-            strategy = (
-                "strategy = tf.distribute.experimental."
-                "MultiWorkerMirroredStrategy()\n"
-            )
+            if machine_config.is_tpu_config(worker_config):
+                strategy = get_tpu_cluster_resolver_fn()
+                strategy.extend(
+                    [
+                        "resolver = wait_for_tpu_cluster_resolver_ready()\n",
+                        "tf.config.experimental_connect_to_cluster(resolver)\n",
+                        "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
+                        "strategy = tf.distribute.experimental.TPUStrategy("
+                        "resolver)\n",
+                    ]
+                )
+            else:
+                strategy = [
+                    "strategy = tf.distribute.experimental."
+                    "MultiWorkerMirroredStrategy()\n"
+                ]
         elif chief_config.accelerator_count > 1:
-            strategy = "strategy = tf.distribute.MirroredStrategy()\n"
+            strategy = ["strategy = tf.distribute.MirroredStrategy()\n"]
         else:
-            strategy = (
-                'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n'
-            )
-        script_lines.extend(
-            [strategy, "tf.distribute.experimental_set_strategy(strategy)\n",]
-        )
+            strategy = ["strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n"]
+        script_lines.extend(strategy)
+        script_lines.append("tf.distribute.experimental_set_strategy(strategy)\n")
 
     # If `entry_point` is not provided, detect if we are in a notebook
     # or a python script. Fetch the `entry_point`.
@@ -185,3 +199,51 @@ def _get_colab_notebook_content():
             # Combine all code cells.
             py_content.extend(cell["source"])
     return py_content
+
+
+def get_tpu_cluster_resolver_fn():
+    """Returns the fn required for runnning custom container on cloud TPUs.
+
+    This function is added to the user code in the custom container before
+    running it on the cloud. With this function, we wait for the TPU to be
+    provisioned before calling TpuClusterResolver.
+
+    https://cloud.devsite.corp.google.com/ai-platform/training/docs/
+    using-tpus#custom-containers
+    """
+    return [
+        "import json\n",
+        "import logging\n",
+        "import time\n",
+        "logger = logging.getLogger(__name__)\n",
+        "logging.basicConfig(level=logging.INFO)\n",
+        "def wait_for_tpu_cluster_resolver_ready():\n",
+        "  tpu_config_env = os.environ.get('TPU_CONFIG')\n",
+        "  if not tpu_config_env:\n",
+        "    logging.info('Missing TPU_CONFIG, use CPU/GPU for training.')\n",
+        "    return None\n",
+        "  tpu_node = json.loads(tpu_config_env)\n",
+        "  logging.info('Waiting for TPU to be ready: %s.', tpu_node)\n",
+        "  num_retries = 40\n",
+        "  for i in range(num_retries):\n",
+        "    try:\n",
+        "      tpu_cluster_resolver = (\n",
+        "          tf.distribute.cluster_resolver.TPUClusterResolver(\n",
+        "              tpu=[tpu_node['tpu_node_name']],\n",
+        "              zone=tpu_node['zone'],\n",
+        "              project=tpu_node['project'],\n",
+        "              job_name='worker'))\n",
+        "      tpu_cluster_resolver_dict = "
+        "tpu_cluster_resolver.cluster_spec().as_dict()\n",
+        "      if 'worker' in tpu_cluster_resolver_dict:\n",
+        "        logging.info('Found TPU worker: %s', tpu_cluster_resolver_dict)\n",
+        "        return tpu_cluster_resolver\n",
+        "    except Exception as e:\n",
+        "      if i < num_retries - 1:\n",
+        "        logging.info('Still waiting for provisioning of TPU VM instance.')\n",
+        "      else:\n",
+        "        # Preserves the traceback.\n",
+        "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",
+        "    time.sleep(10)\n",
+        "  raise RuntimeError('Failed to schedule TPU.')\n",
+    ]

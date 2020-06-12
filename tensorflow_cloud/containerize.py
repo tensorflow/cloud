@@ -60,6 +60,8 @@ class ContainerBuilder(object):
             file path.
         chief_config: `MachineConfig` that represents the configuration for
             the chief worker in a distribution cluster.
+        worker_config: `MachineConfig` that represents the configuration
+            for the workers in a distribution cluster.
         docker_registry: The docker registry name.
         project_id: Project id string.
         requirements_txt: Optional string. File path to requirements.txt file
@@ -78,6 +80,7 @@ class ContainerBuilder(object):
         entry_point,
         preprocessed_entry_point,
         chief_config,
+        worker_config,
         docker_registry,
         project_id,
         requirements_txt=None,
@@ -89,6 +92,7 @@ class ContainerBuilder(object):
         self.entry_point = entry_point
         self.preprocessed_entry_point = preprocessed_entry_point
         self.chief_config = chief_config
+        self.worker_config = worker_config
         self.docker_registry = docker_registry
         self.requirements_txt = requirements_txt
         self.destination_dir = destination_dir
@@ -155,6 +159,11 @@ class ContainerBuilder(object):
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
+
+        if self.worker_config is not None and machine_config.is_tpu_config(
+            self.worker_config
+        ):
+            lines.append("RUN pip install cloud-tpu-client")
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)

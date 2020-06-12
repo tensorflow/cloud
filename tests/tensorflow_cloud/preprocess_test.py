@@ -31,7 +31,8 @@ class TestPreprocess(unittest.TestCase):
 
     def get_preprocessed_entry_point(
         self,
-        chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+        chief_config=machine_config.COMMON_MACHINE_CONFIGS["CPU"],
+        worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
         worker_count=0,
         distribution_strategy="auto",
         called_from_notebook=False,
@@ -39,6 +40,7 @@ class TestPreprocess(unittest.TestCase):
         self.wrapped_entry_point = preprocess.get_preprocessed_entry_point(
             self.entry_point,
             chief_config,
+            worker_config,
             worker_count,
             distribution_strategy,
             called_from_notebook,
@@ -59,7 +61,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
+            "strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -81,15 +83,65 @@ class TestPreprocess(unittest.TestCase):
 
     def test_auto_multi_worker_strategy(self):
         self.setup_py()
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
-        script_lines = self.get_preprocessed_entry_point(
-            chief_config=chief_config, worker_count=2
-        )
+        script_lines = self.get_preprocessed_entry_point(worker_count=2)
         expected_lines = [
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
             "strategy = tf.distribute.experimental." "MultiWorkerMirroredStrategy()\n",
+            "tf.distribute.experimental_set_strategy(strategy)\n",
+            'exec(open("{}").read())\n'.format(self.entry_point_name),
+        ]
+        self.assert_and_cleanup(expected_lines, script_lines)
+
+    def test_auto_tpu_strategy(self):
+        self.setup_py()
+        worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
+        script_lines = self.get_preprocessed_entry_point(
+            worker_config=worker_config, worker_count=1
+        )
+        expected_lines = [
+            "import os\n",
+            "import tensorflow as tf\n",
+            'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
+            "import json\n",
+            "import logging\n",
+            "import time\n",
+            "logger = logging.getLogger(__name__)\n",
+            "logging.basicConfig(level=logging.INFO)\n",
+            "def wait_for_tpu_cluster_resolver_ready():\n",
+            "  tpu_config_env = os.environ.get('TPU_CONFIG')\n",
+            "  if not tpu_config_env:\n",
+            "    logging.info('Missing TPU_CONFIG, use CPU/GPU for training.')\n",
+            "    return None\n",
+            "  tpu_node = json.loads(tpu_config_env)\n",
+            "  logging.info('Waiting for TPU to be ready: %s.', tpu_node)\n",
+            "  num_retries = 40\n",
+            "  for i in range(num_retries):\n",
+            "    try:\n",
+            "      tpu_cluster_resolver = (\n",
+            "          tf.distribute.cluster_resolver.TPUClusterResolver(\n",
+            "              tpu=[tpu_node['tpu_node_name']],\n",
+            "              zone=tpu_node['zone'],\n",
+            "              project=tpu_node['project'],\n",
+            "              job_name='worker'))\n",
+            "      tpu_cluster_resolver_dict = "
+            "tpu_cluster_resolver.cluster_spec().as_dict()\n",
+            "      if 'worker' in tpu_cluster_resolver_dict:\n",
+            "        logging.info('Found TPU worker: %s', tpu_cluster_resolver_dict)\n",
+            "        return tpu_cluster_resolver\n",
+            "    except Exception as e:\n",
+            "      if i < num_retries - 1:\n",
+            "        logging.info('Still waiting for provisioning of TPU VM instance.')\n",
+            "      else:\n",
+            "        # Preserves the traceback.\n",
+            "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",
+            "    time.sleep(10)\n",
+            "  raise RuntimeError('Failed to schedule TPU.')\n",
+            "resolver = wait_for_tpu_cluster_resolver_ready()\n",
+            "tf.config.experimental_connect_to_cluster(resolver)\n",
+            "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
+            "strategy = tf.distribute.experimental.TPUStrategy(" "resolver)\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -102,7 +154,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            'strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")\n',
+            "strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
         ]
         for el in expected_lines:

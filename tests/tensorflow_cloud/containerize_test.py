@@ -33,6 +33,7 @@ class TestContainerize(unittest.TestCase):
     def setup(self):
         self.entry_point = "tests/testdata/mnist_example_using_fit.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
+        self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.entry_point_dir, _ = os.path.split(self.entry_point)
         self.mock_registry = "gcr.io/my-project"
         self.project_id = "my-project"
@@ -51,6 +52,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
         )
@@ -75,6 +77,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             requirements_txt=req_file,
@@ -100,6 +103,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             destination_dir="/my_app/temp/",
@@ -121,6 +125,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             docker_base_image="tensorflow/tensorflow:latest",
@@ -142,6 +147,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             machine_config.COMMON_MACHINE_CONFIGS["CPU"],
+            self.worker_config,
             self.mock_registry,
             self.project_id,
         )
@@ -156,12 +162,35 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
+    def test_create_docker_file_with_tpu_config(self):
+        self.setup()
+        lcb = containerize.LocalContainerBuilder(
+            self.entry_point,
+            None,
+            machine_config.COMMON_MACHINE_CONFIGS["CPU"],
+            machine_config.COMMON_MACHINE_CONFIGS["TPU"],
+            self.mock_registry,
+            self.project_id,
+        )
+        lcb._create_docker_file()
+
+        expected_docker_file_lines = [
+            "FROM tensorflow/tensorflow:{}\n".format(VERSION),
+            "WORKDIR /app/\n",
+            "COPY /app/ /app/\n",
+            "RUN pip install cloud-tpu-client\n",
+            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+        ]
+        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.cleanup(lcb.docker_file_path)
+
     def test_get_file_path_map_defaults(self):
         self.setup()
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
         )
@@ -185,6 +214,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             requirements_txt=req_file,
@@ -211,6 +241,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             None,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             destination_dir="/my_app/temp/",
@@ -232,6 +263,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             self.entry_point,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             destination_dir="/my_app/temp/",
@@ -260,6 +292,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             self.entry_point,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             requirements_txt=req_file,
@@ -293,6 +326,7 @@ class TestContainerize(unittest.TestCase):
             self.entry_point,
             self.entry_point,
             self.chief_config,
+            self.worker_config,
             self.mock_registry,
             self.project_id,
             destination_dir="/my_app/temp/",

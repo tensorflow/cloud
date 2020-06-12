@@ -31,30 +31,104 @@ class TestGcp(unittest.TestCase):
         assert gcp.get_accelerator_type("V100") == "NVIDIA_TESLA_V100"
         assert gcp.get_accelerator_type("P4") == "NVIDIA_TESLA_P4"
         assert gcp.get_accelerator_type("T4") == "NVIDIA_TESLA_T4"
+        assert gcp.get_accelerator_type("TPU_V2") == "TPU_V2"
+        assert gcp.get_accelerator_type("TPU_V3") == "TPU_V3"
 
     def test_get_machine_type(self):
-        assert gcp.get_machine_type(4, 15) == "n1-standard-4"
-        assert gcp.get_machine_type(8, 30) == "n1-standard-8"
-        assert gcp.get_machine_type(16, 60) == "n1-standard-16"
-        assert gcp.get_machine_type(32, 120) == "n1-standard-32"
-        assert gcp.get_machine_type(64, 240) == "n1-standard-64"
-        assert gcp.get_machine_type(96, 360) == "n1-standard-96"
-        assert gcp.get_machine_type(2, 13) == "n1-highmem-2"
-        assert gcp.get_machine_type(4, 26) == "n1-highmem-4"
-        assert gcp.get_machine_type(8, 52) == "n1-highmem-8"
-        assert gcp.get_machine_type(16, 104) == "n1-highmem-16"
-        assert gcp.get_machine_type(32, 208) == "n1-highmem-32"
-        assert gcp.get_machine_type(64, 416) == "n1-highmem-64"
-        assert gcp.get_machine_type(96, 624) == "n1-highmem-96"
-        assert gcp.get_machine_type(16, 14.4) == "n1-highcpu-16"
-        assert gcp.get_machine_type(32, 28.8) == "n1-highcpu-32"
-        assert gcp.get_machine_type(64, 57.6) == "n1-highcpu-64"
-        assert gcp.get_machine_type(96, 86.4) == "n1-highcpu-96"
+        assert (
+            gcp.get_machine_type(4, 15, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-4"
+        )
+        assert (
+            gcp.get_machine_type(8, 30, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-8"
+        )
+        assert (
+            gcp.get_machine_type(16, 60, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-16"
+        )
+        assert (
+            gcp.get_machine_type(32, 120, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-32"
+        )
+        assert (
+            gcp.get_machine_type(64, 240, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-64"
+        )
+        assert (
+            gcp.get_machine_type(96, 360, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-standard-96"
+        )
+        assert (
+            gcp.get_machine_type(2, 13, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-2"
+        )
+        assert (
+            gcp.get_machine_type(4, 26, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-4"
+        )
+        assert (
+            gcp.get_machine_type(8, 52, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-8"
+        )
+        assert (
+            gcp.get_machine_type(16, 104, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-16"
+        )
+        assert (
+            gcp.get_machine_type(32, 208, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-32"
+        )
+        assert (
+            gcp.get_machine_type(64, 416, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-64"
+        )
+        assert (
+            gcp.get_machine_type(96, 624, machine_config.AcceleratorType.NO_ACCELERATOR)
+            == "n1-highmem-96"
+        )
+        assert (
+            gcp.get_machine_type(
+                16, 14.4, machine_config.AcceleratorType.NO_ACCELERATOR
+            )
+            == "n1-highcpu-16"
+        )
+        assert (
+            gcp.get_machine_type(
+                32, 28.8, machine_config.AcceleratorType.NO_ACCELERATOR
+            )
+            == "n1-highcpu-32"
+        )
+        assert (
+            gcp.get_machine_type(
+                64, 57.6, machine_config.AcceleratorType.NO_ACCELERATOR
+            )
+            == "n1-highcpu-64"
+        )
+        assert (
+            gcp.get_machine_type(
+                96, 86.4, machine_config.AcceleratorType.NO_ACCELERATOR
+            )
+            == "n1-highcpu-96"
+        )
+        assert (
+            gcp.get_machine_type(96, 86.4, machine_config.AcceleratorType.TPU_V3)
+            == "cloud_tpu"
+        )
+        assert (
+            gcp.get_machine_type(96, 86.4, machine_config.AcceleratorType.TPU_V2)
+            == "cloud_tpu"
+        )
 
     def test_validate_machine_configuration(self):
-        # valid config
+        # valid GPU config
         gcp.validate_machine_configuration(
             4, 15, machine_config.AcceleratorType.NVIDIA_TESLA_K80, 4
+        )
+
+        # valid TPU config
+        gcp.validate_machine_configuration(
+            4, 15, machine_config.AcceleratorType.TPU_V3, 8
         )
 
         # test invalid config
