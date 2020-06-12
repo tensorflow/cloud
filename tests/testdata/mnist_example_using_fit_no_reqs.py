@@ -22,7 +22,7 @@ import tensorflow as tf
 
 x_train = x_train.reshape((60000, 28 * 28))
 x_train = x_train.astype("float32") / 255
-y_train = y_train.astype("float32")
+y_train = y_train.astype("int32")
 
 model = tf.keras.Sequential(
     [
