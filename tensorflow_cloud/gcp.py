@@ -38,8 +38,8 @@ def validate_machine_configuration(
     Args:
         cpu_cores: Number of virtual CPU cores.
         memory: Amount of memory in GB.
-        accelerator_type: 'MachineConfig.AcceleratorType'.
-      accelerator_count: Number of accelerators. Defaults to 1.
+        accelerator_type: Instance of 'MachineConfig.AcceleratorType'.
+        accelerator_count: Number of accelerators. Defaults to 1.
 
     Raises:
         ValueError, if machine configuration is not a valid GCP configuration.
