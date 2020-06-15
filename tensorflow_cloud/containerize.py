@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import json
 import logging
 import os
 import sys
@@ -268,6 +267,7 @@ class LocalContainerBuilder(ContainerBuilder):
                 fileobj=fileobj,
                 tag=image_uri,
                 encoding="utf-8",
+                decode=True,
             )
         self._get_logs(bld_logs_generator, "build")
         return image_uri
@@ -279,7 +279,7 @@ class LocalContainerBuilder(ContainerBuilder):
             image_uri: String, the registry name and tag.
         """
         logger.info("Publishing docker image: {}".format(image_uri))
-        pb_logs_generator = self.docker_client.push(image_uri, stream=True)
+        pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish")
 
     def _get_logs(self, logs_generator, name):
@@ -294,22 +294,15 @@ class LocalContainerBuilder(ContainerBuilder):
             RuntimeError: if there are any errors when building or publishing a
             docker image.
         """
-        for line in logs_generator:
-            try:
-                unicode_line = line.decode("utf-8").strip()
-                logger.info(unicode_line)
-            except UnicodeError:
-                logger.warning("Unable to decode logs.")
-            try:
-                line = json.loads(unicode_line)
-                if line.get("error"):
-                    raise RuntimeError(
-                        "Docker image {} failed: {}".format(
-                            name, str(line.get("error"))
-                        )
-                    )
-            except json.decoder.JSONDecodeError:
-                raise RuntimeError("There was an error decoding the Docker logs")
+        for chunk in logs_generator:
+            if "stream" in chunk:
+                for line in chunk["stream"].splitlines():
+                    logger.info(line)
+
+            if "error" in chunk:
+                raise RuntimeError(
+                    "Docker image {} failed: {}".format(name, str(chunk["error"]))
+                )
 
 
 class CloudContainerBuilder(ContainerBuilder):
