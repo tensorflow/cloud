@@ -11,34 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+import argparse
 import tensorflow_cloud as tfc
 
-# Automated CPU strategy: CPU chief config and no workers
-# tfc.run(
-#     entry_point='tests/testdata/keras_tuner_mnist_example.py',
-#     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
-#     chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'],
-#     stream_logs=True)
-
-
-# Automated OneDeviceStrategy: default 1 GPU chief config and no workers
-# tfc.run(
-#     entry_point='tests/testdata/keras_tuner_mnist_example.py',
-#     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
-#     stream_logs=True)
+# python call_run_on_script_with_keras_tuner_search.py --path gs://my-bucket/keras-cifar
+parser = argparse.ArgumentParser(description="Model save path arguments.")
+parser.add_argument("--path", required=True, type=str, help="Keras model save path")
+args = parser.parse_args()
 
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point="tests/testdata/keras_tuner_mnist_example.py",
+    entry_point="tests/testdata/keras_tuner_cifar_example.py",
     distribution_strategy="auto",
     requirements_txt="tests/testdata/requirements.txt",
     chief_config=tfc.COMMON_MACHINE_CONFIGS["V100_4X"],
     worker_count=0,
-    stream_logs=True,
+    entry_point_args=["--path", args.path],
 )
