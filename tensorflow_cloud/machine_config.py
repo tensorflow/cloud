@@ -151,12 +151,6 @@ COMMON_MACHINE_CONFIGS = {
         accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
         accelerator_count=4,
     ),
-    "V100_8X": MachineConfig(
-        cpu_cores=32,
-        memory=120,
-        accelerator_type=AcceleratorType.NVIDIA_TESLA_V100,
-        accelerator_count=8,
-    ),
     "T4_1X": MachineConfig(
         cpu_cores=8,
         memory=30,
