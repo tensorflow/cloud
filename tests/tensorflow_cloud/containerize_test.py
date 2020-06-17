@@ -360,7 +360,7 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(docker_client.push.call_count, 1)
         args, kwargs = docker_client.push.call_args
         self.assertListEqual(list(args), [img_tag])
-        self.assertDictEqual(kwargs, {"stream": True})
+        self.assertDictEqual(kwargs, {"decode": True, "stream": True})
 
         # Verify logger info calls.
         self.assertEqual(MockLogger.info.call_count, 2)
