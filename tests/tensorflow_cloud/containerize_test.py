@@ -163,7 +163,6 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-
     def test_create_docker_file_with_docker_base_image(self):
         self.setup()
         lcb = containerize.LocalContainerBuilder(
