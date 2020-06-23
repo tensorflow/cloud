@@ -142,15 +142,24 @@ class ContainerBuilder(object):
 
         if not self._base_image_exist():
             if "dev" in self.docker_base_image:
-                warnings.warn("Docker base image {} does not exist.".format(self.docker_base_image))
+                warnings.warn(
+                    "Docker base image {} does not exist.".format(
+                        self.docker_base_image
+                    )
+                )
                 newtag = "nightly"
                 if self.docker_base_image.endswith("-gpu"):
                     newtag += "-gpu"
-                self.docker_base_image = self.docker_base_image.split(":")[0] + ":" + newtag
+                self.docker_base_image = (
+                    self.docker_base_image.split(":")[0] + ":" + newtag
+                )
                 warnings.warn("Using TF nightly build.")
             else:
-                raise ValueError("Local TF version {} does not have available base image.".format(self.VERSION))
-
+                raise ValueError(
+                    "There is no docker base image corresponding to the local TF version: {}. Please provide docker_base_image or try with an other TF version.".format(
+                        VERSION
+                    )
+                )
 
         lines = [
             "FROM {}".format(self.docker_base_image),
@@ -247,8 +256,13 @@ class ContainerBuilder(object):
         use docker api v2 to check if base image is available.
         """
         repo_name, tag_name = self.docker_base_image.split(":")
-        r = requests.get("http://hub.docker.com/v2/repositories/{}/tags/{}".format(repo_name, tag_name))
+        r = requests.get(
+            "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
+                repo_name, tag_name
+            )
+        )
         return r.ok
+
 
 class LocalContainerBuilder(ContainerBuilder):
     """Container builder that uses local docker daemon process."""
