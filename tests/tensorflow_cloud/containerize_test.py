@@ -87,9 +87,10 @@ class TestContainerize(unittest.TestCase):
         expected_docker_file_lines = [
             "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /app/\n",
-            "COPY /app/ /app/\n",
+            "COPY /app/requirements.txt /app/requirements.txt\n",
             "RUN if [ -e requirements.txt ]; "
             "then pip install --no-cache -r requirements.txt; fi\n",
+            "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
@@ -177,8 +178,8 @@ class TestContainerize(unittest.TestCase):
         expected_docker_file_lines = [
             "FROM tensorflow/tensorflow:{}\n".format(VERSION),
             "WORKDIR /app/\n",
-            "COPY /app/ /app/\n",
             "RUN pip install cloud-tpu-client\n",
+            "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)

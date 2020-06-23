@@ -143,13 +143,15 @@ class ContainerBuilder(object):
             "WORKDIR {}".format(self.destination_dir),
         ]
 
-        # Copies the files from the `destination_dir` in docker daemon location
-        # to the `destination_dir` in docker container filesystem.
-        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
-
         if self.requirements_txt is not None:
             _, requirements_txt_name = os.path.split(self.requirements_txt)
             dst_requirements_txt = os.path.join(requirements_txt_name)
+            requirements_txt_path = os.path.join(
+                self.destination_dir, requirements_txt_name
+            )
+            lines.append(
+                "COPY {} {}".format(requirements_txt_path, requirements_txt_path)
+            )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
                 "RUN if [ -e {} ]; "
@@ -163,6 +165,10 @@ class ContainerBuilder(object):
             self.worker_config
         ):
             lines.append("RUN pip install cloud-tpu-client")
+
+        # Copies the files from the `destination_dir` in docker daemon location
+        # to the `destination_dir` in docker container filesystem.
+        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
