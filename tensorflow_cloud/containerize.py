@@ -156,9 +156,9 @@ class ContainerBuilder(object):
                 warnings.warn("Using TF nightly build.")
             else:
                 raise ValueError(
-                    "There is no docker base image corresponding to the local TF version: {}. Please provide docker_base_image or try with an other TF version.".format(
-                        VERSION
-                    )
+                    "There is no docker base image corresponding to the local "
+                    "TF version: {}. Please provide docker_base_image or try "
+                    "with an other TF version.".format(VERSION)
                 )
 
         lines = [
