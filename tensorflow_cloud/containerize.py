@@ -23,6 +23,8 @@ import tarfile
 import tempfile
 import time
 import uuid
+import requests
+import warnings
 
 from . import machine_config
 from docker import APIClient
@@ -138,6 +140,27 @@ class ContainerBuilder(object):
             ):
                 self.docker_base_image += "-gpu"
 
+        if not self._base_image_exist():
+            if "dev" in self.docker_base_image:
+                warnings.warn(
+                    "Docker base image {} does not exist.".format(
+                        self.docker_base_image
+                    )
+                )
+                newtag = "nightly"
+                if self.docker_base_image.endswith("-gpu"):
+                    newtag += "-gpu"
+                self.docker_base_image = (
+                    self.docker_base_image.split(":")[0] + ":" + newtag
+                )
+                warnings.warn("Using TF nightly build.")
+            else:
+                raise ValueError(
+                    "There is no docker base image corresponding to the local "
+                    "TF version: {}. Please provide docker_base_image or try "
+                    "with an other TF version.".format(VERSION)
+                )
+
         lines = [
             "FROM {}".format(self.docker_base_image),
             "WORKDIR {}".format(self.destination_dir),
@@ -233,6 +256,18 @@ class ContainerBuilder(object):
         # Keeping this name format uniform with the job id.
         unique_tag = str(uuid.uuid4()).replace("-", "_")
         return "{}/{}:{}".format(self.docker_registry, "tf_cloud_train", unique_tag)
+
+    def _base_image_exist(self):
+        """Check whether the docker base image exist on dockerhub. 
+        use docker api v2 to check if base image is available.
+        """
+        repo_name, tag_name = self.docker_base_image.split(":")
+        r = requests.get(
+            "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
+                repo_name, tag_name
+            )
+        )
+        return r.ok
 
 
 class LocalContainerBuilder(ContainerBuilder):
