@@ -343,8 +343,8 @@ class LocalContainerBuilder(ContainerBuilder):
 
             if "error" in chunk:
                 raise RuntimeError(
-                    "Docker image {} failed: {}\n Image URI: {}".format(
-                        name, str(chunk["error"])), image_uri
+                    "Docker image {} failed: {}\nImage URI: {}".format(
+                        name, str(chunk["error"]), image_uri)
                 )
 
 

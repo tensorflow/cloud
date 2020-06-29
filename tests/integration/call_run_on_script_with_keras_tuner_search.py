@@ -27,5 +27,4 @@ tfc.run(
     chief_config=tfc.COMMON_MACHINE_CONFIGS["V100_4X"],
     worker_count=0,
     entry_point_args=["--path", args.path],
-    docker_base_image="tensorflow/tensorflow:custom-op-gpu-ubuntu16",
 )
