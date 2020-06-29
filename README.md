@@ -123,7 +123,7 @@ Create a service account.
 ```console
 export SA_NAME=<your-sa-name>
 gcloud iam service-accounts create $SA_NAME
-gcloud projects add-iam-policy-binding $PROJECT_ID \ 
+gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
     --role 'roles/editor'
 ```
