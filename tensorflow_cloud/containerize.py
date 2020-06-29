@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import json
 import logging
 import os
 import sys
@@ -24,6 +23,8 @@ import tarfile
 import tempfile
 import time
 import uuid
+import requests
+import warnings
 
 from . import machine_config
 from docker import APIClient
@@ -139,18 +140,41 @@ class ContainerBuilder(object):
             ):
                 self.docker_base_image += "-gpu"
 
+        if not self._base_image_exist():
+            if "dev" in self.docker_base_image:
+                warnings.warn(
+                    "Docker base image {} does not exist.".format(
+                        self.docker_base_image
+                    )
+                )
+                newtag = "nightly"
+                if self.docker_base_image.endswith("-gpu"):
+                    newtag += "-gpu"
+                self.docker_base_image = (
+                    self.docker_base_image.split(":")[0] + ":" + newtag
+                )
+                warnings.warn("Using TF nightly build.")
+            else:
+                raise ValueError(
+                    "There is no docker base image corresponding to the local "
+                    "TF version: {}. Please provide docker_base_image or try "
+                    "with an other TF version.".format(VERSION)
+                )
+
         lines = [
             "FROM {}".format(self.docker_base_image),
             "WORKDIR {}".format(self.destination_dir),
         ]
 
-        # Copies the files from the `destination_dir` in docker daemon location
-        # to the `destination_dir` in docker container filesystem.
-        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
-
         if self.requirements_txt is not None:
             _, requirements_txt_name = os.path.split(self.requirements_txt)
             dst_requirements_txt = os.path.join(requirements_txt_name)
+            requirements_txt_path = os.path.join(
+                self.destination_dir, requirements_txt_name
+            )
+            lines.append(
+                "COPY {} {}".format(requirements_txt_path, requirements_txt_path)
+            )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
                 "RUN if [ -e {} ]; "
@@ -164,6 +188,10 @@ class ContainerBuilder(object):
             self.worker_config
         ):
             lines.append("RUN pip install cloud-tpu-client")
+
+        # Copies the files from the `destination_dir` in docker daemon location
+        # to the `destination_dir` in docker container filesystem.
+        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
@@ -229,6 +257,18 @@ class ContainerBuilder(object):
         unique_tag = str(uuid.uuid4()).replace("-", "_")
         return "{}/{}:{}".format(self.docker_registry, "tf_cloud_train", unique_tag)
 
+    def _base_image_exist(self):
+        """Check whether the docker base image exist on dockerhub. 
+        use docker api v2 to check if base image is available.
+        """
+        repo_name, tag_name = self.docker_base_image.split(":")
+        r = requests.get(
+            "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
+                repo_name, tag_name
+            )
+        )
+        return r.ok
+
 
 class LocalContainerBuilder(ContainerBuilder):
     """Container builder that uses local docker daemon process."""
@@ -268,6 +308,7 @@ class LocalContainerBuilder(ContainerBuilder):
                 fileobj=fileobj,
                 tag=image_uri,
                 encoding="utf-8",
+                decode=True,
             )
         self._get_logs(bld_logs_generator, "build", image_uri)
         return image_uri
@@ -279,7 +320,7 @@ class LocalContainerBuilder(ContainerBuilder):
             image_uri: String, the registry name and tag.
         """
         logger.info("Publishing docker image: {}".format(image_uri))
-        pb_logs_generator = self.docker_client.push(image_uri, stream=True)
+        pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish", image_uri)
 
     def _get_logs(self, logs_generator, name, image_uri):
@@ -295,22 +336,16 @@ class LocalContainerBuilder(ContainerBuilder):
             RuntimeError: if there are any errors when building or publishing a
             docker image.
         """
-        for line in logs_generator:
-            try:
-                unicode_line = line.decode("utf-8").strip()
-                logger.info(unicode_line)
-            except UnicodeError:
-                logger.warning("Unable to decode logs.")
-            try:
-                line = json.loads(unicode_line)
-                if line.get("error"):
-                    raise RuntimeError(
-                        "Docker image {} failed: {}\n Image URI: {}".format(
-                            name, str(line.get("error")), image_uri
-                        ),
-                    )
-            except json.decoder.JSONDecodeError:
-                raise RuntimeError("There was an error decoding the Docker logs")
+        for chunk in logs_generator:
+            if "stream" in chunk:
+                for line in chunk["stream"].splitlines():
+                    logger.info(line)
+
+            if "error" in chunk:
+                raise RuntimeError(
+                    "Docker image {} failed: {}\n Image URI: {}".format(
+                        name, str(chunk["error"])), image_uri
+                )
 
 
 class CloudContainerBuilder(ContainerBuilder):

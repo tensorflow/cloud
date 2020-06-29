@@ -87,9 +87,10 @@ class TestContainerize(unittest.TestCase):
         expected_docker_file_lines = [
             "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /app/\n",
-            "COPY /app/ /app/\n",
+            "COPY /app/requirements.txt /app/requirements.txt\n",
             "RUN if [ -e requirements.txt ]; "
             "then pip install --no-cache -r requirements.txt; fi\n",
+            "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
@@ -114,6 +115,50 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /my_app/temp/\n",
             "COPY /my_app/temp/ /my_app/temp/\n",
+            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+        ]
+        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.cleanup(lcb.docker_file_path)
+
+    def test_check_docker_base_image_non_exist(self):
+        self.setup()
+        lcb = containerize.LocalContainerBuilder(
+            self.entry_point,
+            None,
+            self.chief_config,
+            self.worker_config,
+            self.mock_registry,
+            self.project_id,
+            docker_base_image="tensorflow/tensorflow:2.100.0",
+        )
+        # Verify the docker base image is identified as nonexist
+        self.assertTrue(not lcb._base_image_exist())
+
+        # Verify value error is raised
+        with self.assertRaises(ValueError) as context:
+            lcb._create_docker_file()
+        self.assertTrue("base image" in str(context.exception))
+
+    def test_check_docker_base_image_nightly(self):
+        self.setup()
+        lcb = containerize.LocalContainerBuilder(
+            self.entry_point,
+            None,
+            self.chief_config,
+            self.worker_config,
+            self.mock_registry,
+            self.project_id,
+            docker_base_image="tensorflow/tensorflow:2.3.0-dev20200605",
+        )
+        # Verify the docker base image is identified as nonexist
+        self.assertTrue(not lcb._base_image_exist())
+
+        # Verify the dockerfile ask for tfnightly
+        lcb._create_docker_file()
+        expected_docker_file_lines = [
+            "FROM tensorflow/tensorflow:nightly\n",
+            "WORKDIR /app/\n",
+            "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
@@ -177,8 +222,8 @@ class TestContainerize(unittest.TestCase):
         expected_docker_file_lines = [
             "FROM tensorflow/tensorflow:{}\n".format(VERSION),
             "WORKDIR /app/\n",
-            "COPY /app/ /app/\n",
             "RUN pip install cloud-tpu-client\n",
+            "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
@@ -360,7 +405,7 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(docker_client.push.call_count, 1)
         args, kwargs = docker_client.push.call_args
         self.assertListEqual(list(args), [img_tag])
-        self.assertDictEqual(kwargs, {"stream": True})
+        self.assertDictEqual(kwargs, {"decode": True, "stream": True})
 
         # Verify logger info calls.
         self.assertEqual(MockLogger.info.call_count, 2)
