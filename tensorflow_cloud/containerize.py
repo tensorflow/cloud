@@ -269,7 +269,7 @@ class LocalContainerBuilder(ContainerBuilder):
                 tag=image_uri,
                 encoding="utf-8",
             )
-        self._get_logs(bld_logs_generator, "build")
+        self._get_logs(bld_logs_generator, "build", image_uri)
         return image_uri
 
     def _publish_docker_image(self, image_uri):
@@ -280,15 +280,16 @@ class LocalContainerBuilder(ContainerBuilder):
         """
         logger.info("Publishing docker image: {}".format(image_uri))
         pb_logs_generator = self.docker_client.push(image_uri, stream=True)
-        self._get_logs(pb_logs_generator, "publish")
+        self._get_logs(pb_logs_generator, "publish", image_uri)
 
-    def _get_logs(self, logs_generator, name):
+    def _get_logs(self, logs_generator, name, image_uri):
         """Decodes logs from docker and generates user friendly logs.
 
         Args:
             logs_generator: Generator returned from docker build/push APIs.
             name: String, 'build' or 'publish' used to identify where the
                 generator came from.
+            image_uri: String, the docker image URI.
 
         Raises:
             RuntimeError: if there are any errors when building or publishing a
@@ -304,9 +305,9 @@ class LocalContainerBuilder(ContainerBuilder):
                 line = json.loads(unicode_line)
                 if line.get("error"):
                     raise RuntimeError(
-                        "Docker image {} failed: {}".format(
-                            name, str(line.get("error"))
-                        )
+                        "Docker image {} failed: {}\n Image URI: {}".format(
+                            name, str(line.get("error")), image_uri
+                        ),
                     )
             except json.decoder.JSONDecodeError:
                 raise RuntimeError("There was an error decoding the Docker logs")
