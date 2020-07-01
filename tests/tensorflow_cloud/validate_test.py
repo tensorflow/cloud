@@ -78,6 +78,21 @@ class TestValidate(unittest.TestCase):
             called_from_notebook=True,
         )
 
+        validate.validate(
+            entry_point=None,
+            distribution_strategy=None,
+            requirements_txt="tests/testdata/requirements.txt",
+            chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+            worker_config=None,
+            worker_count=0,
+            region="us-central1",
+            args=["1000"],
+            stream_logs=False,
+            docker_image_bucket_name="abc",
+            called_from_notebook=True,
+            labels={"test":"from_script0"}
+        )
+
     def test_invalid_entry_point(self):
         with pytest.raises(ValueError, match=r"Invalid `entry_point`"):
             validate.validate(
@@ -301,4 +316,124 @@ class TestValidate(unittest.TestCase):
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
+            )
+
+    def test_invalid_label(self):
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # must start with lower case
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'':''}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # must start with lower case
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'test':'-label'}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # must start with lower case
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'Test':'label'}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # no upper case
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'test':'labelA'}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # no symbol
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'test':'label@'}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # label cannot be too long
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'test':'a'*64}
+            )
+
+        with pytest.raises(ValueError, match=r"Invalid labels"):
+            # label cannot be too many
+            validate.validate(
+                entry_point="tests/testdata/mnist_example_using_fit.py",
+                distribution_strategy="auto",
+                requirements_txt="tests/testdata/requirements.txt",
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+                labels={'key{}'.format(i):'val{}'.format(i) for i in range(65)}
             )

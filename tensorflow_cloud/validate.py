@@ -35,7 +35,7 @@ def validate(
     stream_logs,
     docker_image_bucket_name,
     called_from_notebook,
-    labels
+    labels={}
 ):
     """Validates the inputs.
 
@@ -161,35 +161,41 @@ def _validate_labels(labels):
               "for easier organizing submitted jobs.")
 
     if len(labels) > 64:
-        raise ValueError("Too many labels."
+        raise ValueError("Invalid labels: too many labels."
                          "Expecting at most 64 labels."
                          "Received {}.".format(len(labels)))
 
     for k in labels:
-        v = labels[v]
+        v = labels[k]
         if not k or not k[0].islower():
-            raise ValueError("Label key must start with lowercase letters."
+            raise ValueError("Invalid labels:"
+                             "Label key must start with lowercase letters."
                              "Received {}.".format(k))
         if not v or not v[0].islower():
-            raise ValueError("Label value must start with lowercase letters."
+            raise ValueError("Invalid labels:"
+                             "Label value must start with lowercase letters."
                              "Received {}.".format(v))
 
         if len(k) > 63:
-            raise ValueError("Label key is too long."
+            raise ValueError("Invalid labels:"
+                             "Label key is too long."
                              "Expecting at most 63 characters."
                              "Received {}.".format(k))
         if len(v) > 63:
-            raise ValueError("Label value is too long for key {}."
+            raise ValueError("Invalid labels:"
+                             "Label value is too long for key {}."
                              "Expecting at most 63 characters."
                              "Received {}.".format(k, v))
 
         if not re.match(r'^[a-z0-9_-]+$', k):
-            raise ValueError("Label key can contain lowercase letters,"
+            raise ValueError("Invalid labels:"
+                             "Label key can only contain lowercase letters,"
                              "numeric characters, underscores and dashes."
                              "Received: {}.".format(k))
 
         if not re.match(r'^[a-z0-9_-]+$', v):
-            raise ValueError("Label value can contain lowercase letters,"
+            raise ValueError("Invalid labels:"
+                             "Label value can only contain lowercase letters,"
                              "numeric characters, underscores and dashes."
                              "Received: {}.".format(v))
             

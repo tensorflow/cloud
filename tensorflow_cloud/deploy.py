@@ -41,7 +41,7 @@ def deploy_job(
     worker_config,
     entry_point_args,
     enable_stream_logs,
-    labels
+    labels={}
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -75,7 +75,7 @@ def deploy_job(
         worker_count,
         worker_config,
         entry_point_args,
-        labels
+        labels=labels
     )
     try:
         response = (
@@ -100,7 +100,7 @@ def _create_request_dict(
     worker_count,
     worker_config,
     entry_point_args,
-    labels
+    labels={}
 ):
     """Creates request dictionary for the CAIP training service.
 
@@ -117,6 +117,8 @@ def _create_request_dict(
             the general workers in a distribution cluster.
         entry_point_args: Command line arguments to pass to the
             `entry_point` program.
+    Optional:
+        labels: Dict of strings for labels to organize jobs.
 
     Returns:
         The job request dictionary.
@@ -175,7 +177,8 @@ def _create_request_dict(
     request_dict = {}
     request_dict["jobId"] = job_id
     request_dict["trainingInput"] = training_input
-    request_dict["labels"] = labels
+    if labels:
+        request_dict["labels"] = labels
     return request_dict
 
 
