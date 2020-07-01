@@ -310,7 +310,7 @@ class LocalContainerBuilder(ContainerBuilder):
                 encoding="utf-8",
                 decode=True,
             )
-        self._get_logs(bld_logs_generator, "build")
+        self._get_logs(bld_logs_generator, "build", image_uri)
         return image_uri
 
     def _publish_docker_image(self, image_uri):
@@ -321,15 +321,16 @@ class LocalContainerBuilder(ContainerBuilder):
         """
         logger.info("Publishing docker image: {}".format(image_uri))
         pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
-        self._get_logs(pb_logs_generator, "publish")
+        self._get_logs(pb_logs_generator, "publish", image_uri)
 
-    def _get_logs(self, logs_generator, name):
+    def _get_logs(self, logs_generator, name, image_uri):
         """Decodes logs from docker and generates user friendly logs.
 
         Args:
             logs_generator: Generator returned from docker build/push APIs.
             name: String, 'build' or 'publish' used to identify where the
                 generator came from.
+            image_uri: String, the docker image URI.
 
         Raises:
             RuntimeError: if there are any errors when building or publishing a
@@ -342,7 +343,8 @@ class LocalContainerBuilder(ContainerBuilder):
 
             if "error" in chunk:
                 raise RuntimeError(
-                    "Docker image {} failed: {}".format(name, str(chunk["error"]))
+                    "Docker image {} failed: {}\nImage URI: {}".format(
+                        name, str(chunk["error"]), image_uri)
                 )
 
 
