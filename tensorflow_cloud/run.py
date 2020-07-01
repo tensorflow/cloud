@@ -168,6 +168,7 @@ def run(
         stream_logs,
         docker_image_bucket_name,
         called_from_notebook,
+        labels
     )
 
     # Make the `entry_point` cloud and distribution ready.

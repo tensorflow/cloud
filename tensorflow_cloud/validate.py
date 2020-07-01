@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import re
 
 from . import machine_config
 
@@ -34,6 +35,7 @@ def validate(
     stream_logs,
     docker_image_bucket_name,
     called_from_notebook,
+    labels
 ):
     """Validates the inputs.
 
@@ -69,6 +71,7 @@ def validate(
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
+    _validate_labels(labels)
     _validate_other_args(
         region, args, stream_logs, docker_image_bucket_name, called_from_notebook
     )
@@ -149,6 +152,47 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Expected worker_count=1 for TPU `worker_config`. "
             "Received {}.".format(worker_count)
         )
+
+def _validate_labels(labels):
+    """Validates labels conform guidelines at 
+       https://cloud.google.com/ai-platform/training/docs/resource-labels"""
+    if not labels:
+        print("No label for the job. Consider creating labels"
+              "for easier organizing submitted jobs.")
+
+    if len(labels) > 64:
+        raise ValueError("Too many labels."
+                         "Expecting at most 64 labels."
+                         "Received {}.".format(len(labels)))
+
+    for k in labels:
+        v = labels[v]
+        if not k or not k[0].islower():
+            raise ValueError("Label key must start with lowercase letters."
+                             "Received {}.".format(k))
+        if not v or not v[0].islower():
+            raise ValueError("Label value must start with lowercase letters."
+                             "Received {}.".format(v))
+
+        if len(k) > 63:
+            raise ValueError("Label key is too long."
+                             "Expecting at most 63 characters."
+                             "Received {}.".format(k))
+        if len(v) > 63:
+            raise ValueError("Label value is too long for key {}."
+                             "Expecting at most 63 characters."
+                             "Received {}.".format(k, v))
+
+        if not re.match(r'^[a-z0-9_-]+$', k):
+            raise ValueError("Label key can contain lowercase letters,"
+                             "numeric characters, underscores and dashes."
+                             "Received: {}.".format(k))
+
+        if not re.match(r'^[a-z0-9_-]+$', v):
+            raise ValueError("Label value can contain lowercase letters,"
+                             "numeric characters, underscores and dashes."
+                             "Received: {}.".format(v))
+            
 
 
 def _validate_other_args(
