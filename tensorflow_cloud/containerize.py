@@ -139,6 +139,7 @@ class ContainerBuilder(object):
                 != machine_config.AcceleratorType.NO_ACCELERATOR
             ):
                 self.docker_base_image += "-gpu"
+            self.docker_base_image += "-py3"
 
         if not self._base_image_exist():
             if "dev" in self.docker_base_image:
@@ -344,7 +345,8 @@ class LocalContainerBuilder(ContainerBuilder):
             if "error" in chunk:
                 raise RuntimeError(
                     "Docker image {} failed: {}\nImage URI: {}".format(
-                        name, str(chunk["error"]), image_uri)
+                        name, str(chunk["error"]), image_uri
+                    )
                 )
 
 
