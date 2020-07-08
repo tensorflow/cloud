@@ -354,7 +354,7 @@ class CloudContainerBuilder(ContainerBuilder):
     """Container builder that uses Google cloud build."""
 
     def get_docker_image(
-        self, max_status_check_attempts=10, delay_between_status_checks=30
+        self, max_status_check_attempts=20, delay_between_status_checks=30
     ):
         """Builds, publishes and returns a docker image.
 
