@@ -97,7 +97,7 @@ python -V
 3. Setup virtual environment
 
 ```console
-virtualenv venv --python=python3
+virtualenv tfcloud --python=python3
 source venv/bin/activate
 ```
 
@@ -140,33 +140,28 @@ Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
 ```
 
-6. Docker dependencies
-
-To use local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) for docker build and publish
+6. Install Docker if you plan to use local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) for docker build and publish
 
 ```console
-dockerd
+sudo dockerd
 ```
 
-**or**
-
-[Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
+7. [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) if you plan to use [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
 
 ```console
 BUCKET_NAME="your-bucket-name"
 REGION="us-central1"
+gcloud auth login
 gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
-7. [Optional] Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/)
-
-This is required only if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
+8. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
 
 ```console
 pip install nbconvert
 ```
 
-8. Install latest release
+8. Install latest release of tensorflow-cloud
 
 ```console
 pip install tensorflow-cloud
