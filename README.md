@@ -347,6 +347,7 @@ Please see `run` API documentation for detailed information on the parameters an
 - [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_notebook_with_keras_fit.py).
 - [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_keras_fit.py).
 - [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit_cloud_build.py).
+- [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_autokeras.py).
 
 ## Local vs remote training
 
