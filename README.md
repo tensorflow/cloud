@@ -149,7 +149,10 @@ gcloud auth login
 gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
-(optional for local docker process)
+(optional for local docker setup)
+```console
+sudo dockerd
+```
 
 7. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
 
