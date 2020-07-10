@@ -161,7 +161,7 @@ gsutil mb -l $REGION gs://$BUCKET_NAME
 pip install nbconvert
 ```
 
-8. Install latest release of tensorflow-cloud
+9. Install latest release of tensorflow-cloud
 
 ```console
 pip install tensorflow-cloud
