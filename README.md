@@ -9,13 +9,13 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 ### Requirements
 
 - Python >= 3.5
-- [Set up your Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
-- [Authenticate your GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
-- We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying docker images on GCP. Please make sure you have AI platform APIs enabled on your GCP project.
-- Please make sure `docker` is installed and running if you want to use local docker process for docker build, otherwise [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
-- Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
+- [A Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
+- An [authenticated GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
+- [Google AI platform](https://cloud.google.com/ai-platform/) APIs enabled for your GCP account. We use the AI platform for deploying docker images on GCP.
+- Either a functioning version of [docker](https://docs.docker.com/engine/install/) if you want to use local docker process for your build, or [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publishing.
+- (optional) [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
 
-For detailed end to end setup instructions, please see [Setup instructions](#setup-instructions) section.
+For detailed end to end setup instructions, please see [Setup instructions](#setup-instructions).
 
 ### Install latest release
 
@@ -33,9 +33,9 @@ pip install .
 
 ## High level overview 
 
-TensorFlow Cloud package provides the `run` API for training your models on GCP. Before we get into the details of the API, let's see how a simple workflow will look like using this API.
+TensorFlow Cloud package provides the `run` API for training your models on GCP. To start, let's walk through a simple workflow using this API.
 
-1. Let's say you have a Keras model training code, such as the following, saved as `mnist_example.py`.
+1. Let's begin with a Keras model training code such as the following, saved as `mnist_example.py`.
 
 ```python
 import tensorflow as tf
@@ -65,9 +65,9 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.py')
 ```
 
-Running this script will automatically apply TensorFlow [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions on how to use the API.
+Running `scale_mnist.py` will automatically apply TensorFlow [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions and additional API parameters.
 
-3. You will see an output similar to the following on your console. The information from the output can be used to track the training job status. 
+3. You will see an output similar to the following on your console. This information can be used to track the training job status. 
 
 ```console
 usr@desktop$ python scale_mnist.py
