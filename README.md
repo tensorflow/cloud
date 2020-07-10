@@ -140,13 +140,7 @@ Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
 ```
 
-6. Install Docker if you plan to use local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) for docker build and publish
-
-```console
-sudo dockerd
-```
-
-7. [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) if you plan to use [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publish.
+6. [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket). Using [Google Cloud build](https://cloud.google.com/cloud-build) is the recommended method for building and publishing docker images, although we optionally allow for local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) depending on your specific needs.
 
 ```console
 BUCKET_NAME="your-bucket-name"
@@ -155,13 +149,15 @@ gcloud auth login
 gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
-8. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
+(optional for local docker process)
+
+7. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
 
 ```console
 pip install nbconvert
 ```
 
-9. Install latest release of tensorflow-cloud
+8. Install latest release of tensorflow-cloud
 
 ```console
 pip install tensorflow-cloud
