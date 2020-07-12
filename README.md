@@ -168,7 +168,7 @@ pip install tensorflow-cloud
 
 ## Usage guide
 
-As described in the [high level overview](#high-level-overview) section, the `run` API allows you to train your models at scale on GCP. The [`run`](https://github.com/tensorflow/cloud/blob/master/tensorflow_cloud/run.py#L31) API can be used in four different ways. This is defined by where you are running the API (Terminal vs IPython notebook) and what the `entry_point` parameter value is. `entry_point` is an optional Python script or notebook file path to the file that contains the TensorFlow Keras training code. This is the most important parameter in the API.
+As described in the [high level overview](#high-level-overview), the `run` API allows you to train your models at scale on GCP. The [`run`](https://github.com/tensorflow/cloud/blob/master/tensorflow_cloud/run.py#L31) API can be used in four different ways. This is defined by where you are running the API (Terminal vs IPython notebook), and your `entry_point` parameter. `entry_point` is an optional Python script or notebook file path to the file that contains your TensorFlow Keras training code. This is the most important parameter in the API.
 
 
 ```python
@@ -196,7 +196,7 @@ tfc.run(entry_point='mnist_example.py')
 
 **2. Using a notebook file as `entry_point`.**
 
-If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`sclae_mnist.py`) to scale your model on GCP.
+If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP.
 
 ```python
 import tensorflow_cloud as tfc
@@ -205,7 +205,7 @@ tfc.run(entry_point='mnist_example.ipynb')
 
 **3. Using `run` within a python script that contains the `tf.keras` model.**
 
-You can use the `run` API from within your python file that contains the `tf.keras` model (`mnist_scale.py`). 
+You can use the `run` API from within your python file that contains the `tf.keras` model (`mnist_scale.py`). In this use case, `entry_point` should be `None`. The `run` API can be called anywhere and the entire file will be executed remotely. The API can be called at the end to run the script locally for debugging purposes (possibly with fewer epochs and other flags).
 
 ```python
 import tensorflow_datasets as tfds
@@ -257,15 +257,13 @@ model.compile(loss='sparse_categorical_crossentropy',
 model.fit(train_dataset, epochs=12)
 ```
 
-In this use case, `entry_point` should be `None`. The `run` API can be called anywhere and the entire file will be executed remotely. The API can be called at the end to run the script locally once for debugging purposes (possibly with different #epochs and other flags).
-
 **4. Using `run` within a notebook script that contains the `tf.keras` model.**
 
 ![Image of colab](https://github.com/tensorflow/cloud/blob/master/images/colab.png)
 
-In this use case, `entry_point` should be `None` and `docker_image_bucket_name` must be provided.
+In this use case, `entry_point` should be `None` and `docker_image_bucket_name` must be specified, to ensure the build can be stored and published.
 
-**Cluster and distribution strategy configuration**
+## Cluster and distribution strategy configuration
 
 By default, `run` API takes care of wrapping your model code in a TensorFlow distribution strategy based on the cluster configuration you have provided.
 
@@ -321,17 +319,15 @@ tfc.run(entry_point='mnist_example.py',
 
 The API call will encompass the following:
 1. Making code entities such as a Keras script/notebook, **cloud and distribution ready**.
-2. Converting this distribution entity into a **docker container** with all the required dependencies.
+2. Converting this distribution entity into a **docker container** with the required dependencies.
 3. **Deploy** this container at scale and train using TensorFlow distribution strategies.
 4. **Stream logs** and monitor them on hosted TensorBoard, manage checkpoint storage.
 
 By default, we will use local docker daemon for building and publishing docker images to Google container registry. Images are published to `gcr.io/your-gcp-project-id`. If you specify `docker_image_bucket_name`, then we will use [Google Cloud build](https://cloud.google.com/cloud-build) to build and publish docker images. 
 
-**Note** If you are using `run` within a notebook script that contains the `tf.keras` model, `docker_image_bucket_name` must be specified.
-
 We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying docker images on GCP.
 
-Please see `run` API documentation for detailed information on the parameters and how you can control the above processes. 
+Please see `run` API documentation for detailed information on the parameters and how you can modify the above processes to suit your needs. 
 
 ## End to end examples
 
