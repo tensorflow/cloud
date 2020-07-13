@@ -331,13 +331,13 @@ Please see `run` API documentation for detailed information on the parameters an
 
 ## End to end examples
 
-- [Using a python file as `entry_point` (Keras fit API)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit.py).
-- [Using a python file as `entry_point` (Keras custom training loop)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_ctl.py).
-- [Using a python file as `entry_point` (Keras save and load)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_save_and_load.py).
-- [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_notebook_with_keras_fit.py).
-- [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_keras_fit.py).
-- [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit_cloud_build.py).
-- [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_autokeras.py).
+- [Using a python file as `entry_point` (Keras fit API)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit_test.py).
+- [Using a python file as `entry_point` (Keras custom training loop)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_ctl_test.py).
+- [Using a python file as `entry_point` (Keras save and load)](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_save_and_load_test.py).
+- [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_notebook_with_keras_fit_test.py).
+- [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_keras_fit_test.py).
+- [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_on_script_with_keras_fit_cloud_build_test.py).
+- [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/tests/integration/call_run_within_script_with_autokeras_test.py).
 
 ## Local vs remote training
 
