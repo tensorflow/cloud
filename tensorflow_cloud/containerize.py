@@ -40,6 +40,7 @@ except ImportError:
     VERSION = "latest"
 
 
+VERSION = VERSION.replace('-rc','rc')
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
