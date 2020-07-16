@@ -40,7 +40,6 @@ except ImportError:
     VERSION = "latest"
 
 
-VERSION = VERSION.replace('-rc','rc')
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -132,6 +131,8 @@ class ContainerBuilder(object):
     def _create_docker_file(self):
         """Creates a Dockerfile."""
         if self.docker_base_image is None:
+            # Updating the name for RC's to match with the TF generated RC docker image names.
+            VERSION = VERSION.replace('-rc','rc')
             # Get the TF docker base image to use based on the current
             # TF version.
             self.docker_base_image = "tensorflow/tensorflow:{}".format(VERSION)
