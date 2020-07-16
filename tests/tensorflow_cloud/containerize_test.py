@@ -137,7 +137,7 @@ class TestContainerize(unittest.TestCase):
         # Verify value error is raised
         with self.assertRaises(ValueError) as context:
             lcb._create_docker_file()
-        self.assertTrue("base image" in str(context.exception))
+        self.assertIn("base image", str(context.exception))
 
     def test_check_docker_base_image_nightly(self):
         self.setup()
