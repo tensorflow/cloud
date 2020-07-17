@@ -349,7 +349,11 @@ Things to keep in mind when running your jobs remotely:
 
 Here are some tips for fixing unexpected issues occurring remotely.
 
-[Coming soon]
+### Operation disallowed within distribution strategy scope
+
+**Error like**: Creating a generator within a strategy scope is disallowed, because there is ambiguity on how to replicate a generator (e.g. should it be copied so that each replica gets the same random numbers, or 'split' so that each replica gets different random numbers).
+
+**Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/tests/testdata/save_and_load.py) example.
 
 ## Coming up
 
