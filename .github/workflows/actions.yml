@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.5]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -24,8 +24,8 @@ jobs:
         pip install flake8 pytest mock
     - name: Install tensorflow cloud from setup
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest mock
+        pip install .
+        pip install nbconvert
     - name: Test with pytest
       run: |
         pytest tests/tensorflow_cloud
