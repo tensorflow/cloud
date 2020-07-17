@@ -29,6 +29,7 @@ from . import validate
 
 
 def is_running_remotely():
+    """True when code is run in a remote cloud environment by TF Cloud."""
     return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
 
 
