@@ -144,9 +144,10 @@ class ContainerBuilder(object):
 
             # Add python 3 tag for TF version <= 2.1.0
             # https://hub.docker.com/r/tensorflow/tensorflow
-            v = VERSION.split(".")
-            if float(v[0] + "." + v[1]) <= 2.1:
-                self.docker_base_image += "-py3"
+            if VERSION != 'latest':
+                v = VERSION.split(".")
+                if float(v[0] + "." + v[1]) <= 2.1:
+                    self.docker_base_image += "-py3"
 
         if not self._base_image_exist():
             if "dev" in self.docker_base_image:

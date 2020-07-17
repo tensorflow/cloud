@@ -59,7 +59,7 @@ class TestContainerize(unittest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu-py3\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
@@ -85,7 +85,7 @@ class TestContainerize(unittest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu-py3\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /app/\n",
             "COPY /app/requirements.txt /app/requirements.txt\n",
             "RUN if [ -e requirements.txt ]; "
@@ -112,7 +112,7 @@ class TestContainerize(unittest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu-py3\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /my_app/temp/\n",
             "COPY /my_app/temp/ /my_app/temp/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
@@ -199,7 +199,7 @@ class TestContainerize(unittest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-py3\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}\n".format(VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
@@ -220,7 +220,7 @@ class TestContainerize(unittest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-py3\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}\n".format(VERSION),
             "WORKDIR /app/\n",
             "RUN pip install cloud-tpu-client\n",
             "COPY /app/ /app/\n",
