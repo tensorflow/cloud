@@ -305,6 +305,19 @@ tfc.run(entry_point='mnist_example.py',
 	    worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
 ```
 
+***TPUStrategy***
+
+Chief config with 1 CPU and 1 worker with 
+
+```python
+tfc.run(entry_point="mnist_example.py",
+        chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
+        worker_count=1,
+        worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"])
+```
+
+Please note that TPUStrategy with TensorFlow Cloud works only with TF version 2.1 as this is the latest version supported by [AI Platform cloud TPU](https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support)
+
 ***Custom distribution strategy***
 
 If you would like to take care of specifying distribution strategy in your model code and do not want `run` API to create a strategy, then set `distribution_stategy` as `None`. This will be required for example when you are using `strategy.experimental_distribute_dataset`.
@@ -347,14 +360,23 @@ Things to keep in mind when running your jobs remotely:
 
 ## Debugging workflow
 
-Here are some tips for fixing unexpected issues occurring remotely.
+Here are some tips for fixing unexpected issues.
 
-[Coming soon]
+### Operation disallowed within distribution strategy scope
+
+**Error like**: Creating a generator within a strategy scope is disallowed, because there is ambiguity on how to replicate a generator (e.g. should it be copied so that each replica gets the same random numbers, or 'split' so that each replica gets different random numbers).
+
+**Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/tests/testdata/save_and_load.py) example.
+
+### Version not supported for TPU training
+
+**Error like**: There was an error submitting the job.Field: tpu_tf_version Error: The specified runtime version '2.3' is not supported for TPU training. Please specify a different runtime version.
+
+**Solution**: Please use TF version 2.1. See TPU Strategy in [Cluster and distribution strategy configuration section](#cluster-and-distribution-strategy-configuration).
 
 ## Coming up
 
-- Keras tuner support.
-- TPU support.
+- Distributed Keras tuner support.
 
 ## Contributing
 

@@ -132,16 +132,21 @@ class ContainerBuilder(object):
         """Creates a Dockerfile."""
         if self.docker_base_image is None:
             # Updating the name for RC's to match with the TF generated RC docker image names.
-            VERSION = VERSION.replace('-rc','rc')
+            tf_version = VERSION.replace("-rc", "rc")
             # Get the TF docker base image to use based on the current
             # TF version.
-            self.docker_base_image = "tensorflow/tensorflow:{}".format(VERSION)
+            self.docker_base_image = "tensorflow/tensorflow:{}".format(tf_version)
             if (
                 self.chief_config.accelerator_type
                 != machine_config.AcceleratorType.NO_ACCELERATOR
             ):
                 self.docker_base_image += "-gpu"
-            self.docker_base_image += "-py3"
+
+            # Add python 3 tag for TF version <= 2.1.0
+            # https://hub.docker.com/r/tensorflow/tensorflow
+            v = VERSION.split(".")
+            if float(v[0] + "." + v[1]) <= 2.1:
+                self.docker_base_image += "-py3"
 
         if not self._base_image_exist():
             if "dev" in self.docker_base_image:
@@ -156,7 +161,7 @@ class ContainerBuilder(object):
                 self.docker_base_image = (
                     self.docker_base_image.split(":")[0] + ":" + newtag
                 )
-                warnings.warn("Using TF nightly build.")
+                warnings.warn("Using the latest TF nightly build.")
             else:
                 raise ValueError(
                     "There is no docker base image corresponding to the local "
@@ -261,8 +266,9 @@ class ContainerBuilder(object):
         return "{}/{}:{}".format(self.docker_registry, "tf_cloud_train", unique_tag)
 
     def _base_image_exist(self):
-        """Check whether the docker base image exist on dockerhub. 
-        use docker api v2 to check if base image is available.
+        """Check whether the docker base image exists on dockerhub.
+
+        Use docker api v2 to check if base image is available.
         """
         repo_name, tag_name = self.docker_base_image.split(":")
         r = requests.get(
