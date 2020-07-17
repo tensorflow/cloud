@@ -25,7 +25,9 @@ VERSION = "0.1.3"
 setup(
     name="tensorflow-cloud",
     version=VERSION,
-    description="",
+    description="The TensorFlow Cloud repository provides APIs that will allow "
+    "to easily go from debugging and training your Keras and TensorFlow "
+    "code in a local environment to distributed training in the cloud.",
     url="https://github.com/tensorflow/cloud",
     author="The tensorflow cloud authors",
     author_email="tensorflow-cloud@google.com",
