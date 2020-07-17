@@ -22,3 +22,4 @@ from .machine_config import AcceleratorType
 from .machine_config import COMMON_MACHINE_CONFIGS
 from .machine_config import MachineConfig
 from .run import run
+from .remote import remote
