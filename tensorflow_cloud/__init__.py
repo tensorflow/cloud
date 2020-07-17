@@ -16,7 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from .machine_config import AcceleratorType
 from .machine_config import COMMON_MACHINE_CONFIGS
