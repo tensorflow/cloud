@@ -370,7 +370,7 @@ Here are some tips for fixing unexpected issues.
 
 ### Version not supported for TPU training
 
-**Error like**: RuntimeError: There was an error submitting the job.Field: tpu_tf_version Error: The specified runtime version '2.3' is not supported for TPU training.  Please specify a different runtime version. See https://cloud.google.com/ml-engine/docs/runtime-version-list for a list of supported versions
+**Error like**: There was an error submitting the job.Field: tpu_tf_version Error: The specified runtime version '2.3' is not supported for TPU training. Please specify a different runtime version.
 
 **Solution**: Please use TF version 2.1. See TPU Strategy in [Cluster and distribution strategy configuration section](#cluster-and-distribution-strategy-configuration).
 

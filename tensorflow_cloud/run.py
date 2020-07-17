@@ -28,7 +28,7 @@ from . import preprocess
 from . import validate
 
 
-def is_running_remotely():
+def remote():
     """True when code is run in a remote cloud environment by TF Cloud."""
     return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
 
@@ -126,7 +126,7 @@ def run(
         **kwargs: Additional keyword arguments.
     """
     # If code is triggered in a cloud environment, do nothing.
-    if is_running_remotely():
+    if remote():
         return
 
     if kwargs:
