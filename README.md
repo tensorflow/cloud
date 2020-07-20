@@ -13,6 +13,7 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 - An [authenticated GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
 - [Google AI platform](https://cloud.google.com/ai-platform/) APIs enabled for your GCP account. We use the AI platform for deploying docker images on GCP.
 - Either a functioning version of [docker](https://docs.docker.com/engine/install/) if you want to use local docker process for your build, or [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publishing.
+- [Authenticate to your Docker Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-helper)
 - (optional) [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
 
 For detailed end to end setup instructions, please see [Setup instructions](#setup-instructions).
@@ -373,6 +374,12 @@ Here are some tips for fixing unexpected issues.
 **Error like**: There was an error submitting the job.Field: tpu_tf_version Error: The specified runtime version '2.3' is not supported for TPU training. Please specify a different runtime version.
 
 **Solution**: Please use TF version 2.1. See TPU Strategy in [Cluster and distribution strategy configuration section](#cluster-and-distribution-strategy-configuration).
+
+### TF nightly build.
+
+**Warning like**: Docker base image '2.4.0.dev20200720' does not exist. Using the latest TF nightly build.
+
+**Solution**: If you do not provide `docker_base_image` param, then by default we use pre-built TF docker images as base image. If you do not have TF installed on the environment where `run` is called, then TF docker image for the `latest` stable release will be used. Otherwise, the version of the docker image will match the locally installed TF version. However, pre-built TF docker images aren't available for TF nightlies except for the latest. So, if your local TF is an older nightly version, we upgrade to the latest nightly automatically and raise this warning.
 
 ## Coming up
 
