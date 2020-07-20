@@ -26,7 +26,7 @@ REMOTE_DIR = os.environ["E2E_TEST_BUCKET"]
 BUILD_ID = os.environ["E2E_BUID_ID"]
 
 # Path to the source code in test enviroment
-SOURCE_PATH = os.environ["E2E_SOURCE_PATH"]
+TEST_DATA_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class TensorflowCloudOnScriptTest(tf.test.TestCase):
 
@@ -52,7 +52,7 @@ class TensorflowCloudOnScriptTest(tf.test.TestCase):
     with self.assertRaises(RuntimeError):
       tfc.run(
           entry_point=os.path.join(
-            SOURCE_PATH, 'test/testdata/mnist_example_using_fit_no_reqs.py'),
+            TEST_DATA_PATH, '../testdata/mnist_example_using_fit_no_reqs.py'),
           entry_point_args=["--path", self.save_model_path],
       )
     mock_exit.assert_called_once_with(0)
