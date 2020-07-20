@@ -64,7 +64,7 @@ class MachineConfig(object):
       accelerator_type: Type of the accelerator to be used
         ('K80', 'P100', 'V100', 'P4', 'T4', 'TPU_V2', 'TPU_V3') or 'CPU'
         for no accelerator. Defaults to `auto`, which maps to a standard
-        gpu config such as 'P100'.
+        gpu config such as 'T4'.
       accelerator_count: Number of accelerators. Defaults to 1.
     """
 
