@@ -220,7 +220,7 @@ tfc.run(
     chief_config=tfc.MachineConfig(
             cpu_cores=8,
             memory=30,
-            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
             accelerator_count=2),
     worker_count=0)
 
@@ -279,7 +279,7 @@ tfc.run(entry_point='mnist_example.py',
 
 ***OneDeviceStrategy***
 
-1 GPU on chief (defaults to `AcceleratorType.NVIDIA_TESLA_P100`) and no additional workers. 
+1 GPU on chief (defaults to `AcceleratorType.NVIDIA_TESLA_T4`) and no additional workers. 
 
 ```python
 tfc.run(entry_point='mnist_example.py')
