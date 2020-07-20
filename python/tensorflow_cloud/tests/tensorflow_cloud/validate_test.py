@@ -16,8 +16,8 @@
 import pytest
 import unittest
 
-from tensorflow_cloud import machine_config
-from tensorflow_cloud import validate
+from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.core import validate
 
 
 class TestValidate(unittest.TestCase):

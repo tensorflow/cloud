@@ -12,14 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-__version__ = "0.1.4"
-
-from .machine_config import AcceleratorType
-from .machine_config import COMMON_MACHINE_CONFIGS
-from .machine_config import MachineConfig
-from .run import run
-from .run import remote
+from .core.machine_config import AcceleratorType
+from .core.machine_config import COMMON_MACHINE_CONFIGS
+from .core.machine_config import MachineConfig
+from .core.run import run
+from .core.run import remote

@@ -169,7 +169,7 @@ pip install tensorflow-cloud
 
 ## Usage guide
 
-As described in the [high level overview](#high-level-overview), the `run` API allows you to train your models at scale on GCP. The [`run`](https://github.com/tensorflow/cloud/blob/master/python/tensorflow_cloud/tensorflow_cloud/run.py#L31) API can be used in four different ways. This is defined by where you are running the API (Terminal vs IPython notebook), and your `entry_point` parameter. `entry_point` is an optional Python script or notebook file path to the file that contains your TensorFlow Keras training code. This is the most important parameter in the API.
+As described in the [high level overview](#high-level-overview), the `run` API allows you to train your models at scale on GCP. The [`run`](https://github.com/tensorflow/cloud/blob/master/python/tensorflow_cloud/core/run.py#L31) API can be used in four different ways. This is defined by where you are running the API (Terminal vs IPython notebook), and your `entry_point` parameter. `entry_point` is an optional Python script or notebook file path to the file that contains your TensorFlow Keras training code. This is the most important parameter in the API.
 
 
 ```python

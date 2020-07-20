@@ -16,8 +16,8 @@
 import os
 import unittest
 
-from tensorflow_cloud import machine_config
-from tensorflow_cloud import preprocess
+from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.core import preprocess
 
 
 class TestPreprocess(unittest.TestCase):
