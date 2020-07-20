@@ -51,7 +51,8 @@ class TensorflowCloudOnScriptTest(tf.test.TestCase):
     mock_exit.side_effect = RuntimeError("exit called")
     with self.assertRaises(RuntimeError):
       tfc.run(
-          entry_point=os.path.join(SOURCE_PATH,"test/testdata/mnist_example_using_fit_no_reqs.py"),
+          entry_point=os.path.join(
+            SOURCE_PATH, 'test/testdata/mnist_example_using_fit_no_reqs.py'),
           entry_point_args=["--path", self.save_model_path],
       )
     mock_exit.assert_called_once_with(0)
