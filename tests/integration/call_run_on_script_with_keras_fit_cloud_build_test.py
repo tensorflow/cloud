@@ -30,7 +30,7 @@ tfc.run(
     chief_config=tfc.MachineConfig(
         cpu_cores=8,
         memory=30,
-        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_P100,
+        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
         accelerator_count=2,
     ),
     worker_count=0,

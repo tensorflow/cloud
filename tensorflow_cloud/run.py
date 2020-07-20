@@ -92,15 +92,15 @@ def run(
         chief_config: Optional `MachineConfig` that represents the
             configuration for the chief worker in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
-            `COMMON_MACHINE_CONFIGS.P100_1X` (8 cpu cores, 30GB memory,
-            1 Nvidia Tesla P100).
+            `COMMON_MACHINE_CONFIGS.T4_1X` (8 cpu cores, 30GB memory,
+            1 Nvidia Tesla T4).
             For TPU strategy, `chief_config` refers to the config of the host
             that controls the TPU workers.
         worker_config: Optional `MachineConfig` that represents the
             configuration for the general workers in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
-            `COMMON_MACHINE_CONFIGS.P100_1X` (8 cpu cores, 30GB memory,
-            1 Nvidia Tesla P100).
+            `COMMON_MACHINE_CONFIGS.T4_1X` (8 cpu cores, 30GB memory,
+            1 Nvidia Tesla T4).
             For TPU strategy, `worker_config` should be a TPU config with 
             8 TPU cores (eg. `COMMON_MACHINE_CONFIGS.TPU`).
         worker_count: Optional integer that represents the number of general
@@ -147,9 +147,9 @@ def run(
     # package is required to be installed in addition to the user provided
     # packages.
     if chief_config == "auto":
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS["P100_1X"]
+        chief_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
     if worker_config == "auto":
-        worker_config = machine_config.COMMON_MACHINE_CONFIGS["P100_1X"]
+        worker_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
     region = gcp.get_region()
     # Working directory in the docker container filesystem.
     destination_dir = "/app/"
