@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module that contains the `run` API for scaling Keras/Tensorflow jobs."""
+"""Module that contains the `run` API for scaling Keras/TensorFlow jobs."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -59,7 +59,7 @@ def run(
             - Otherwise, the current python script is taken as the
                 `entry_point`.
         requirements_txt: Optional string. File path to requirements.txt file
-            containing aditional pip dependencies if any. ie. a file with a
+            containing additional pip dependencies if any. ie. a file with a
             list of pip dependency package names.
             Note: This path must be in the current working directory tree.
             Example: 'requirements.txt', 'deps/reqs.txt'
@@ -76,14 +76,14 @@ def run(
                 `tf.distribute.MirroredStrategy`
             - Otherwise, we will use `tf.distribute.OneDeviceStrategy`
             If you have created a distribution strategy instance in your script
-            already, please set `distribution_stratgey` as None here.
+            already, please set `distribution_strategy` as None here.
             For example, if you are using `tf.keras` custom training loops,
             you will need to create a strategy in the script for distributing
             the dataset.
         docker_base_image: Optional base docker image to use. Defaults to None.
             Example: 'gcr.io/my_gcp_project/deep_learning:v2'
             If a base docker image is not provided here, we will use a
-            Tensorflow docker image (https://www.tensorflow.org/install/docker)
+            TensorFlow docker image (https://www.tensorflow.org/install/docker)
             as the base image. The version of TensorFlow and Python in that
             case will match your local environment.
             If both docker_base_image and a local TF installation are not
