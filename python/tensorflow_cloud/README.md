@@ -28,7 +28,7 @@ pip install -U tensorflow-cloud
 
 ```console
 git clone https://github.com/tensorflow/cloud.git
-cd cloud/python/tensorflow_cloud
+cd cloud/python
 pip install .
 ```
 
