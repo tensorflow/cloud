@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__version__ = "0.1.4"
+
 from .core.machine_config import AcceleratorType
 from .core.machine_config import COMMON_MACHINE_CONFIGS
 from .core.machine_config import MachineConfig
