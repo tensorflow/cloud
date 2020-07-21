@@ -11,3 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+__version__ = "0.1.4"
+
+from .machine_config import AcceleratorType
+from .machine_config import COMMON_MACHINE_CONFIGS
+from .machine_config import MachineConfig
+from .run import run
+from .run import remote

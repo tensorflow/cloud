@@ -16,8 +16,8 @@
 import pytest
 import unittest
 
-from tensorflow_cloud.core import gcp
-from tensorflow_cloud.core import machine_config
+from tensorflow_cloud import gcp
+from tensorflow_cloud import machine_config
 
 
 class TestGcp(unittest.TestCase):
