@@ -31,7 +31,9 @@ class TestDeploy(unittest.TestCase):
     def setup(self, MockDiscovery):
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
-        self.entry_point = "python/tensorflow_cloud/tests/testdata/sample_compile_fit.py"
+        self.entry_point = (
+            "python/tensorflow_cloud/tests/testdata/sample_compile_fit.py"
+        )
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
         self.worker_count = 2
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
