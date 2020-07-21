@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import google.auth
+import re
 
 
 def get_project_name():
@@ -397,3 +398,54 @@ def _get_valid_machine_configurations():
         # 'cloud_tpu', 'TPU_V3'
         (None, None, "TPU_V3", 8),
     ]
+
+def validate_job_labels(job_labels):
+    """Validates job labels conform guidelines at 
+       https://cloud.google.com/ai-platform/training/docs/resource-labels"""
+
+    if not job_labels:
+        print("No labels provided for the training job."
+              "Please consider creating labels to help "
+              "with retrieval of job information. "
+              "Please see https://cloud.google.com/ai-"
+              "platform/training/docs/resource-labels "
+              "for more information.")
+
+    if len(job_labels) > 64:
+        raise ValueError("Invalid job labels: too many labels."
+                         "Expecting at most 64 labels."
+                         "Received {}.".format(len(job_labels)))
+
+    for k in job_labels:
+        v = job_labels[k]
+        if not k or not k[0].islower():
+            raise ValueError("Invalid job labels:"
+                             "Label key must start with lowercase letters."
+                             "Received {}.".format(k))
+        if not v or not v[0].islower():
+            raise ValueError("Invalid job labels:"
+                             "Label value must start with lowercase letters."
+                             "Received {}.".format(v))
+
+        if len(k) > 63:
+            raise ValueError("Invalid job labels:"
+                             "Label key is too long."
+                             "Expecting at most 63 characters."
+                             "Received {}.".format(k))
+        if len(v) > 63:
+            raise ValueError("Invalid job labels:"
+                             "Label value is too long for key {}."
+                             "Expecting at most 63 characters."
+                             "Received {}.".format(k, v))
+
+        if not re.match(r'^[a-z0-9_-]+$', k):
+            raise ValueError("Invalid job labels:"
+                             "Label key can only contain lowercase letters,"
+                             "numeric characters, underscores and dashes."
+                             "Received: {}.".format(k))
+
+        if not re.match(r'^[a-z0-9_-]+$', v):
+            raise ValueError("Invalid job labels:"
+                             "Label value can only contain lowercase letters,"
+                             "numeric characters, underscores and dashes."
+                             "Received: {}.".format(v))

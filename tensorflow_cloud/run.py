@@ -39,7 +39,7 @@ def run(
     entry_point_args=None,
     stream_logs=False,
     docker_image_bucket_name=None,
-    labels = {},
+    job_labels = {},
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -119,6 +119,10 @@ def run(
             Note: When you are using this API from within an iPython notebook,
             we will default to using Google Cloud Build,
             so `docker_image_bucket_name` must be specified for this use case.
+        job_labels: Dict of str: str. Labels to organize jobs. You can specify
+            up to 64 key-value pairs in lowercase letters and numbers, where
+            the first character must be lowercase letter. For more details see 
+            https://cloud.google.com/ai-platform/training/docs/resource-labels.
         **kwargs: Additional keyword arguments.
     """
     # If code is triggered in a cloud environment, do nothing.
@@ -168,7 +172,7 @@ def run(
         stream_logs,
         docker_image_bucket_name,
         called_from_notebook,
-        labels=labels
+        job_labels=job_labels
     )
 
     # Make the `entry_point` cloud and distribution ready.
@@ -227,7 +231,7 @@ def run(
         worker_config,
         entry_point_args,
         stream_logs,
-        labels=labels
+        job_labels=job_labels
     )
 
     # Call `exit` to prevent training the Keras model in the local env.

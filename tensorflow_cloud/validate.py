@@ -21,6 +21,7 @@ import os
 import re
 
 from . import machine_config
+from . import gcp
 
 
 def validate(
@@ -35,7 +36,7 @@ def validate(
     stream_logs,
     docker_image_bucket_name,
     called_from_notebook,
-    labels={}
+    job_labels={}
 ):
     """Validates the inputs.
 
@@ -64,6 +65,8 @@ def validate(
         docker_image_bucket_name: Optional string. Cloud storage bucket name.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
+        job_labels: Dict of str: str. Labels to organize jobs. See 
+            https://cloud.google.com/ai-platform/training/docs/resource-labels.
 
     # Raises:
         ValueError: if any of the inputs is invalid.
@@ -71,7 +74,7 @@ def validate(
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
-    _validate_labels(labels)
+    _validate_job_labels(job_labels)
     _validate_other_args(
         region, args, stream_logs, docker_image_bucket_name, called_from_notebook
     )
@@ -153,52 +156,9 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Received {}.".format(worker_count)
         )
 
-def _validate_labels(labels):
-    """Validates labels conform guidelines at 
-       https://cloud.google.com/ai-platform/training/docs/resource-labels"""
-    if not labels:
-        print("No label for the job. Consider creating labels"
-              "for easier organizing submitted jobs.")
-
-    if len(labels) > 64:
-        raise ValueError("Invalid labels: too many labels."
-                         "Expecting at most 64 labels."
-                         "Received {}.".format(len(labels)))
-
-    for k in labels:
-        v = labels[k]
-        if not k or not k[0].islower():
-            raise ValueError("Invalid labels:"
-                             "Label key must start with lowercase letters."
-                             "Received {}.".format(k))
-        if not v or not v[0].islower():
-            raise ValueError("Invalid labels:"
-                             "Label value must start with lowercase letters."
-                             "Received {}.".format(v))
-
-        if len(k) > 63:
-            raise ValueError("Invalid labels:"
-                             "Label key is too long."
-                             "Expecting at most 63 characters."
-                             "Received {}.".format(k))
-        if len(v) > 63:
-            raise ValueError("Invalid labels:"
-                             "Label value is too long for key {}."
-                             "Expecting at most 63 characters."
-                             "Received {}.".format(k, v))
-
-        if not re.match(r'^[a-z0-9_-]+$', k):
-            raise ValueError("Invalid labels:"
-                             "Label key can only contain lowercase letters,"
-                             "numeric characters, underscores and dashes."
-                             "Received: {}.".format(k))
-
-        if not re.match(r'^[a-z0-9_-]+$', v):
-            raise ValueError("Invalid labels:"
-                             "Label value can only contain lowercase letters,"
-                             "numeric characters, underscores and dashes."
-                             "Received: {}.".format(v))
-            
+def _validate_job_labels(job_labels):
+    """Validates job labels."""
+    gcp.validate_job_labels(job_labels)
 
 
 def _validate_other_args(
