@@ -18,8 +18,10 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import re
 
 from . import machine_config
+from . import gcp
 
 
 def validate(
@@ -34,6 +36,7 @@ def validate(
     stream_logs,
     docker_image_bucket_name,
     called_from_notebook,
+    job_labels={}
 ):
     """Validates the inputs.
 
@@ -62,6 +65,8 @@ def validate(
         docker_image_bucket_name: Optional string. Cloud storage bucket name.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
+        job_labels: Dict of str: str. Labels to organize jobs. See 
+            https://cloud.google.com/ai-platform/training/docs/resource-labels.
 
     # Raises:
         ValueError: if any of the inputs is invalid.
@@ -69,6 +74,7 @@ def validate(
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(chief_config, worker_count, worker_config)
+    _validate_job_labels(job_labels)
     _validate_other_args(
         region, args, stream_logs, docker_image_bucket_name, called_from_notebook
     )
@@ -149,6 +155,10 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Expected worker_count=1 for TPU `worker_config`. "
             "Received {}.".format(worker_count)
         )
+
+def _validate_job_labels(job_labels):
+    """Validates job labels."""
+    gcp.validate_job_labels(job_labels)
 
 
 def _validate_other_args(
