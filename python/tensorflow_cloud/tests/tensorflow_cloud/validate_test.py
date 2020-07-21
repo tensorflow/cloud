@@ -81,7 +81,7 @@ class TestValidate(unittest.TestCase):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
-            requirements_txt="tests/testdata/requirements.txt",
+            requirements_txt="python/tensorflow_cloud/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
