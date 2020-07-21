@@ -78,6 +78,21 @@ class TestValidate(unittest.TestCase):
             called_from_notebook=True,
         )
 
+        validate.validate(
+            entry_point=None,
+            distribution_strategy=None,
+            requirements_txt="tests/testdata/requirements.txt",
+            chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
+            worker_config=None,
+            worker_count=0,
+            region="us-central1",
+            args=["1000"],
+            stream_logs=False,
+            docker_image_bucket_name="abc",
+            called_from_notebook=True,
+            job_labels={"a": "b"}
+        )
+
     def test_invalid_entry_point(self):
         with pytest.raises(ValueError, match=r"Invalid `entry_point`"):
             validate.validate(
@@ -302,3 +317,4 @@ class TestValidate(unittest.TestCase):
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
+
