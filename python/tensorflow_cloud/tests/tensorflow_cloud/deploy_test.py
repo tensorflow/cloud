@@ -21,8 +21,8 @@ import sys
 import tarfile
 import unittest
 
-from tensorflow_cloud import deploy
-from tensorflow_cloud import machine_config
+from tensorflow_cloud.core import deploy
+from tensorflow_cloud.core import machine_config
 
 from mock import call, patch
 
@@ -31,7 +31,9 @@ class TestDeploy(unittest.TestCase):
     def setup(self, MockDiscovery):
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
-        self.entry_point = "testdata/sample_compile_fit.py"
+        self.entry_point = (
+            "python/tensorflow_cloud/tests/testdata/sample_compile_fit.py"
+        )
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
         self.worker_count = 2
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -75,7 +77,7 @@ class TestDeploy(unittest.TestCase):
         deploy.gcp.get_project_name = _mock_get_project_name
 
     @patch("sys.stdout", new_callable=io.StringIO)
-    @patch("tensorflow_cloud.deploy.discovery")
+    @patch("tensorflow_cloud.core.deploy.discovery")
     def test_deploy_job(self, MockDiscovery, MockStdOut):
         self.setup(MockDiscovery)
 
@@ -124,7 +126,7 @@ class TestDeploy(unittest.TestCase):
             ),
         )
 
-    @patch("tensorflow_cloud.deploy.discovery")
+    @patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_without_workers(self, MockDiscovery):
         self.setup(MockDiscovery)
         worker_count = 0
@@ -156,7 +158,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.deploy.discovery")
+    @patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_without_user_args(self, MockDiscovery):
         self.setup(MockDiscovery)
         job_name = deploy.deploy_job(
@@ -184,7 +186,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.deploy.discovery")
+    @patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_with_TPU_worker(self, MockDiscovery):
         self.setup(MockDiscovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]

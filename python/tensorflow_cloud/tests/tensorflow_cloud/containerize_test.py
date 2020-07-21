@@ -17,8 +17,8 @@ import os
 import tarfile
 import unittest
 
-from tensorflow_cloud import containerize
-from tensorflow_cloud import machine_config
+from tensorflow_cloud.core import containerize
+from tensorflow_cloud.core import machine_config
 
 from mock import call, patch
 
@@ -31,7 +31,9 @@ except ImportError:
 
 class TestContainerize(unittest.TestCase):
     def setup(self):
-        self.entry_point = "tests/testdata/mnist_example_using_fit.py"
+        self.entry_point = (
+            "python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.py"
+        )
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.entry_point_dir, _ = os.path.split(self.entry_point)
@@ -355,8 +357,8 @@ class TestContainerize(unittest.TestCase):
         os.remove(req_file)
         self.cleanup(lcb.docker_file_path)
 
-    @patch("tensorflow_cloud.containerize.logger")
-    @patch("tensorflow_cloud.containerize.APIClient")
+    @patch("tensorflow_cloud.core.containerize.logger")
+    @patch("tensorflow_cloud.core.containerize.APIClient")
     def test_get_docker_image(self, MockAPIClient, MockLogger):
         self.setup()
         mock_registry = "gcr.io/my-project"
