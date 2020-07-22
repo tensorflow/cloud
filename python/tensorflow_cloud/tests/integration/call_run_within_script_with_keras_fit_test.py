@@ -141,7 +141,7 @@ tfc.run(
 
 # Save, load and evaluate the model
 if tfc.remote():
-    SAVE_PATH = f"gs://{GCP_BUCKET}/{MODEL_PATH}"
+    SAVE_PATH = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
     model.save(SAVE_PATH)
     model = tf.keras.models.load_model(SAVE_PATH)
 model.evaluate(test_data)
