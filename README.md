@@ -32,7 +32,7 @@ cd cloud/python
 pip install .
 ```
 
-## High level overview 
+## High level overview
 
 TensorFlow Cloud package provides the `run` API for training your models on GCP. To start, let's walk through a simple workflow using this API.
 
@@ -71,7 +71,7 @@ Running `scale_mnist.py` will automatically apply TensorFlow [one device strateg
 3. You will see an output similar to the following on your console. This information can be used to track the training job status. 
 
 ```shell
-usr@desktop$ python scale_mnist.py
+user@desktop$ python scale_mnist.py
 Job submitted successfully.
 Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
 Please access your job logs at the following URL:
@@ -82,7 +82,7 @@ https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9
 
 End to end instructions to help set up your environment for Tensorflow Cloud.
 
-1. Create a new local directory 
+1. Create a new local directory
 
 ```shell
 mkdir tensorflow_cloud
@@ -141,7 +141,7 @@ Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
 ```
 
-6. [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket). Using [Google Cloud build](https://cloud.google.com/cloud-build) is the recommended method for building and publishing docker images, although we optionally allow for local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) depending on your specific needs.
+6. [Create a Cloud Storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket). Using [Google Cloud build](https://cloud.google.com/cloud-build) is the recommended method for building and publishing docker images, although we optionally allow for local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) depending on your specific needs.
 
 ```shell
 BUCKET_NAME="your-bucket-name"
@@ -274,7 +274,7 @@ CPU chief config and no additional workers
 
 ```python
 tfc.run(entry_point='mnist_example.py',
-    	chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'])
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'])
 ```
 
 ***OneDeviceStrategy***
@@ -291,7 +291,7 @@ Chief config with multiple GPUS (`AcceleratorType.NVIDIA_TESLA_V100`).
 
 ```python
 tfc.run(entry_point='mnist_example.py',
-    	chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_4X'])
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_4X'])
 ```
 
 ***MultiWorkerMirroredStrategy***
@@ -301,14 +301,14 @@ Chief config with 1 GPU and 2 workers each with 8 GPUs (`AcceleratorType.NVIDIA_
 
 ```python
 tfc.run(entry_point='mnist_example.py',
-	    chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_1X'],
-	    worker_count=2,
-	    worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_1X'],
+        worker_count=2,
+        worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
 ```
 
 ***TPUStrategy***
 
-Chief config with 1 CPU and 1 worker with 
+Chief config with 1 CPU and 1 worker with TPU.
 
 ```python
 tfc.run(entry_point="mnist_example.py",
@@ -325,8 +325,8 @@ If you would like to take care of specifying distribution strategy in your model
 
 ```python
 tfc.run(entry_point='mnist_example.py',
-	    distribution_strategy=None,
-	    worker_count=2)
+        distribution_strategy=None,
+        worker_count=2)
 ```
 
 ### What happens when you call run?
