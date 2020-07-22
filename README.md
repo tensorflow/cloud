@@ -20,13 +20,13 @@ For detailed end to end setup instructions, please see [Setup instructions](#set
 
 ### Install latest release
 
-```console
+```shell
 pip install -U tensorflow-cloud
 ```
 
 ### Install from source
 
-```console
+```shell
 git clone https://github.com/tensorflow/cloud.git
 cd cloud/python
 pip install .
@@ -68,14 +68,14 @@ tfc.run(entry_point='mnist_example.py')
 
 Running `scale_mnist.py` will automatically apply TensorFlow [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions and additional API parameters.
 
-3. You will see an output similar to the following on your console. This information can be used to track the training job status. 
+3. You will see an output similar to the following on your shell. This information can be used to track the training job status. 
 
-```console
+```shell
 usr@desktop$ python scale_mnist.py
 Job submitted successfully.
 Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
 Please access your job logs at the following URL:
-https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
+https://shell.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
 ```
 
 ## Setup instructions
@@ -84,20 +84,20 @@ End to end instructions to help setup your environment for Tensorflow Cloud.
 
 1. Create a new local directory 
 
-```console
+```shell
 mkdir tensorflow_cloud
 cd tensorflow_cloud
 ```
 
 2. Make sure you have `python >= 3.5`
 
-```console
+```shell
 python -V
 ```
 
 3. Setup virtual environment
 
-```console
+```shell
 virtualenv tfcloud --python=python3
 source venv/bin/activate
 ```
@@ -106,13 +106,13 @@ source venv/bin/activate
 
 Verify that gcloud sdk is installed.
 
-```console
+```shell
 which gcloud
 ```
 
 Set default gcloud project
 
-```console
+```shell
 export PROJECT_ID=<your-project-id>
 gcloud config set project $PROJECT_ID
 ```
@@ -121,7 +121,7 @@ gcloud config set project $PROJECT_ID
 
 Create a service account.
 
-```console
+```shell
 export SA_NAME=<your-sa-name>
 gcloud iam service-accounts create $SA_NAME
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -131,19 +131,19 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 Create a key for your service account.
 
-```console
+```shell
 gcloud iam service-accounts keys create ~/key.json --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
 Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
-```console
+```shell
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
 ```
 
 6. [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket). Using [Google Cloud build](https://cloud.google.com/cloud-build) is the recommended method for building and publishing docker images, although we optionally allow for local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) depending on your specific needs.
 
-```console
+```shell
 BUCKET_NAME="your-bucket-name"
 REGION="us-central1"
 gcloud auth login
@@ -151,19 +151,19 @@ gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
 (optional for local docker setup)
-```console
+```shell
 sudo dockerd
 ```
 
 7. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
 
-```console
+```shell
 pip install nbconvert
 ```
 
 8. Install latest release of tensorflow-cloud
 
-```console
+```shell
 pip install tensorflow-cloud
 ```
 
