@@ -12,7 +12,7 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 - [A Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 - An [authenticated GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
 - [Google AI platform](https://cloud.google.com/ai-platform/) APIs enabled for your GCP account. We use the AI platform for deploying docker images on GCP.
-- Either a functioning version of [docker](https://docs.docker.com/engine/install/) if you want to use local docker process for your build, or [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) for using [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publishing.
+- Either a functioning version of [docker](https://docs.docker.com/engine/install/) if you want to use a local docker process for your build, or [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket) to use with [Google Cloud build](https://cloud.google.com/cloud-build) for docker image build and publishing.
 - [Authenticate to your Docker Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-helper)
 - (optional) [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you are using a notebook file as `entry_point` as shown in [usage guide #4](#usage-guide).
 
@@ -20,13 +20,13 @@ For detailed end to end setup instructions, please see [Setup instructions](#set
 
 ### Install latest release
 
-```console
+```shell
 pip install -U tensorflow-cloud
 ```
 
 ### Install from source
 
-```console
+```shell
 git clone https://github.com/tensorflow/cloud.git
 cd cloud/python
 pip install .
@@ -70,7 +70,7 @@ Running `scale_mnist.py` will automatically apply TensorFlow [one device strateg
 
 3. You will see an output similar to the following on your console. This information can be used to track the training job status. 
 
-```console
+```shell
 user@desktop$ python scale_mnist.py
 Job submitted successfully.
 Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
@@ -80,24 +80,24 @@ https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9
 
 ## Setup instructions
 
-End to end instructions to help setup your environment for Tensorflow Cloud.
+End to end instructions to help set up your environment for Tensorflow Cloud.
 
 1. Create a new local directory
 
-```console
+```shell
 mkdir tensorflow_cloud
 cd tensorflow_cloud
 ```
 
 2. Make sure you have `python >= 3.5`
 
-```console
+```shell
 python -V
 ```
 
-3. Setup virtual environment
+3. Set up virtual environment
 
-```console
+```shell
 virtualenv tfcloud --python=python3
 source venv/bin/activate
 ```
@@ -106,13 +106,13 @@ source venv/bin/activate
 
 Verify that gcloud sdk is installed.
 
-```console
+```shell
 which gcloud
 ```
 
 Set default gcloud project
 
-```console
+```shell
 export PROJECT_ID=<your-project-id>
 gcloud config set project $PROJECT_ID
 ```
@@ -121,7 +121,7 @@ gcloud config set project $PROJECT_ID
 
 Create a service account.
 
-```console
+```shell
 export SA_NAME=<your-sa-name>
 gcloud iam service-accounts create $SA_NAME
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -131,19 +131,19 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 Create a key for your service account.
 
-```console
+```shell
 gcloud iam service-accounts keys create ~/key.json --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
 Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
-```console
+```shell
 export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
 ```
 
 6. [Create a Cloud Storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket). Using [Google Cloud build](https://cloud.google.com/cloud-build) is the recommended method for building and publishing docker images, although we optionally allow for local [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually) depending on your specific needs.
 
-```console
+```shell
 BUCKET_NAME="your-bucket-name"
 REGION="us-central1"
 gcloud auth login
@@ -151,19 +151,19 @@ gsutil mb -l $REGION gs://$BUCKET_NAME
 ```
 
 (optional for local docker setup)
-```console
+```shell
 sudo dockerd
 ```
 
 7. Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan to use a notebook file `entry_point` as shown in [usage guide #4](#usage-guide).
 
-```console
+```shell
 pip install nbconvert
 ```
 
 8. Install latest release of tensorflow-cloud
 
-```console
+```shell
 pip install tensorflow-cloud
 ```
 
