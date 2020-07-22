@@ -68,14 +68,14 @@ tfc.run(entry_point='mnist_example.py')
 
 Running `scale_mnist.py` will automatically apply TensorFlow [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy) and train your model at scale on Google Cloud Platform. Please see the [usage guide](#usage-guide) section for detailed instructions and additional API parameters.
 
-3. You will see an output similar to the following on your shell. This information can be used to track the training job status. 
+3. You will see an output similar to the following on your console. This information can be used to track the training job status. 
 
 ```shell
 usr@desktop$ python scale_mnist.py
 Job submitted successfully.
 Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
 Please access your job logs at the following URL:
-https://shell.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
+https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
 ```
 
 ## Setup instructions
