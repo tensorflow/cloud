@@ -11,33 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import tensorflow_cloud as tfc
 
 # # Automated CPU strategy: CPU chief config and no workers
 # tfc.run(
-#     entry_point='tests/testdata/mnist_example_using_fit.py',
+#     entry_point='tensorflow_cloud/python/tests/testdata/mnist_example_using_fit.py',
 #     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
+#     requirements_txt='tensorflow_cloud/python/tests/testdata/requirements.txt',
 #     chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'],
 #     stream_logs=True)
 
 
 # # Automated OneDeviceStrategy: default 1 GPU chief config and no workers
 # tfc.run(
-#     entry_point='tests/testdata/mnist_example_using_fit.py',
+#     entry_point='tensorflow_cloud/python/tests/testdata/mnist_example_using_fit.py',
 #     distribution_strategy='auto',
-#     requirements_txt='tests/testdata/requirements.txt',
+#     requirements_txt='tensorflow_cloud/python/tests/testdata/requirements.txt',
 #     stream_logs=True)
 
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point="tests/testdata/mnist_example_using_fit.py",
+    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_fit.py",
     distribution_strategy="auto",
-    requirements_txt="tests/testdata/requirements.txt",
+    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
     chief_config=tfc.MachineConfig(
         cpu_cores=8,
         memory=30,
@@ -50,7 +47,7 @@ tfc.run(
 
 # Automated TPUStrategy
 # tfc.run(
-#     entry_point="tests/testdata/mnist_example_using_fit_no_reqs.py",
+#     entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_fit_no_reqs.py",
 #     distribution_strategy="auto",
 #     chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
 #     worker_count=1,

@@ -42,5 +42,5 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Software Development",
     ],
-    packages=find_packages(exclude=("tests",)),
+    packages=find_packages(exclude=("tensorflow_cloud/python/tests",)),
 )

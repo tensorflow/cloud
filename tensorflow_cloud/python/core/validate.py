@@ -36,7 +36,7 @@ def validate(
     stream_logs,
     docker_image_bucket_name,
     called_from_notebook,
-    job_labels={}
+    job_labels={},
 ):
     """Validates the inputs.
 
@@ -155,6 +155,7 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Expected worker_count=1 for TPU `worker_config`. "
             "Received {}.".format(worker_count)
         )
+
 
 def _validate_job_labels(job_labels):
     """Validates job labels."""

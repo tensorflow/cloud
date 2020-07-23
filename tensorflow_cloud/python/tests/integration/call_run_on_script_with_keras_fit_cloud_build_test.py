@@ -11,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import argparse
 
@@ -25,7 +22,7 @@ args = parser.parse_args()
 
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point="tests/testdata/mnist_example_using_fit_no_reqs.py",
+    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_fit_no_reqs.py",
     distribution_strategy="auto",
     chief_config=tfc.MachineConfig(
         cpu_cores=8,
