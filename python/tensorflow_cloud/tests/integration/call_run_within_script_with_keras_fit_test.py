@@ -12,28 +12,123 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Example from TF tutorials
-# https://www.tensorflow.org/tutorials/distribute/keras
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+import datetime
 import os
 
-import tensorflow_datasets as tfds
+import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
-
 import tensorflow_cloud as tfc
+import tensorflow_datasets as tfds
 
-tfds.disable_progress_bar()
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.models import Model
 
-print(tf.__version__)
+# Set Cloud GCP bucket name
+GCP_BUCKET = "psv-gcs-bucket"  # "your-bucket-name"
+MODEL_PATH = "resnet-dogs"
 
-# Calling `run` from within a script with contains the Keras model.
+# Setup dataset
+(ds_train, ds_test), metadata = tfds.load(
+    "stanford_dogs",
+    split=["train", "test"],
+    shuffle_files=True,
+    with_info=True,
+    as_supervised=True,
+)
+
+NUM_CLASSES = metadata.features["label"].num_classes
+print("Number of training samples: %d" % tf.data.experimental.cardinality(ds_train))
+print("Number of test samples: %d" % tf.data.experimental.cardinality(ds_test))
+print("Number of classes: %d" % NUM_CLASSES)
+
+# Visualize dataset
+plt.figure(figsize=(10, 10))
+for i, (image, label) in enumerate(ds_train.take(9)):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(image)
+    plt.title(int(label))
+    plt.axis("off")
+
+# Preprocess dataset
+IMG_SIZE = 224
+BATCH_SIZE = 64
+BUFFER_SIZE = 2
+
+size = (IMG_SIZE, IMG_SIZE)
+ds_train = ds_train.map(lambda image, label: (tf.image.resize(image, size), label))
+ds_test = ds_test.map(lambda image, label: (tf.image.resize(image, size), label))
+
+
+def input_preprocess(image, label):
+    image = tf.keras.applications.resnet50.preprocess_input(image)
+    return image, label
+
+
+ds_train = ds_train.map(
+    input_preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE
+)
+ds_train = ds_train.batch(batch_size=BATCH_SIZE, drop_remainder=True)
+ds_train = ds_train.prefetch(tf.data.experimental.AUTOTUNE)
+
+ds_test = ds_test.map(input_preprocess)
+ds_test = ds_test.batch(batch_size=BATCH_SIZE, drop_remainder=True)
+
+# Build the model
+inputs = tf.keras.layers.Input(shape=(IMG_SIZE, IMG_SIZE, 3))
+base_model = tf.keras.applications.ResNet50(
+    weights="imagenet", include_top=False, input_tensor=inputs
+)
+x = tf.keras.layers.GlobalAveragePooling2D()(base_model.output)
+x = tf.keras.layers.Dropout(0.5)(x)
+outputs = tf.keras.layers.Dense(NUM_CLASSES)(x)
+
+model = tf.keras.Model(inputs, outputs)
+
+# Freeze base model
+base_model.trainable = False
+
+# Setup callbacks
+checkpoint_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH, "save_at_{epoch}")
+tensorboard_path = os.path.join(
+    "gs://", GCP_BUCKET, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+)
+callbacks = [
+    tf.keras.callbacks.ModelCheckpoint(checkpoint_path),
+    tf.keras.callbacks.TensorBoard(log_dir=tensorboard_path, histogram_freq=1),
+    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3),
+]
+
+# Compile model
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-2)
+model.compile(
+    optimizer=optimizer,
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=["accuracy"],
+)
+
+# Train the model.
+if tfc.remote():
+    epochs = 500
+    train_data = ds_train
+    test_data = ds_test
+else:
+    epochs = 1
+    train_data = ds_train.take(5)
+    test_data = ds_test.take(5)
+    callbacks = None
+
+model.fit(
+    train_data, epochs=epochs, callbacks=callbacks, validation_data=test_data, verbose=2
+)
+
+# Calling `tfc.run` with `auto` distribution strategy with multi-gpu
+# chief_config. This will automate TensorFlow Mirrored distribution
+# strategy when training this model.
+# Tip: Move this call to the top of this file if you do not want to
+# train your model locally first.
 tfc.run(
-    entry_point=None,
-    distribution_strategy="auto",
     requirements_txt="tests/testdata/requirements.txt",
     chief_config=tfc.MachineConfig(
         cpu_cores=8,
@@ -41,71 +136,12 @@ tfc.run(
         accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
         accelerator_count=2,
     ),
-    worker_count=0,
+    docker_image_bucket_name=GCP_BUCKET,
 )
 
-# Download the dataset
-datasets, info = tfds.load(name="mnist", with_info=True, as_supervised=True)
-mnist_train, mnist_test = datasets["train"], datasets["test"]
-
-# Setup input pipeline
-num_train_examples = info.splits["train"].num_examples
-num_test_examples = info.splits["test"].num_examples
-
-BUFFER_SIZE = 10000
-BATCH_SIZE = 64
-
-
-def scale(image, label):
-    image = tf.cast(image, tf.float32)
-    image /= 255
-
-    return image, label
-
-
-train_dataset = mnist_train.map(scale).cache()
-train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
-
-# Create the model
-model = tf.keras.Sequential(
-    [
-        tf.keras.layers.Conv2D(32, 3, activation="relu", input_shape=(28, 28, 1)),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(64, activation="relu"),
-        tf.keras.layers.Dense(10, activation="softmax"),
-    ]
-)
-
-model.compile(
-    loss="sparse_categorical_crossentropy",
-    optimizer=tf.keras.optimizers.Adam(),
-    metrics=["accuracy"],
-)
-
-
-# Function for decaying the learning rate.
-# You can define any decay function you need.
-def decay(epoch):
-    if epoch < 3:
-        return 1e-3
-    elif epoch >= 3 and epoch < 7:
-        return 1e-4
-    else:
-        return 1e-5
-
-
-# Callback for printing the LR at the end of each epoch.
-class PrintLR(tf.keras.callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        print(
-            "\nLearning rate for epoch {} is {}".format(
-                epoch + 1, model.optimizer.lr.numpy()
-            )
-        )
-
-
-callbacks = [tf.keras.callbacks.LearningRateScheduler(decay), PrintLR()]
-
-model.fit(train_dataset, epochs=12, callbacks=callbacks)
+# Save, load and evaluate the model
+if tfc.remote():
+    SAVE_PATH = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
+    model.save(SAVE_PATH)
+    model = tf.keras.models.load_model(SAVE_PATH)
+model.evaluate(test_data)
