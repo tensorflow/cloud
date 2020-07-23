@@ -16,8 +16,8 @@
 import pytest
 import unittest
 
-from tensorflow_cloud.core import gcp
-from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.python.core import gcp
+from tensorflow_cloud.python.core import machine_config
 
 
 class TestGcp(unittest.TestCase):
@@ -140,42 +140,30 @@ class TestGcp(unittest.TestCase):
     def test_validate_invalid_job_label(self):
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # must start with lower case
-            gcp.validate_job_labels(
-                job_labels={'':''},
-            )
+            gcp.validate_job_labels(job_labels={"": ""},)
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # must start with lower case
-            gcp.validate_job_labels(
-                job_labels={'test':'-label'}
-            )
+            gcp.validate_job_labels(job_labels={"test": "-label"})
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # must start with lower case
-            gcp.validate_job_labels(
-                job_labels={'Test':'label'}
-            )
+            gcp.validate_job_labels(job_labels={"Test": "label"})
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # no upper case
-            gcp.validate_job_labels(
-                job_labels={'test':'labelA'}
-            )
+            gcp.validate_job_labels(job_labels={"test": "labelA"})
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # no symbol
-            gcp.validate_job_labels(
-                job_labels={'test':'label@'}
-            )
+            gcp.validate_job_labels(job_labels={"test": "label@"})
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # label cannot be too long
-            gcp.validate_job_labels(
-                job_labels={'test':'a'*64}
-            )
+            gcp.validate_job_labels(job_labels={"test": "a" * 64})
 
         with pytest.raises(ValueError, match=r"Invalid job labels"):
             # label cannot be too many
             gcp.validate_job_labels(
-                job_labels={'key{}'.format(i):'val{}'.format(i) for i in range(65)}
+                job_labels={"key{}".format(i): "val{}".format(i) for i in range(65)}
             )

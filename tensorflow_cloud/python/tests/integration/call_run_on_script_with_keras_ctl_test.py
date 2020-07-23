@@ -11,21 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import argparse
 
 import tensorflow_cloud as tfc
 
-parser = argparse.ArgumentParser(description="Model save path arguments.")
-parser.add_argument("--path", required=True, type=str, help="Keras model save path")
-args = parser.parse_args()
-
+# MultiWorkerMirroredStrategy
 tfc.run(
-    entry_point="tests/testdata/save_and_load.py",
+    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_ctl.py",
     distribution_strategy=None,
-    requirements_txt="tests/testdata/requirements.txt",
-    entry_point_args=["--path", args.path],
+    worker_count=1,
+    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
+    stream_logs=True,
 )

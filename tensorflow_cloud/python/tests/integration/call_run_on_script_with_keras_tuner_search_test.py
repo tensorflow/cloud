@@ -21,9 +21,9 @@ args = parser.parse_args()
 
 # Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point="tests/testdata/keras_tuner_cifar_example.py",
+    entry_point="tensorflow_cloud/python/tests/testdata/keras_tuner_cifar_example.py",
     distribution_strategy="auto",
-    requirements_txt="tests/testdata/requirements.txt",
+    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
     chief_config=tfc.COMMON_MACHINE_CONFIGS["V100_4X"],
     worker_count=0,
     entry_point_args=["--path", args.path],

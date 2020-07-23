@@ -44,7 +44,7 @@ def run(
     entry_point_args=None,
     stream_logs=False,
     docker_image_bucket_name=None,
-    job_labels = {},
+    job_labels={},
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -177,7 +177,7 @@ def run(
         stream_logs,
         docker_image_bucket_name,
         called_from_notebook,
-        job_labels=job_labels
+        job_labels=job_labels,
     )
 
     # Make the `entry_point` cloud and distribution ready.
@@ -236,7 +236,7 @@ def run(
         worker_config,
         entry_point_args,
         stream_logs,
-        job_labels=job_labels
+        job_labels=job_labels,
     )
 
     # Call `exit` to prevent training the Keras model in the local env.

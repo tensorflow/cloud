@@ -41,7 +41,7 @@ def deploy_job(
     worker_config,
     entry_point_args,
     enable_stream_logs,
-    job_labels={}
+    job_labels={},
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -75,7 +75,7 @@ def deploy_job(
         worker_count,
         worker_config,
         entry_point_args,
-        job_labels=job_labels
+        job_labels=job_labels,
     )
     try:
         response = (
@@ -100,7 +100,7 @@ def _create_request_dict(
     worker_count,
     worker_config,
     entry_point_args,
-    job_labels={}
+    job_labels={},
 ):
     """Creates request dictionary for the CAIP training service.
 

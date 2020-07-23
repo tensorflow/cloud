@@ -24,7 +24,7 @@ jobs:
         pip install flake8 pytest mock
     - name: Install tensorflow cloud from setup
       run: |
-        pip install python/.
+        pip install .
         pip install nbconvert
     - name: Lint with flake8
       run: |
@@ -34,4 +34,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest python/tensorflow_cloud/tests/tensorflow_cloud
+        pytest tensorflow_cloud/python/tests/core
