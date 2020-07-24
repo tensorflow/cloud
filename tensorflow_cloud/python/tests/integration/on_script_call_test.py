@@ -15,11 +15,12 @@
 
 import os
 import sys
+from typing import Text
 from unittest import mock
 import tensorflow as tf
 import tensorflow_cloud as tfc
 
-# Following are the env varialbes avaialabe in test infrastructure:
+# Following are the env variables available in test infrastructure:
 #
 # The staging bucket to use for cloudbuild as well as save the model and data.
 # TEST_BUCKET = os.environ['TEST_BUCKET']
@@ -30,7 +31,7 @@ import tensorflow_cloud as tfc
 # The GCP region in which the end-to-end test is run.
 # REGION = os.environ['REGION']
 #
-# Unique ID for this build, can be used as a label for AI Platform training job.
+# Unique ID for this build, can be used as a label for an AI Platform training job.
 # BUILD_ID = os.environ['BUILD_ID']
 
 class TensorflowCloudOnScriptTest(tf.test.TestCase):
