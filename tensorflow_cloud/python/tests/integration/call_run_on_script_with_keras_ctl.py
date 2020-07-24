@@ -11,35 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration tests for calling tfc.run on script with keras."""
 
-import os
-import sys
-from unittest import mock
-import tensorflow as tf
 import tensorflow_cloud as tfc
 
-
-class TensorflowCloudOnScriptTest(tf.test.TestCase):
-    def setUp(self):
-        super(TensorflowCloudOnScriptTest, self).setUp()
-        self.test_data_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
-        )
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_MWMS_on_script(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(
-                self.test_data_path, "mnist_example_using_ctl.py"
-            ),
-            distribution_strategy=None,
-            worker_count=1,
-            requirements_txt=os.path.join(
-                self.test_data_path, "requirements.txt"),
-        )
-        mock_exit.assert_called_once_with(0)
-
-
-if __name__ == "__main__":
-    tf.test.main()
+# MultiWorkerMirroredStrategy
+tfc.run(
+    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_ctl.py",
+    distribution_strategy=None,
+    worker_count=1,
+    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
+    stream_logs=True,
+)
