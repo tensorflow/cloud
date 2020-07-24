@@ -29,17 +29,15 @@ class TensorflowCloudOnScriptTest(tf.test.TestCase):
 
     @mock.patch.object(sys, "exit", autospec=True)
     def test_MWMS_on_script(self, mock_exit):
-        mock_exit.side_effect = RuntimeError("exit called")
-        with self.assertRaises(RuntimeError):
-            tfc.run(
-                entry_point=os.path.join(
-                    self.test_data_path, "mnist_example_using_ctl.py"
-                ),
-                distribution_strategy=None,
-                worker_count=1,
-                requirements_txt=os.path.join(
-                    self.test_data_path, "requirements.txt"),
-            )
+        tfc.run(
+            entry_point=os.path.join(
+                self.test_data_path, "mnist_example_using_ctl.py"
+            ),
+            distribution_strategy=None,
+            worker_count=1,
+            requirements_txt=os.path.join(
+                self.test_data_path, "requirements.txt"),
+        )
         mock_exit.assert_called_once_with(0)
 
 
