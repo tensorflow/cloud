@@ -18,20 +18,12 @@ import dependencies
 from setuptools import find_packages
 from setuptools import setup
 
-import importlib
-import types
 
-
-# It should not do `from tensorflow_cloud import version`,
-# because setuptools is executed before dependencies may be installed,
-# hence __init__.py may fail.
-loader = importlib.machinery.SourceFileLoader(fullname="version", path="tensorflow_cloud/version.py",)
-version = types.ModuleType(loader.name)
-loader.exec_module(version)
+VERSION = "0.1.4"
 
 setup(
     name="tensorflow-cloud",
-    version=version,
+    version=VERSION,
     description="The TensorFlow Cloud repository provides APIs that will allow "
     "to easily go from debugging and training your Keras and TensorFlow "
     "code in a local environment to distributed training in the cloud.",
@@ -51,5 +43,5 @@ setup(
         "Topic :: Software Development",
     ],
     packages=find_packages(exclude=("tensorflow_cloud/python/tests",)),
-    package_data={"tensorflow_cloud": ["python/cloudtuner/api/*.json"]},
+    package_data={"tensorflow_cloud": ["python/tuner/api/*.json"]},
 )
