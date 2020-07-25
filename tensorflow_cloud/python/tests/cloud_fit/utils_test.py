@@ -20,19 +20,18 @@ from tensorflow_cloud.python.cloud_fit import utils
 
 
 class CloudFitUtilitiesTest(tf.test.TestCase):
+    @mock.patch.object(utils, "is_tf_v1", autospec=True)
+    @mock.patch.object(tf.compat.v1, "enable_eager_execution", autospec=True)
+    def test_enable_eager_for_tf_1(self, mock_eager_execution, mock_is_tf_v1):
+        mock_is_tf_v1.return_value = False
+        utils.enable_eager_for_tf_1()
+        # Work around as assert_not_called is not supported in test infra for py35
+        self.assertFalse(mock_eager_execution.called)
 
-  @mock.patch.object(utils, 'is_tf_v1', autospec=True)
-  @mock.patch.object(tf.compat.v1, 'enable_eager_execution', autospec=True)
-  def test_enable_eager_for_tf_1(self, mock_eager_execution, mock_is_tf_v1):
-    mock_is_tf_v1.return_value = False
-    utils.enable_eager_for_tf_1()
-    # Work around as assert_not_called is not supported in test infra for py35
-    self.assertFalse(mock_eager_execution.called)
-
-    mock_is_tf_v1.return_value = True
-    utils.enable_eager_for_tf_1()
-    mock_eager_execution.assert_called_once_with()
+        mock_is_tf_v1.return_value = True
+        utils.enable_eager_for_tf_1()
+        mock_eager_execution.assert_called_once_with()
 
 
-if __name__ == '__main__':
-  tf.test.main()
+if __name__ == "__main__":
+    tf.test.main()

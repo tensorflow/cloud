@@ -16,23 +16,23 @@
 
 import tensorflow as tf
 
-MULTI_WORKER_MIRRORED_STRATEGY_NAME = tf.distribute.experimental.MultiWorkerMirroredStrategy.__name__
+MULTI_WORKER_MIRRORED_STRATEGY_NAME = (
+    tf.distribute.experimental.MultiWorkerMirroredStrategy.__name__
+)
 MIRRORED_STRATEGY_NAME = tf.distribute.MirroredStrategy.__name__
 
 SUPPORTED_DISTRIBUTION_STRATEGIES = {
-    MULTI_WORKER_MIRRORED_STRATEGY_NAME:
-        tf.distribute.experimental.MultiWorkerMirroredStrategy,
-    MIRRORED_STRATEGY_NAME:
-        tf.distribute.MirroredStrategy,
+    MULTI_WORKER_MIRRORED_STRATEGY_NAME: tf.distribute.experimental.MultiWorkerMirroredStrategy,
+    MIRRORED_STRATEGY_NAME: tf.distribute.MirroredStrategy,
 }
 
 
 def is_tf_v1():
-  """Returns true if Tensorflow is 1.x."""
-  return tf.version.VERSION.split('.')[0] == '1'
+    """Returns true if Tensorflow is 1.x."""
+    return tf.version.VERSION.split(".")[0] == "1"
 
 
 def enable_eager_for_tf_1():
-  """Enables eager execution mode for Tensorflow 1.x."""
-  if is_tf_v1():
-    tf.compat.v1.enable_eager_execution()
+    """Enables eager execution mode for Tensorflow 1.x."""
+    if is_tf_v1():
+        tf.compat.v1.enable_eager_execution()
