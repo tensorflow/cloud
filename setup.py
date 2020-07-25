@@ -14,17 +14,24 @@
 
 """Setup script."""
 
-from __future__ import absolute_import
-
+import dependencies
 from setuptools import find_packages
 from setuptools import setup
 
-VERSION = "0.1.4"
+import importlib
+import types
 
+
+# It should not do `from tensorflow_cloud import version`,
+# because setuptools is executed before dependencies may be installed,
+# hence __init__.py may fail.
+loader = importlib.machinery.SourceFileLoader(fullname="version", path="tensorflow_cloud/version.py",)
+version = types.ModuleType(loader.name)
+loader.exec_module(version)
 
 setup(
     name="tensorflow-cloud",
-    version=VERSION,
+    version=version,
     description="The TensorFlow Cloud repository provides APIs that will allow "
     "to easily go from debugging and training your Keras and TensorFlow "
     "code in a local environment to distributed training in the cloud.",
@@ -32,8 +39,9 @@ setup(
     author="The tensorflow cloud authors",
     author_email="tensorflow-cloud@google.com",
     license="Apache License 2.0",
-    install_requires=["docker", "google-api-python-client", "google-cloud-storage",],
-    extras_require={"tests": ["pytest", "flake8", "mock"],},
+    extras_require={"tests": dependencies.make_required_test_packages()},
+    include_package_data=True,
+    install_requires=dependencies.make_required_install_packages(),
     classifiers=[
         "Programming Language :: Python",
         "Operating System :: Unix",
@@ -43,4 +51,5 @@ setup(
         "Topic :: Software Development",
     ],
     packages=find_packages(exclude=("tensorflow_cloud/python/tests",)),
+    package_data={"tensorflow_cloud": ["python/cloudtuner/api/*.json"]},
 )
