@@ -37,7 +37,7 @@ _PROJECT_ID = os.environ["PROJECT_ID"]
 _REGION = os.environ["REGION"]
 
 # Study ID for testing
-_STUDY_ID_BASE = os.environ["BUID_ID"]
+_STUDY_ID_BASE = os.environ["BUILD_ID"]
 
 # The search space for hyperparameters
 _HPS = kerastuner.engine.hyperparameters.HyperParameters()
