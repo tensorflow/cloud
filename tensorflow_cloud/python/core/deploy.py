@@ -162,6 +162,12 @@ def _create_request_dict(
         )
 
         if machine_config.is_tpu_config(worker_config):
+            # TPU is not support for TF version > 2.1.0
+            if VERSION >= "2.2":
+                raise NotImplementedError(
+                    "TPUs are only supported for TF version <= 2.1.0"
+                )
+
             # AI Platform runtime version spec is required for training
             # on cloud TPUs.
             v = VERSION.split(".")

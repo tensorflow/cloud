@@ -26,6 +26,12 @@ from tensorflow_cloud.python.core import machine_config
 
 from mock import call, patch
 
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use TF runtime version 2.1 (latest supported) as the default.
+    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
+    VERSION = "2.1"
 
 class TestDeploy(unittest.TestCase):
     def setup(self, MockDiscovery):
@@ -190,7 +196,18 @@ class TestDeploy(unittest.TestCase):
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
-
+        if VERSION == 'latest' or VERSION >= '2.2':
+            with self.assertRaises(NotImplementedError):
+                deploy.deploy_job(
+                    self.region,
+                    self.docker_img,
+                    chief_config,
+                    worker_count,
+                    worker_config,
+                    self.entry_point_args,
+                    self.stream_logs,
+                )
+            return
         job_name = deploy.deploy_job(
             self.region,
             self.docker_img,
