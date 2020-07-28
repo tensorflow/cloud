@@ -22,11 +22,15 @@ from tensorflow_cloud.core import preprocess
 
 class TestPreprocess(unittest.TestCase):
     def setup_py(self):
-        self.entry_point = "tensorflow_cloud/python/tensorflow_cloud/tests/testdata/sample_compile_fit.py"
+        self.entry_point = (
+            "src/python/tensorflow_cloud/tests/testdata/sample_compile_fit.py"
+        )
         _, self.entry_point_name = os.path.split(self.entry_point)
 
     def setup_ipython(self):
-        self.entry_point = "tensorflow_cloud/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.ipynb"
+        self.entry_point = (
+            "src/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.ipynb"
+        )
         _, self.entry_point_name = os.path.split(self.entry_point)
 
     def get_preprocessed_entry_point(
