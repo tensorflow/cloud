@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.1.4"
+import tensorflow_cloud as tfc
 
-from .python.core.machine_config import AcceleratorType
-from .python.core.machine_config import COMMON_MACHINE_CONFIGS
-from .python.core.machine_config import MachineConfig
-from .python.core.run import run
-from .python.core.run import remote
+# Automated MirroredStrategy: chief config with multiple GPUs
+tfc.run(
+    entry_point="tests/testdata/mnist_example_using_fit.ipynb",
+    distribution_strategy="auto",
+    requirements_txt="tests/testdata/requirements.txt",
+    chief_config=tfc.MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
+        accelerator_count=2,
+    ),
+    worker_count=0,
+)
