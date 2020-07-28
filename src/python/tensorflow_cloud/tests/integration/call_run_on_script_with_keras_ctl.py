@@ -11,3 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import tensorflow_cloud as tfc
+
+# MultiWorkerMirroredStrategy
+tfc.run(
+    entry_point="tests/testdata/mnist_example_using_ctl.py",
+    distribution_strategy=None,
+    worker_count=1,
+    requirements_txt="tests/testdata/requirements.txt",
+    stream_logs=True,
+)

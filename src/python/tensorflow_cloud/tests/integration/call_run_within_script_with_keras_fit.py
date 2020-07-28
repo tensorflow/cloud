@@ -26,7 +26,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import Model
 
 # Set Cloud GCP bucket name
-GCP_BUCKET = "psv-gcs-bucket"  # "your-bucket-name"
+GCP_BUCKET = "your-bucket-name"
 MODEL_PATH = "resnet-dogs"
 
 # Setup dataset
@@ -129,7 +129,7 @@ model.fit(
 # Tip: Move this call to the top of this file if you do not want to
 # train your model locally first.
 tfc.run(
-    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
+    requirements_txt="tests/testdata/requirements.txt",
     chief_config=tfc.MachineConfig(
         cpu_cores=8,
         memory=30,
