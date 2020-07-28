@@ -34,9 +34,9 @@ import tensorflow_cloud as tfc
 # Unique ID for this build, can be used as a label for an AI Platform training job.
 # BUILD_ID = os.environ['BUILD_ID']
 
-class TensorflowCloudOnScriptTest(tf.test.TestCase):
+class RunOnScriptTest(tf.test.TestCase):
     def setUp(self):
-        super(TensorflowCloudOnScriptTest, self).setUp()
+        super(RunOnScriptTest, self).setUp()
         # To keep track of content that needs to be deleted in teardown clean up
         self.test_folders = []
         self.test_data_path = os.path.join(
@@ -44,7 +44,7 @@ class TensorflowCloudOnScriptTest(tf.test.TestCase):
         )
 
     def tearDown(self):
-        super(TensorflowCloudOnScriptTest, self).tearDown()
+        super(RunOnScriptTest, self).tearDown()
         # Clean up any temporary file or folder created during testing.
         for folder in self.test_folders:
             self.delete_dir(folder)
@@ -55,13 +55,13 @@ class TensorflowCloudOnScriptTest(tf.test.TestCase):
             tf.io.gfile.rmtree(path)
       
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_MWMS_on_script(self, mock_exit):
+    def test_none_dist_strat_mwms_on_script(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(
                 self.test_data_path, "mnist_example_using_ctl.py"
             ),
             distribution_strategy=None,
-            worker_count=1,
+            worker_count=2,
             requirements_txt=os.path.join(
                 self.test_data_path, "requirements.txt"),
         )

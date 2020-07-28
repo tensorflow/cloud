@@ -16,13 +16,21 @@ import argparse
 
 import tensorflow_cloud as tfc
 
-parser = argparse.ArgumentParser(description="Model save path arguments.")
-parser.add_argument("--path", required=True, type=str, help="Keras model save path")
+parser = argparse.ArgumentParser(description="Model cloud bucket name argument.")
+parser.add_argument("--bucket_name", required=True, type=str, help="Cloud bucket name")
 args = parser.parse_args()
 
+# Automated MirroredStrategy: chief config with multiple GPUs
 tfc.run(
-    entry_point="tensorflow_cloud/python/tests/testdata/save_and_load.py",
-    distribution_strategy=None,
-    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
-    entry_point_args=["--path", args.path],
+    entry_point="tests/testdata/mnist_example_using_fit_no_reqs.py",
+    distribution_strategy="auto",
+    chief_config=tfc.MachineConfig(
+        cpu_cores=8,
+        memory=30,
+        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
+        accelerator_count=2,
+    ),
+    worker_count=0,
+    stream_logs=True,
+    docker_image_bucket_name=args.bucket_name,
 )

@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+
 import tensorflow_cloud as tfc
 
-# Automated MirroredStrategy: chief config with multiple GPUs
+parser = argparse.ArgumentParser(description="Model save path arguments.")
+parser.add_argument("--path", required=True, type=str, help="Keras model save path")
+args = parser.parse_args()
+
 tfc.run(
-    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_fit.ipynb",
-    distribution_strategy="auto",
-    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
-    chief_config=tfc.MachineConfig(
-        cpu_cores=8,
-        memory=30,
-        accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
-        accelerator_count=2,
-    ),
-    worker_count=0,
+    entry_point="tests/testdata/save_and_load.py",
+    distribution_strategy=None,
+    requirements_txt="tests/testdata/requirements.txt",
+    entry_point_args=["--path", args.path],
 )

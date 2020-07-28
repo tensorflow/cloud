@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow_cloud as tfc
+__version__ = "0.1.4"
 
-# MultiWorkerMirroredStrategy
-tfc.run(
-    entry_point="tensorflow_cloud/python/tests/testdata/mnist_example_using_ctl.py",
-    distribution_strategy=None,
-    worker_count=1,
-    requirements_txt="tensorflow_cloud/python/tests/testdata/requirements.txt",
-    stream_logs=True,
-)
+from .core.machine_config import AcceleratorType
+from .core.machine_config import COMMON_MACHINE_CONFIGS
+from .core.machine_config import MachineConfig
+from .core.run import run
+from .core.run import remote
