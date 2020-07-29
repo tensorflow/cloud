@@ -191,6 +191,7 @@ class TestDeploy(unittest.TestCase):
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
+
         job_name = deploy.deploy_job(
             self.region,
             self.docker_img,
