@@ -16,16 +16,18 @@
 
 
 def make_required_install_packages():
-  return [
-      'absl-py',
-      'cloudpickle',
-      'google-api-python-client',
-      'google-auth',
-      'keras-tuner',
-      'tensorflow>=1.15.0,<3.0',
-      'tensorflow_datasets<3.1.0',
-  ]
+    return [
+        "absl-py",
+        "cloudpickle",
+        "docker",
+        "google-api-python-client",
+        "google-auth",
+        "google-cloud-storage",
+        "keras-tuner",
+        "tensorflow>=1.15.0,<3.0",
+        "tensorflow_datasets<3.1.0",
+    ]
 
 
 def make_required_test_packages():
-  return ['mock', 'numpy']
+    return ["mock", "numpy", "pytest", "flake8", "mock"]
