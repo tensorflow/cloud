@@ -22,7 +22,13 @@ import re
 
 from . import machine_config
 from . import gcp
-from . import deploy
+
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use TF runtime version 2.1 (latest supported) as the default.
+    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
+    VERSION = "2.1"
 
 
 def validate(
@@ -160,7 +166,7 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
     if (
         worker_count > 0
         and machine_config.is_tpu_config(worker_config)
-        and deploy.VERSION >= "2.2.0"
+        and VERSION >= "2.2.0"
     ):
         raise NotImplementedError("TPUs are only supported for TF version <= 2.1.0")
 

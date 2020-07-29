@@ -184,7 +184,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.core.deploy.VERSION", "2.1.0")
+    @patch("tensorflow_cloud.core.validate.VERSION", "2.1.0")
     @patch("tensorflow_cloud.core.deploy.discovery")
     def DISABLED_test_request_dict_with_TPU_worker(self, MockDiscovery):
         self.setup(MockDiscovery)
