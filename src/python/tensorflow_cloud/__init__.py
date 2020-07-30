@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Init for tensorflow_cloud package."""
 
 __version__ = "0.1.4"
 
 from .core.machine_config import AcceleratorType
 from .core.machine_config import COMMON_MACHINE_CONFIGS
 from .core.machine_config import MachineConfig
-from .core.run import run
 from .core.run import remote
+from .core.run import run

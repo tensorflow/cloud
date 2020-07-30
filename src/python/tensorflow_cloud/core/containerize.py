@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Docker related utilities."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 import os
 import sys
@@ -23,15 +19,16 @@ import tarfile
 import tempfile
 import time
 import uuid
-import requests
 import warnings
 
 from . import machine_config
 from docker import APIClient
-from google.cloud import storage
-from google.cloud.exceptions import NotFound
 from googleapiclient import discovery
 from googleapiclient import errors
+import requests
+
+from google.cloud import storage
+from google.cloud.exceptions import NotFound
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -186,14 +183,13 @@ class ContainerBuilder(object):
             requirements_txt_path = os.path.join(
                 self.destination_dir, requirements_txt_name
             )
-            lines.append(
-                "COPY {} {}".format(requirements_txt_path, requirements_txt_path)
+            lines.append(f"COPY {requirements_txt_path} {requirements_txt_path}")
             )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
-                "RUN if [ -e {} ]; "
-                "then pip install --no-cache -r {}; "
-                "fi".format(dst_requirements_txt, dst_requirements_txt)
+            f"RUN if [ -e {dst_requirements_txt} ]; "
+                f"then pip install --no-cache -r {dst_requirements_txt}; "
+                "fi")
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
@@ -241,7 +237,7 @@ class ContainerBuilder(object):
         # Map entry_point directory to the dst directory.
         if not self.called_from_notebook:
             entry_point_dir, _ = os.path.split(self.entry_point)
-            if entry_point_dir == "":  # Current directory
+            if not entry_point_dir:  # Current directory
                 entry_point_dir = "."
             location_map[entry_point_dir] = self.destination_dir
 
@@ -275,6 +271,8 @@ class ContainerBuilder(object):
         """Check whether the docker base image exists on dockerhub.
 
         Use docker api v2 to check if base image is available.
+        Returns:
+            True if base image is available, False otherwise.
         """
         repo_name, tag_name = self.docker_base_image.split(":")
         r = requests.get(
@@ -298,6 +296,8 @@ class LocalContainerBuilder(ContainerBuilder):
                 build status. Not applicable to this builder.
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
+        Returns:
+            The image_uri.
         """
         self.docker_client = APIClient(version="auto")
         self._get_tar_file_path()
@@ -311,7 +311,7 @@ class LocalContainerBuilder(ContainerBuilder):
     def _build_docker_image(self):
         """Builds docker image."""
         image_uri = self._generate_name()
-        logger.info("Building docker image: {}".format(image_uri))
+        logger.info("Building docker image: %s", image_uri)
 
         # `fileobj` is generally set to the Dockerfile file path. If a tar file
         # is used for docker build context (ones that includes a Dockerfile)
@@ -334,7 +334,7 @@ class LocalContainerBuilder(ContainerBuilder):
         Args:
             image_uri: String, the registry name and tag.
         """
-        logger.info("Publishing docker image: {}".format(image_uri))
+            logger.info("Publishing docker image: %s", image_uri)
         pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish", image_uri)
 
@@ -377,6 +377,8 @@ class CloudContainerBuilder(ContainerBuilder):
                 build status. Applicable only to cloud container builder.
             delay_between_status_checks: Time is seconds to wait between status
                 checks.
+        Returns:
+            The URI for the published image.
         """
         self._get_tar_file_path()
         storage_object_name = self._upload_tar_to_gcs()
@@ -384,7 +386,7 @@ class CloudContainerBuilder(ContainerBuilder):
 
         logger.info(
             "Building and publishing docker image using Google "
-            "Cloud Build: {}".format(image_uri)
+            "Cloud Build: %s", image_uri)
         )
         build_service = discovery.build("cloudbuild", "v1", cache_discovery=False)
         request_dict = self._create_cloud_build_request_dict(
