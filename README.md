@@ -195,6 +195,8 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.py')
 ```
 
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+
 **2. Using a notebook file as `entry_point`.**
 
 If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP.
@@ -203,6 +205,8 @@ If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), th
 import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.ipynb')
 ```
+
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
 
 **3. Using `run` within a python script that contains the `tf.keras` model.**
 
@@ -341,6 +345,8 @@ By default, we will use local docker daemon for building and publishing docker i
 
 We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying docker images on GCP.
 
+Please note that, when `entry_point` argument is specified, all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+
 Please see `run` API documentation for detailed information on the parameters and how you can modify the above processes to suit your needs. 
 
 ## End to end examples
@@ -357,6 +363,12 @@ python tests/integration/call_run_on_script_with_keras_fit.py
 - [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_within_script_with_keras_fit.py).
 - [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_script_with_keras_fit_cloud_build.py).
 - [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_within_script_with_autokeras.py).
+
+## Running unit tests
+
+```shell
+pytest src/python/tensorflow_cloud/tests/core/
+```
 
 ## Local vs remote training
 
