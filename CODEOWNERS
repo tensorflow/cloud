@@ -2,7 +2,6 @@
 
 # Tensorflow Cloud Core - @pavithrasv
 src/python/tensorflow_cloud/core
-src/python/tensorflow_cloud/tests
 
 # Repository actions workflow - @pavithrasv
 .github/

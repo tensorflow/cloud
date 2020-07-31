@@ -23,9 +23,9 @@ from tensorflow_cloud.core import validate
 class TestValidate(unittest.TestCase):
     def test_valid_args(self):
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.py",
+            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py",
             distribution_strategy="auto",
-            requirements_txt="src/python/tensorflow_cloud/tests/testdata/requirements.txt",
+            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_count=1,
@@ -37,9 +37,9 @@ class TestValidate(unittest.TestCase):
         )
 
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.py",
+            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py",
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/tests/testdata/requirements.txt",
+            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -51,9 +51,9 @@ class TestValidate(unittest.TestCase):
         )
 
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.ipynb",
+            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.ipynb",
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/tests/testdata/requirements.txt",
+            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -67,7 +67,7 @@ class TestValidate(unittest.TestCase):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/tests/testdata/requirements.txt",
+            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -81,7 +81,7 @@ class TestValidate(unittest.TestCase):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/tests/testdata/requirements.txt",
+            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
