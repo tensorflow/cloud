@@ -184,12 +184,11 @@ class ContainerBuilder(object):
                 self.destination_dir, requirements_txt_name
             )
             lines.append(f"COPY {requirements_txt_path} {requirements_txt_path}")
-            )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
-            f"RUN if [ -e {dst_requirements_txt} ]; "
+                f"RUN if [ -e {dst_requirements_txt} ]; "
                 f"then pip install --no-cache -r {dst_requirements_txt}; "
-                "fi")
+                "fi"
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
@@ -334,7 +333,7 @@ class LocalContainerBuilder(ContainerBuilder):
         Args:
             image_uri: String, the registry name and tag.
         """
-            logger.info("Publishing docker image: %s", image_uri)
+        logger.info("Publishing docker image: %s", image_uri)
         pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish", image_uri)
 
@@ -385,9 +384,10 @@ class CloudContainerBuilder(ContainerBuilder):
         image_uri = self._generate_name()
 
         logger.info(
-            "Building and publishing docker image using Google "
-            "Cloud Build: %s", image_uri)
+            "Building and publishing docker image using Google " "Cloud Build: %s",
+            image_uri,
         )
+
         build_service = discovery.build("cloudbuild", "v1", cache_discovery=False)
         request_dict = self._create_cloud_build_request_dict(
             image_uri, storage_object_name
