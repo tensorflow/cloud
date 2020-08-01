@@ -183,12 +183,14 @@ class ContainerBuilder(object):
             requirements_txt_path = os.path.join(
                 self.destination_dir, requirements_txt_name
             )
-            lines.append(f"COPY {requirements_txt_path} {requirements_txt_path}")
+            lines.append(
+                "COPY {} {}".format(requirements_txt_path, requirements_txt_path)
+            )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
-                f"RUN if [ -e {dst_requirements_txt} ]; "
-                f"then pip install --no-cache -r {dst_requirements_txt}; "
-                "fi"
+                "RUN if [ -e {} ]; "
+                "then pip install --no-cache -r {}; "
+                "fi".format(dst_requirements_txt, dst_requirements_txt)
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
