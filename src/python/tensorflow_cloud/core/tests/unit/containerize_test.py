@@ -32,7 +32,7 @@ except ImportError:
 class TestContainerize(unittest.TestCase):
     def setup(self):
         self.entry_point = (
-            "src/python/tensorflow_cloud/tests/testdata/mnist_example_using_fit.py"
+            "src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py"
         )
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -122,25 +122,6 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_check_docker_base_image_non_exist(self):
-        self.setup()
-        lcb = containerize.LocalContainerBuilder(
-            self.entry_point,
-            None,
-            self.chief_config,
-            self.worker_config,
-            self.mock_registry,
-            self.project_id,
-            docker_base_image="tensorflow/tensorflow:2.100.0",
-        )
-        # Verify the docker base image is identified as nonexist
-        self.assertTrue(not lcb._base_image_exist())
-
-        # Verify value error is raised
-        with self.assertRaises(ValueError) as context:
-            lcb._create_docker_file()
-        self.assertIn("base image", str(context.exception))
-
     def test_check_docker_base_image_nightly(self):
         self.setup()
         lcb = containerize.LocalContainerBuilder(
@@ -152,13 +133,38 @@ class TestContainerize(unittest.TestCase):
             self.project_id,
             docker_base_image="tensorflow/tensorflow:2.3.0-dev20200605",
         )
-        # Verify the docker base image is identified as nonexist
+        # Verify the docker base image is identified as nonexistent
         self.assertTrue(not lcb._base_image_exist())
 
-        # Verify the dockerfile ask for tfnightly
+        # Verify that the dockerfile fetches the latest tfnightly
         lcb._create_docker_file()
         expected_docker_file_lines = [
             "FROM tensorflow/tensorflow:nightly\n",
+            "WORKDIR /app/\n",
+            "COPY /app/ /app/\n",
+            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+        ]
+        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.cleanup(lcb.docker_file_path)
+
+    def test_check_nonexistent_docker_image(self):
+        self.setup()
+        lcb = containerize.LocalContainerBuilder(
+            self.entry_point,
+            None,
+            self.chief_config,
+            self.worker_config,
+            self.mock_registry,
+            self.project_id,
+            docker_base_image="tensorflow/tensorflow:21",
+        )
+        # Verify the docker base image is identified as nonexistent
+        self.assertTrue(not lcb._base_image_exist())
+
+        # Verify that the dockerfile fetches the latest stable image
+        lcb._create_docker_file()
+        expected_docker_file_lines = [
+            "FROM tensorflow/tensorflow:latest\n",
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',

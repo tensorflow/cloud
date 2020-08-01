@@ -195,6 +195,8 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.py')
 ```
 
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+
 **2. Using a notebook file as `entry_point`.**
 
 If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP.
@@ -203,6 +205,8 @@ If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), th
 import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.ipynb')
 ```
+
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
 
 **3. Using `run` within a python script that contains the `tf.keras` model.**
 
@@ -341,22 +345,30 @@ By default, we will use local docker daemon for building and publishing docker i
 
 We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying docker images on GCP.
 
+Please note that, when `entry_point` argument is specified, all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+
 Please see `run` API documentation for detailed information on the parameters and how you can modify the above processes to suit your needs. 
 
 ## End to end examples
 
 ```shell
-cd src/python/tensorflow_cloud
+cd src/python/tensorflow_cloud/core
 python tests/integration/call_run_on_script_with_keras_fit.py
 ```
 
-- [Using a python file as `entry_point` (Keras fit API)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_script_with_keras_fit.py).
-- [Using a python file as `entry_point` (Keras custom training loop)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_script_with_keras_ctl.py).
-- [Using a python file as `entry_point` (Keras save and load)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_script_with_keras_save_and_load.py).
-- [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_notebook_with_keras_fit.py).
-- [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_within_script_with_keras_fit.py).
-- [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_on_script_with_keras_fit_cloud_build.py).
-- [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/integration/call_run_within_script_with_autokeras.py).
+- [Using a python file as `entry_point` (Keras fit API)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_fit.py).
+- [Using a python file as `entry_point` (Keras custom training loop)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_ctl.py).
+- [Using a python file as `entry_point` (Keras save and load)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_save_and_load.py).
+- [Using a notebook file as `entry_point`](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_notebook_with_keras_fit.py).
+- [Using `run` within a python script that contains the `tf.keras` model](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_within_script_with_keras_fit.py).
+- [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_fit_cloud_build.py).
+- [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_within_script_with_autokeras.py).
+
+## Running unit tests
+
+```shell
+pytest src/python/tensorflow_cloud/core/tests/unit/
+```
 
 ## Local vs remote training
 
@@ -372,7 +384,7 @@ Here are some tips for fixing unexpected issues.
 
 **Error like**: Creating a generator within a strategy scope is disallowed, because there is ambiguity on how to replicate a generator (e.g. should it be copied so that each replica gets the same random numbers, or 'split' so that each replica gets different random numbers).
 
-**Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tests/testdata/save_and_load.py) example.
+**Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/testdata/save_and_load.py) example.
 
 ### Version not supported for TPU training
 

@@ -150,12 +150,12 @@ class ContainerBuilder(object):
                     self.docker_base_image += "-py3"
 
         if not self._base_image_exist():
+            warnings.warn(
+                "Docker base image {} does not exist.".format(self.docker_base_image)
+            )
             if "dev" in self.docker_base_image:
-                warnings.warn(
-                    "Docker base image {} does not exist.".format(
-                        self.docker_base_image
-                    )
-                )
+                # Except for the latest TF nightly, other nightlies
+                # do not have corresponding docker images.
                 newtag = "nightly"
                 if self.docker_base_image.endswith("-gpu"):
                     newtag += "-gpu"
@@ -164,11 +164,16 @@ class ContainerBuilder(object):
                 )
                 warnings.warn("Using the latest TF nightly build.")
             else:
-                raise ValueError(
-                    "There is no docker base image corresponding to the local "
-                    "TF version: {}. Please provide docker_base_image or try "
-                    "with an other TF version.".format(VERSION)
+                warnings.warn(
+                    "Using the latest stable TF docker image available: "
+                    "`tensorflow/tensorflow:latest`"
+                    "Please see https://hub.docker.com/r/tensorflow/tensorflow/ "
+                    "for details on available docker images."
                 )
+                newtag = "tensorflow/tensorflow:latest"
+                if self.docker_base_image.endswith("-gpu"):
+                    newtag += "-gpu"
+                self.docker_base_image = newtag
 
         lines = [
             "FROM {}".format(self.docker_base_image),
