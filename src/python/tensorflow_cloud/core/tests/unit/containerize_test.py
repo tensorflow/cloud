@@ -419,8 +419,8 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(MockLogger.info.call_count, 2)
         MockLogger.info.assert_has_calls(
             [
-                call(r"Building docker image: " + img_tag),
-                call(r"Publishing docker image: " + img_tag),
+                call(r"Building docker image: %s" , img_tag),
+                call(r"Publishing docker image: %s" , img_tag),
             ]
         )
         self.cleanup(lcb.docker_file_path)
