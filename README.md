@@ -353,7 +353,7 @@ Please see `run` API documentation for detailed information on the parameters an
 
 ```shell
 cd src/python/tensorflow_cloud/core
-python tests/integration/call_run_on_script_with_keras_fit.py
+python tests/examples/call_run_on_script_with_keras_fit.py
 ```
 
 - [Using a python file as `entry_point` (Keras fit API)](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_fit.py).
