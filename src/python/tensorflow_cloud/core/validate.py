@@ -156,19 +156,15 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Received {}.".format(chief_config)
         )
 
-    if worker_count > 1 and machine_config.is_tpu_config(worker_config):
-        raise ValueError(
-            "Invalid `worker_count` input. "
-            "Expected worker_count=1 for TPU `worker_config`. "
-            "Received {}.".format(worker_count)
-        )
-
-    if (
-        worker_count > 0
-        and machine_config.is_tpu_config(worker_config)
-        and VERSION >= "2.2.0"
-    ):
-        raise NotImplementedError("TPUs are only supported for TF version <= 2.1.0")
+    if machine_config.is_tpu_config(worker_config):
+        if worker_count != 1:
+            raise ValueError(
+                "Invalid `worker_count` input. "
+                "Expected worker_count=1 for TPU `worker_config`. "
+                "Received {}.".format(worker_count)
+            )
+        elif VERSION >= "2.2.0":
+            raise NotImplementedError("TPUs are only supported for TF version <= 2.1.0")
 
 
 def _validate_job_labels(job_labels):
