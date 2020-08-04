@@ -185,7 +185,7 @@ class TestDeploy(unittest.TestCase):
         )
 
     @patch("tensorflow_cloud.core.deploy.discovery")
-    def DISABLED_test_request_dict_with_TPU_worker(self, MockDiscovery):
+    def test_request_dict_with_TPU_worker(self, MockDiscovery):
         self.setup(MockDiscovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
@@ -213,9 +213,10 @@ class TestDeploy(unittest.TestCase):
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["count"] = "8"
+        v = deploy.VERSION.split(".")
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "tpuTfVersion"
-        ] = "2.1"
+        ] = v[0] + "." + v[1]
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
         ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"

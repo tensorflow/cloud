@@ -18,7 +18,6 @@ import unittest
 
 from mock import patch
 from tensorflow_cloud.core import machine_config
-from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import validate
 
 
