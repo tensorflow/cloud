@@ -99,7 +99,7 @@ python -V
 
 ```shell
 virtualenv tfcloud --python=python3
-source venv/bin/activate
+source tfcloud/bin/activate
 ```
 
 4. [Set up your Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
