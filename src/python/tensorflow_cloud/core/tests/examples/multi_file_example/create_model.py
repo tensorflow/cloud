@@ -16,7 +16,6 @@ import os
 
 import tensorflow as tf
 
-# Create the model
 def create_keras_model():
         
     model = tf.keras.Sequential(
@@ -32,7 +31,7 @@ def create_keras_model():
     model.compile(
         loss="sparse_categorical_crossentropy",
         optimizer=tf.keras.optimizers.Adam(),
-        metrics=["accuracy"],
+        metrics=["sparse_categorical_accuracy"],
     )
 
     return model
