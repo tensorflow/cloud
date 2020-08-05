@@ -1,0 +1,7 @@
+# Where component owners are known, add them here.
+
+# Tensorflow Cloud Core - @pavithrasv
+src/python/tensorflow_cloud/core
+
+# Repository actions workflow - @pavithrasv
+.github/
