@@ -21,5 +21,5 @@ from .core.run import run
 from .core.run import remote
 
 # Oracle and Tuner APIs for hyperparamter tuning.
-from .tuner.tuner import CloudOracle
+from .tuner.tuner import Oracle
 from .tuner.tuner import Tuner
