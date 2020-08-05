@@ -43,13 +43,11 @@ train_dataset = mnist_train.map(scale).cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
 
-# Load model from separate file
 model = create_keras_model()
 
 if tfc.remote():
     epochs = 10
-
 else:
     epochs = 1
- 
+
 model.fit(train_dataset, epochs=epochs)
