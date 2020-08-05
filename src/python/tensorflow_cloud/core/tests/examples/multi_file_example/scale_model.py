@@ -14,6 +14,11 @@
 
 import tensorflow_cloud as tfc
 
+gcp_bucket = "your-gcp-bucket"
+
 tfc.run(
-    entry_point="train_model.py", requirements_txt="requirements.txt", stream_logs=True
+    entry_point="train_model.py",
+    requirements_txt="requirements.txt",
+    docker_image_bucket_name=gcp_bucket,
+    stream_logs=True,
 )
