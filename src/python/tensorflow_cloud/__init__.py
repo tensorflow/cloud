@@ -13,7 +13,7 @@
 # limitations under the License.
 """Init for tensorflow_cloud package."""
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 from .core.machine_config import AcceleratorType
 from .core.machine_config import COMMON_MACHINE_CONFIGS
