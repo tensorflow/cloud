@@ -18,7 +18,7 @@ import dependencies
 from setuptools import find_packages
 from setuptools import setup
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 setup(
     name="tensorflow-cloud",
