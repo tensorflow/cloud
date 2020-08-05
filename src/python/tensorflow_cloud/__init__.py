@@ -20,7 +20,6 @@ from .core.machine_config import MachineConfig
 from .core.run import run
 from .core.run import remote
 
-# Provides direct access to Tuner and CloudOracle classes,
-# which is the primary user-facing APIs.
+# Oracle and Tuner APIs for hyperparamter tuning.
 from .tuner.tuner import CloudOracle
 from .tuner.tuner import Tuner

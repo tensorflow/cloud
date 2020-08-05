@@ -29,7 +29,7 @@ from tensorflow_cloud.tuner import tuner_utils
 from tensorflow_cloud.tuner import optimizer_client
 
 
-class CloudOracle(oracle_module.Oracle):
+class Oracle(oracle_module.Oracle):
     """KerasTuner Oracle interface implemented by talking to CAIP Optimizer Service."""
 
     def __init__(
@@ -82,7 +82,7 @@ class CloudOracle(oracle_module.Oracle):
                 objective, hyperparameters
             )
 
-        super(CloudOracle, self).__init__(
+        super(Oracle, self).__init__(
             objective=objective,
             hyperparameters=hyperparameters,
             max_trials=max_trials,
@@ -346,7 +346,7 @@ class Tuner(tuner_module.Tuner):
         **kwargs
     ):
 
-        oracle = CloudOracle(
+        oracle = Oracle(
             project_id=project_id,
             region=region,
             objective=objective,
