@@ -16,6 +16,7 @@
 import pytest
 import unittest
 
+from mock import patch
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
 
@@ -309,6 +310,29 @@ class TestValidate(unittest.TestCase):
                 chief_config=machine_config.COMMON_MACHINE_CONFIGS["CPU"],
                 worker_config=machine_config.MachineConfig(
                     accelerator_type=machine_config.AcceleratorType.TPU_V3
+                ),
+                worker_count=1,
+                region="us-central1",
+                args=None,
+                stream_logs=True,
+                docker_image_bucket_name=None,
+                called_from_notebook=False,
+            )
+
+    @patch("tensorflow_cloud.core.validate.VERSION", "2.2.0")
+    def test_invalid_tpu_accelerator_tf_version(self):
+        with pytest.raises(
+            NotImplementedError,
+            match=r"TPUs are only supported for TF version <= 2.1.0",
+        ):
+            validate.validate(
+                entry_point=None,
+                distribution_strategy="auto",
+                requirements_txt=None,
+                chief_config=machine_config.COMMON_MACHINE_CONFIGS["CPU"],
+                worker_config=machine_config.MachineConfig(
+                    accelerator_type=machine_config.AcceleratorType.TPU_V2,
+                    accelerator_count=8,
                 ),
                 worker_count=1,
                 region="us-central1",
