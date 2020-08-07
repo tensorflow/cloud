@@ -39,16 +39,16 @@ def build_model(hp):
     return model
 
 
-class TunerTest(tf.test.TestCase):
+class CloudTunerTest(tf.test.TestCase):
     def setUp(self):
-        super(TunerTest, self).setUp()
+        super(CloudTunerTest, self).setUp()
         self.addCleanup(mock.patch.stopall)
 
         self._study_id = "study-a"
         self._region = "us-central1"
         self._project_id = "project-a"
         self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
-            self._project_id, self._region, "Tuner_study_{}".format(self._study_id)
+            self._project_id, self._region, "CloudTuner_study_{}".format(self._study_id)
         )
 
         hps = hp_module.HyperParameters()
@@ -93,7 +93,7 @@ class TunerTest(tf.test.TestCase):
         )
 
     def _tuner(self, objective, hyperparameters, study_config, max_trials=None):
-        return tuner.Tuner(
+        return tuner.CloudTuner(
             hypermodel=build_model,
             objective=objective,
             study_config=study_config,
@@ -110,7 +110,7 @@ class TunerTest(tf.test.TestCase):
         self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
             self._project_id,
             self._region,
-            "Tuner_study_{}".format(self._study_id),
+            "CloudTuner_study_{}".format(self._study_id),
             self._study_config,
         )
 
@@ -119,7 +119,7 @@ class TunerTest(tf.test.TestCase):
         self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
             self._project_id,
             self._region,
-            "Tuner_study_{}".format(self._study_id),
+            "CloudTuner_study_{}".format(self._study_id),
             self._study_config,
         )
 
@@ -144,7 +144,7 @@ class TunerTest(tf.test.TestCase):
         self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
             self._project_id,
             self._region,
-            "Tuner_study_{}".format(self._study_id),
+            "CloudTuner_study_{}".format(self._study_id),
             self._study_config,
         )
 

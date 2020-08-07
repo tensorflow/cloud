@@ -344,7 +344,7 @@ def create_or_load_study(project_id, region, study_id, study_config):
     apidoc_path = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(apidoc_path, _OPTIMIZER_API_DOCUMENT_FILE)) as f:
         service_client = discovery.build_from_document(
-            service=json.load(f), requestBuilder=TunerHttpRequest
+            service=json.load(f), requestBuilder=CloudTunerHttpRequest
         )
 
     # Creates or loads a study.
@@ -388,7 +388,7 @@ def create_or_load_study(project_id, region, study_id, study_config):
     return _OptimizerClient(service_client, project_id, region, study_id)
 
 
-class TunerHttpRequest(googleapiclient_http.HttpRequest):
+class CloudTunerHttpRequest(googleapiclient_http.HttpRequest):
     """HttpRequest builder that sets a customized user-agent header to Cloud Tuner.
 
   This is used to track the usage of the Cloud Tuner.
@@ -403,4 +403,4 @@ class TunerHttpRequest(googleapiclient_http.HttpRequest):
     """
         headers = kwargs.setdefault("headers", {})
         headers["user-agent"] = _USER_AGENT_FOR_CLOUD_TUNER_TRACKING
-        super(TunerHttpRequest, self).__init__(*args, **kwargs)
+        super(CloudTunerHttpRequest, self).__init__(*args, **kwargs)

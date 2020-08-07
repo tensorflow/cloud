@@ -88,6 +88,71 @@ class OptimizerClientTest(tf.test.TestCase):
             studyId=self._study_id,
         )
 
+    @mock.patch.object(optimizer_client, "discovery")
+    def test_create_or_load_study_with_409_raises_RuntimeError(self, mock_discovery):
+        """Verify that get_study gracefully handles 409 errors."""
+        mock_request = mock.MagicMock()
+        mock_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 409}), b""
+        )
+        mock_create_study = mock.MagicMock()
+        mock_create_study.return_value = mock_request
+        mock_discovery.build_from_document.return_value.projects().locations().studies().create = (
+            mock_create_study
+        )
+
+        mock_get_study = mock.MagicMock()
+        mock_get_study.side_effect = [
+            errors.HttpError(httplib2.Response(info={"status": 400}), b"")
+        ] * 3
+        mock_discovery.build_from_document.return_value.projects().locations().studies().get = (
+            mock_get_study
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'GetStudy wasn\'t successful after 3 tries: <HttpError 400 "Ok">',
+        ):
+            optimizer_client.create_or_load_study(
+                project_id=self._project_id,
+                region=self._region,
+                study_id=self._study_id,
+                study_config=self._study_config,
+            )
+
+    @mock.patch.object(optimizer_client, "discovery")
+    def test_create_or_load_study_with_409_success(self, mock_discovery):
+        """Verify that get_study gracefully handles 409 errors."""
+        mock_create_request = mock.MagicMock()
+        mock_create_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 409}), b""
+        )
+        mock_create_study = mock.MagicMock()
+        mock_create_study.return_value = mock_create_request
+        mock_discovery.build_from_document.return_value.projects().locations().studies().create = (
+            mock_create_study
+        )
+
+        mock_get_request = mock.MagicMock()
+        mock_get_request.execute.side_effect = [
+            errors.HttpError(httplib2.Response(info={"status": 400}), b""),
+            errors.HttpError(httplib2.Response(info={"status": 400}), b""),
+            mock.DEFAULT,
+        ]
+        mock_get_study = mock.MagicMock()
+        mock_get_study.side_effect = mock_get_request
+        mock_discovery.build_from_document.return_value.projects().locations().studies().get = (
+            mock_get_study
+        )
+
+        client = optimizer_client.create_or_load_study(
+            project_id=self._project_id,
+            region=self._region,
+            study_id=self._study_id,
+            study_config=self._study_config,
+        )
+        self.assertIsInstance(client, optimizer_client._OptimizerClient)
+
     def test_get_suggestions(self):
         mock_suggest = mock.MagicMock()
         self._mock_discovery.projects().locations().studies().trials().suggest = (
@@ -120,10 +185,12 @@ class OptimizerClientTest(tf.test.TestCase):
 
     def test_get_suggestions_with_429(self):
         """Verify that get_suggestion gracefully handles 429 errors."""
-        mock_suggest = mock.MagicMock()
-        mock_suggest.side_effect = errors.HttpError(
+        mock_request = mock.MagicMock()
+        mock_request.execute.side_effect = errors.HttpError(
             httplib2.Response(info={"status": 429}), b""
         )
+        mock_suggest = mock.MagicMock()
+        mock_suggest.return_value = mock_request
         self._mock_discovery.projects().locations().studies().trials().suggest = (
             mock_suggest
         )
@@ -243,8 +310,8 @@ class OptimizerClientTest(tf.test.TestCase):
         mock_list_trials.assert_called_once_with(parent=self._trial_parent)
         self.assertEqual(len(trials), 2)
 
-    def test_tuner_request_header(self):
-        http_request = optimizer_client.TunerHttpRequest(
+    def test_cloud_tuner_request_header(self):
+        http_request = optimizer_client.CloudTunerHttpRequest(
             googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
             object(),
             "fake_uri",

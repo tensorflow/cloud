@@ -12,12 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for tuner_utils."""
+"""Tests for utils."""
 
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 import tensorflow as tf
-from tensorflow_cloud.tuner.tuner import tuner_utils
+from tensorflow_cloud.tuner.tuner import utils
 
 STUDY_CONFIG_DISCRETE = {
     "algorithm": "ALGORITHM_UNSPECIFIED",
@@ -132,93 +132,81 @@ EXPECTE_TRIAL_HPS = {
 }
 
 
-class TunerUtilsTest(tf.test.TestCase):
+class CloudTunerUtilsTest(tf.test.TestCase):
     def convert_study_config_discrete(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        study_config = tuner_utils.make_study_config(
+        study_config = utils.make_study_config(
             objective=oracle_module.Objective("val_accuracy", "max"), hyperparams=hps
         )
         self.assertEqual(study_config, STUDY_CONFIG_DISCRETE)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_categorical(self):
         hps = hp_module.HyperParameters()
         hps.Choice("model_type", ["LINEAR", "WIDE_AND_DEEP"])
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_CATEGORICAL)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_int(self):
         hps = hp_module.HyperParameters()
         hps.Int("units", min_value=1, max_value=4)
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_INT)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_int_step(self):
         hps = hp_module.HyperParameters()
         hps.Int("units", min_value=32, max_value=128, step=32)
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_INT_STEP)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_float_log_scale(self):
         hps = hp_module.HyperParameters()
         hps.Float("learning_rate", min_value=1e-4, max_value=1e-1, sampling="log")
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_FLOAT_LOG_SCALE)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_multi_float(self):
         hps = hp_module.HyperParameters()
         hps.Float("theta", min_value=0.0, max_value=1.57)
         hps.Float("r", min_value=0.0, max_value=1.0)
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_MULTI_FLOAT)
 
-        actual_hps = tuner_utils.convert_study_config_to_hps(study_config)
+        actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
     def convert_study_config_bool(self):
         hps = hp_module.HyperParameters()
         hps.Boolean("has_beta")
-        study_config = tuner_utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
+        study_config = utils.make_study_config(objective="accuracy", hyperparams=hps)
         self.assertEqual(study_config, STUDY_CONFIG_BOOL)
 
     def convert_study_config_fixed(self):
         hps = hp_module.HyperParameters()
         hps.Fixed("beta", 0.1)
-        study_config_float = tuner_utils.make_study_config(
+        study_config_float = utils.make_study_config(
             objective="accuracy", hyperparams=hps
         )
         self.assertEqual(study_config_float, STUDY_CONFIG_FIXED_FLOAT)
 
         hps = hp_module.HyperParameters()
         hps.Fixed("type", "WIDE_AND_DEEP")
-        study_config_categorical = tuner_utils.make_study_config(
+        study_config_categorical = utils.make_study_config(
             objective="accuracy", hyperparams=hps
         )
         self.assertEqual(study_config_categorical, STUDY_CONFIG_FIXED_CATEGORICAL)
@@ -236,23 +224,23 @@ class TunerUtilsTest(tf.test.TestCase):
                 {"parameter": "units_1", "floatValue": 352},
             ],
         }
-        trial_hps = tuner_utils.convert_optimizer_trial_to_hps(hps, optimizer_trial)
+        trial_hps = utils.convert_optimizer_trial_to_hps(hps, optimizer_trial)
         self.assertEqual(trial_hps.values, EXPECTE_TRIAL_HPS)
 
     def test_format_objective(self):
-        objective = tuner_utils.format_objective(
+        objective = utils.format_objective(
             oracle_module.Objective(name="val_acc", direction="max")
         )
         self.assertEqual(
             objective, [oracle_module.Objective(name="val_acc", direction="max")]
         )
 
-        objective = tuner_utils.format_objective("accuracy")
+        objective = utils.format_objective("accuracy")
         self.assertEqual(
             objective, [oracle_module.Objective(name="accuracy", direction="max")]
         )
 
-        objective = tuner_utils.format_objective(["val_acc", "val_loss"])
+        objective = utils.format_objective(["val_acc", "val_loss"])
         self.assertEqual(
             objective,
             [

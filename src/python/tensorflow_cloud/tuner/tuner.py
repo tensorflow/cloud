@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""KerasTuner Cloud Oracle and Tuner classes."""
+"""KerasTuner CloudOracle and CloudTuner classes."""
 
 import datetime
 import time
@@ -25,11 +25,11 @@ from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
 import tensorflow as tf  # pylint: disable=g-explicit-tensorflow-version-import
 
-from tensorflow_cloud.tuner import tuner_utils
+from tensorflow_cloud.tuner import utils
 from tensorflow_cloud.tuner import optimizer_client
 
 
-class Oracle(oracle_module.Oracle):
+class CloudOracle(oracle_module.Oracle):
     """KerasTuner Oracle interface implemented by talking to CAIP Optimizer Service."""
 
     def __init__(
@@ -69,8 +69,8 @@ class Oracle(oracle_module.Oracle):
                     "Please configure either study_config or "
                     '"objective, and hyperparameters".'
                 )
-            objective = tuner_utils.convert_study_config_to_objective(study_config)
-            hyperparameters = tuner_utils.convert_study_config_to_hps(study_config)
+            objective = utils.convert_study_config_to_objective(study_config)
+            hyperparameters = utils.convert_study_config_to_hps(study_config)
             self.study_config = study_config
         else:
             if not (objective and hyperparameters):
@@ -78,11 +78,9 @@ class Oracle(oracle_module.Oracle):
                     "If study_config is not set, "
                     "objective and hyperparameters must be set."
                 )
-            self.study_config = tuner_utils.make_study_config(
-                objective, hyperparameters
-            )
+            self.study_config = utils.make_study_config(objective, hyperparameters)
 
-        super(Oracle, self).__init__(
+        super(CloudOracle, self).__init__(
             objective=objective,
             hyperparameters=hyperparameters,
             max_trials=max_trials,
@@ -98,14 +96,14 @@ class Oracle(oracle_module.Oracle):
             raise ValueError('"region" is not found.')
         self.region = region
 
-        self.objective = tuner_utils.format_objective(objective)
+        self.objective = utils.format_objective(objective)
         self.hyperparameters = hyperparameters
         self.max_trials = max_trials
 
         if study_id:
-            self.study_id = "Tuner_study_{}".format(study_id)
+            self.study_id = "CloudTuner_study_{}".format(study_id)
         else:
-            self.study_id = "Tuner_study_{}".format(
+            self.study_id = "CloudTuner_study_{}".format(
                 datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             )
 
@@ -162,11 +160,11 @@ class Oracle(oracle_module.Oracle):
         # Fetches the suggested trial.
         # Optimizer Trial instance
         optimizer_trial = suggestions["trials"][0]
-        trial_id = tuner_utils.get_trial_id(optimizer_trial)
+        trial_id = utils.get_trial_id(optimizer_trial)
 
         # KerasTuner Trial instance
         kerastuner_trial = trial_module.Trial(
-            hyperparameters=tuner_utils.convert_optimizer_trial_to_hps(
+            hyperparameters=utils.convert_optimizer_trial_to_hps(
                 self.hyperparameters.copy(), optimizer_trial
             ),
             trial_id=trial_id,
@@ -275,7 +273,7 @@ class Oracle(oracle_module.Oracle):
                 "is not supported. "
             )
 
-        maximizing = tuner_utils.format_goal(self.objective[0].direction) == "MAXIMIZE"
+        maximizing = utils.format_goal(self.objective[0].direction) == "MAXIMIZE"
 
         # List all trials associated with the same study
         trial_list = self.service.list_trials()
@@ -297,10 +295,10 @@ class Oracle(oracle_module.Oracle):
         for optimizer_trial in best_optimizer_trials:
             final_measurement = optimizer_trial["finalMeasurement"]
             kerastuner_trial = trial_module.Trial(
-                hyperparameters=tuner_utils.convert_optimizer_trial_to_hps(
+                hyperparameters=utils.convert_optimizer_trial_to_hps(
                     self.hyperparameters.copy(), optimizer_trial
                 ),
-                trial_id=tuner_utils.get_trial_id(optimizer_trial),
+                trial_id=utils.get_trial_id(optimizer_trial),
                 status=trial_module.TrialStatus.COMPLETED,
             )
             # If trial had ended before having intermediate metric reporting, set
@@ -311,7 +309,7 @@ class Oracle(oracle_module.Oracle):
         return best_trials
 
 
-class Tuner(tuner_module.Tuner):
+class CloudTuner(tuner_module.Tuner):
     """KerasTuner interface implementation backed by CAIP Optimizer Service.
 
     Arguments:
@@ -346,7 +344,7 @@ class Tuner(tuner_module.Tuner):
         **kwargs
     ):
 
-        oracle = Oracle(
+        oracle = CloudOracle(
             project_id=project_id,
             region=region,
             objective=objective,
@@ -355,4 +353,6 @@ class Tuner(tuner_module.Tuner):
             max_trials=max_trials,
             study_id=study_id,
         )
-        super(Tuner, self,).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
+        super(CloudTuner, self,).__init__(
+            oracle=oracle, hypermodel=hypermodel, **kwargs
+        )

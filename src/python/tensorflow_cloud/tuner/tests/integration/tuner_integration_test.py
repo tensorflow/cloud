@@ -23,7 +23,7 @@ import time
 import kerastuner
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow_cloud import Tuner
+from tensorflow_cloud import CloudTuner
 
 # If input dataset is created outside tuner.search(),
 # it requires eager execution even in TF 1.x.
@@ -58,7 +58,7 @@ def _load_data():
 
 
 def _build_model(hparams):
-    # Note that Tuner does not support adding hyperparameters in
+    # Note that CloudTuner does not support adding hyperparameters in
     # the model building function. Instead, the search space is configured
     # by passing a hyperparameters argument when instantiating (constructing)
     # the tuner.
@@ -89,7 +89,7 @@ def _dist_search_fn(temp_dir, study_id, tuner_id):
     # Dataset must be loaded independently in sub-process.
     (x, y), (val_x, val_y) = _load_data()
 
-    tuner = Tuner(
+    tuner = CloudTuner(
         _build_model,
         project_id=_PROJECT_ID,
         region=_REGION,
@@ -116,7 +116,7 @@ def _dist_search_fn_wrapper(args):
     return _dist_search_fn(*args)
 
 
-class _TunerIntegrationTestBase(tf.test.TestCase):
+class _CloudTunerIntegrationTestBase(tf.test.TestCase):
     def _assert_output(self, fn, regex_str):
         stdout = io.StringIO()
         with contextlib.redirect_stdout(stdout):
@@ -128,20 +128,20 @@ class _TunerIntegrationTestBase(tf.test.TestCase):
         self._assert_output(fn, ".*Results summary.*Trial summary.*Hyperparameters.*")
 
     def tearDown(self):
-        super(_TunerIntegrationTestBase, self).tearDown()
+        super(_CloudTunerIntegrationTestBase, self).tearDown()
         tf.keras.backend.clear_session()
 
 
-class TunerIntegrationTest(_TunerIntegrationTestBase):
+class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
     @classmethod
     def setUpClass(cls):
-        super(TunerIntegrationTest, cls).setUpClass()
+        super(CloudTunerIntegrationTest, cls).setUpClass()
         (cls._x, cls._y), (cls._val_x, cls._val_y) = _load_data()
 
-    def testTunerHyperparameters(self):
+    def testCloudTunerHyperparameters(self):
         """Test case to configure Tuner with HyperParameters object."""
         study_id = "{}_hyperparameters".format(_STUDY_ID_BASE)
-        tuner = Tuner(
+        tuner = CloudTuner(
             _build_model,
             project_id=_PROJECT_ID,
             region=_REGION,
@@ -172,7 +172,7 @@ class TunerIntegrationTest(_TunerIntegrationTestBase):
 
         self._assert_results_summary(tuner.results_summary)
 
-    def testTunerDatasets(self):
+    def testCloudTunerDatasets(self):
         """Test case to configure Tuner with tf.data.Dataset as input data."""
         train_dataset = (
             tf.data.Dataset.from_tensor_slices((self._x, self._y))
@@ -188,7 +188,7 @@ class TunerIntegrationTest(_TunerIntegrationTestBase):
         )
 
         study_id = "{}_dataset".format(_STUDY_ID_BASE)
-        tuner = Tuner(
+        tuner = CloudTuner(
             _build_model,
             project_id=_PROJECT_ID,
             region=_REGION,
@@ -215,7 +215,7 @@ class TunerIntegrationTest(_TunerIntegrationTestBase):
 
         self._assert_results_summary(tuner.results_summary)
 
-    def testTunerStudyConfig(self):
+    def testCloudTunerStudyConfig(self):
         """Test case to configure Tuner with StudyConfig object."""
         # Configure the search space. Specification:
         # https://cloud.google.com/ai-platform/optimizer/docs/reference/rest/v1/projects.locations.studies#StudyConfig
@@ -245,7 +245,7 @@ class TunerIntegrationTest(_TunerIntegrationTestBase):
         }
 
         study_id = "{}_study_config".format(_STUDY_ID_BASE)
-        tuner = Tuner(
+        tuner = CloudTuner(
             _build_model,
             project_id=_PROJECT_ID,
             region=_REGION,
@@ -273,8 +273,8 @@ class TunerIntegrationTest(_TunerIntegrationTestBase):
         self._assert_results_summary(tuner.results_summary)
 
 
-class TunerInDistributedIntegrationTest(_TunerIntegrationTestBase):
-    def testTunerInProcessDistributedTuning(self):
+class CloudTunerInDistributedIntegrationTest(_CloudTunerIntegrationTestBase):
+    def testCloudTunerInProcessDistributedTuning(self):
         """Test case to simulate multiple parallel tuning workers."""
         study_id = "{}_dist".format(_STUDY_ID_BASE)
 
@@ -289,7 +289,7 @@ class TunerInDistributedIntegrationTest(_TunerIntegrationTestBase):
 
         self._assert_results_summary(results[0].results_summary)
 
-    def testTunerAIPlatformTrainingDistributedTuning(self):
+    def testCloudTunerAIPlatformTrainingDistributedTuning(self):
         """Test case of parallel tuning using Cloud AI Platform as flock manager."""
         study_id = "{}_caip_dist".format(_STUDY_ID_BASE)
         del study_id
