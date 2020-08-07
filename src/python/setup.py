@@ -31,6 +31,7 @@ setup(
     author_email="tensorflow-cloud@google.com",
     license="Apache License 2.0",
     extras_require={"tests": dependencies.make_required_test_packages()},
+    include_package_data=True,
     install_requires=dependencies.make_required_install_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
