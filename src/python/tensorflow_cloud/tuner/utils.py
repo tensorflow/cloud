@@ -47,14 +47,14 @@ _SAMPLING_REVERSE_LOG = "reverse_log"
 def make_study_config(objective, hyperparams):
     """Generates CAIP Optimizer StudyConfig from kerastuner objective, max_trials and hyperparameters.
 
-  Arguments:
-    objective: String or `oracle_module.Objective`. If a string, the direction
-      of the optimization (min or max) will be inferred.
-    hyperparams: HyperParameters class instance. Can be used to override (or
-      register in advance) hyperparamters in the search space.
+    Arguments:
+        objective: String or `oracle_module.Objective`. If a string, the direction
+            of the optimization (min or max) will be inferred.
+        hyperparams: HyperParameters class instance. Can be used to override (or
+            register in advance) hyperparamters in the search space.
 
-  Returns:
-    A dict that holds the study configuration.
+    Returns:
+        A dict that holds the study configuration.
   """
     study_config = {}
     # The default algorithm used by the CAIP Optimizer.
@@ -275,17 +275,17 @@ def _convert_hyperparams_to_optimizer_params(hyperparams):
 def format_objective(objective, direction=None):
     """Formats objective to a list of oracle_module.Objective.
 
-  Arguments:
-    objective: If a string, the direction of the optimization (min or max) will
-      be inferred.
-    direction: Optional. e.g. 'min' or 'max'.
+    Arguments:
+        objective: If a string, the direction of the optimization (min or max) will
+            be inferred.
+        direction: Optional. e.g. 'min' or 'max'.
 
-  Returns:
-    A list of oracle_module.Objective.
+    Returns:
+        A list of oracle_module.Objective.
 
-  Raises:
-    TypeError: indicates wrong objective format.
-  """
+    Raises:
+        TypeError: indicates wrong objective format.
+    """
     if isinstance(objective, oracle_module.Objective):
         return [objective]
     if isinstance(objective, str):
@@ -314,13 +314,13 @@ def format_objective(objective, direction=None):
 def format_goal(metric_direction):
     """oracle_module.Objective 'direction' and CAIP Optimizer study_config 'goal' conversion.
 
-  Arguments:
-    metric_direction: If oracle_module.Objective 'direction' is supplied,
-      returns 'goal' in CAIP Optimizer study_config. If 'goal' in CAIP Optimizer
-      study_config is supplied, returns 'direction' in oracle_module.Objective.
+    Arguments:
+        metric_direction: If oracle_module.Objective 'direction' is supplied,
+            returns 'goal' in CAIP Optimizer study_config. If 'goal' in CAIP Optimizer
+            study_config is supplied, returns 'direction' in oracle_module.Objective.
 
-  Returns:
-    'goal' or 'direction'.
+    Returns:
+        'goal' or 'direction'.
   """
     if metric_direction == _DIRECTION_MAX:
         return _GOAL_MAXIMIZE
@@ -347,13 +347,13 @@ def _get_scale_type(sampling):
 def get_trial_id(optimizer_trial):
     """Gets trial_id from a CAIP Optimizer Trial.
 
-  Arguments:
-    optimizer_trial: A CAIP Optimizer Trial instance.
+    Arguments:
+        optimizer_trial: A CAIP Optimizer Trial instance.
 
-  Returns:
-    trial_id: Note that a trial name follows the followining format
-      projects/{project_id}/locations/{region}/studies/{study_id}/trials/{trial_id}
-  """
+    Returns:
+        trial_id: Note that a trial name follows the followining format
+            projects/{project_id}/locations/{region}/studies/{study_id}/trials/{trial_id}
+    """
     return optimizer_trial["name"].split("/")[-1]
 
 

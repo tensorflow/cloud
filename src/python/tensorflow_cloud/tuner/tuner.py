@@ -44,25 +44,25 @@ class CloudOracle(oracle_module.Oracle):
     ):
         """KerasTuner Oracle interface implmemented by talking to CAIP Optimizer Service.
 
-    Arguments:
-      project_id: A GCP project id.
-      region: A GCP region. e.g. 'us-central1'.
-      objective: If a string, the direction of the optimization (min or max)
-        will be inferred.
-      hyperparameters: Mandatory and must include definitions for all
-        hyperparameters used during the search. Can be used to override (or
-        register in advance) hyperparameters in the search space.
-      study_config: Study configuration for CAIP Optimizer service.
-      max_trials: Total number of trials (model configurations) to test at most.
-        If None, it continues the search until it reaches the Optimizer trial
-        limit for each study. Users may stop the search externally (e.g. by
-        killing the job). Note that the oracle may interrupt the search before
-        `max_trials` models have been tested.
-      study_id: An identifier of the study. If not supplied, system-determined
-        unique ID is given. The full study name will be
-        projects/{project_id}/locations/{region}/studies/{study_id}. And the
-        full trial name will be {study name}/trials/{trial_id}.
-    """
+        Arguments:
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            objective: If a string, the direction of the optimization (min or max)
+                will be inferred.
+            hyperparameters: Mandatory and must include definitions for all
+                hyperparameters used during the search. Can be used to override (or
+                register in advance) hyperparameters in the search space.
+            study_config: Study configuration for CAIP Optimizer service.
+            max_trials: Total number of trials (model configurations) to test at most.
+                If None, it continues the search until it reaches the Optimizer trial
+                limit for each study. Users may stop the search externally (e.g. by
+                killing the job). Note that the oracle may interrupt the search before
+                `max_trials` models have been tested.
+            study_id: An identifier of the study. If not supplied, system-determined
+                unique ID is given. The full study name will be
+                projects/{project_id}/locations/{region}/studies/{study_id}. And the
+                full trial name will be {study name}/trials/{trial_id}.
+        """
         if study_config:
             if objective or hyperparameters:
                 raise ValueError(
@@ -117,20 +117,20 @@ class CloudOracle(oracle_module.Oracle):
     def create_trial(self, tuner_id):
         """Create a new `Trial` to be run by the `Tuner`.
 
-    Arguments:
-      tuner_id: An ID that identifies the `Tuner` requesting a `Trial`. `Tuners`
-        that should run the same trial (for instance, when running a
-        multi-worker model) should have the same ID. If multiple
-        suggestTrialsRequests have the same tuner_id, the service will return
-        the identical suggested trial if the trial is PENDING, and provide a new
-        trial if the last suggest trial was completed.
+        Arguments:
+            tuner_id: An ID that identifies the `Tuner` requesting a `Trial`. `Tuners`
+                that should run the same trial (for instance, when running a
+                multi-worker model) should have the same ID. If multiple
+                suggestTrialsRequests have the same tuner_id, the service will return
+                the identical suggested trial if the trial is PENDING, and provide a new
+                trial if the last suggest trial was completed.
 
-    Returns:
-      A `Trial` object containing a set of hyperparameter values to run
-      in a `Tuner`.
-    Raises:
-      SuggestionInactiveError: Indicates that a suggestion was requested from an
-        inactive study.
+        Returns:
+            A `Trial` object containing a set of hyperparameter values to run
+            in a `Tuner`.
+        Raises:
+            SuggestionInactiveError: Indicates that a suggestion was requested from an
+                inactive study.
     """
         # List all trials from the same study and see if any trial.status=STOPPED or
         # if number of trials >= max_limit.
@@ -261,12 +261,11 @@ class CloudOracle(oracle_module.Oracle):
     def get_best_trials(self, num_trials=1):
         """Returns the trials with the best objective values found so far.
 
-    Arguments:
-      num_trials: positive int, number of trials to return.
-
-    Returns:
-      List of KerasTuner Trials.
-    """
+        Arguments:
+            num_trials: positive int, number of trials to return.
+        Returns:
+            List of KerasTuner Trials.
+        """
         if len(self.objective) > 1:
             raise ValueError(
                 "Getting the best trials for multi-objective optimization "
@@ -313,23 +312,23 @@ class CloudTuner(tuner_module.Tuner):
     """KerasTuner interface implementation backed by CAIP Optimizer Service.
 
     Arguments:
-    hypermodel: Instance of HyperModel class (or callable that takes
-      hyperparameters and returns a Model instance).
-    project_id: A GCP project id.
-    region: A GCP region. e.g. 'us-central1'.
-    objective: Name of model metric to minimize or maximize, e.g.
-      "val_accuracy".
-    hyperparameters: Can be used to override (or register in advance)
-      hyperparamters in the search space.
-    study_config: Study configuration for CAIP Optimizer service.
-    max_trials: Total number of trials (model configurations) to test at most.
-      Note that the oracle may interrupt the search before `max_trials` models
-      have been tested if the search space has been exhausted.
-    study_id: An identifier of the study. The full study name will be
-      projects/{project_id}/locations/{region}/studies/{study_id}.
-    **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please see
-      the docstring for `Tuner`.
-  """
+        hypermodel: Instance of HyperModel class (or callable that takes
+            hyperparameters and returns a Model instance).
+        project_id: A GCP project id.
+        region: A GCP region. e.g. 'us-central1'.
+        objective: Name of model metric to minimize or maximize, e.g.
+            "val_accuracy".
+        hyperparameters: Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        study_config: Study configuration for CAIP Optimizer service.
+        max_trials: Total number of trials (model configurations) to test at most.
+            Note that the oracle may interrupt the search before `max_trials` models
+            have been tested if the search space has been exhausted.
+        study_id: An identifier of the study. The full study name will be
+            projects/{project_id}/locations/{region}/studies/{study_id}.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please see
+            the docstring for `Tuner`.
+    """
 
     def __init__(
         self,

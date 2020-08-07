@@ -49,19 +49,19 @@ class _OptimizerClient(object):
     def __init__(self, service_client, project_id, region, study_id=None):
         """Create an OptimizerClient object.
 
-    Use this constructor when you know the study_id, and when the Study
-    already exists.  Otherwise, you'll probably want to use
-    create_or_load_study() instead of constructing the
-    OptimizerClient class directly.
+        Use this constructor when you know the study_id, and when the Study
+        already exists.  Otherwise, you'll probably want to use
+        create_or_load_study() instead of constructing the
+        OptimizerClient class directly.
 
-    Args:
-      service_client: An API client of CAIP Optimizer service.
-      project_id: A GCP project id.
-      region: A GCP region. e.g. 'us-central1'.
-      study_id: An identifier of the study. The full study name will be
-        projects/{project_id}/locations/{region}/studies/{study_id}. And the
-        full trial name will be {study name}/trials/{trial_id}.
-    """
+        Args:
+            service_client: An API client of CAIP Optimizer service.
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            study_id: An identifier of the study. The full study name will be
+                projects/{project_id}/locations/{region}/studies/{study_id}. And the
+                full trial name will be {study name}/trials/{trial_id}.
+        """
         self.service_client = service_client
         self.project_id = project_id
         self.region = region
@@ -75,24 +75,24 @@ class _OptimizerClient(object):
     def get_suggestions(self, client_id):
         """Gets a list of suggested Trials.
 
-    Arguments:
-      client_id: An ID that identifies the `Tuner` requesting a `Trial`.
-        `Tuners` that should run the same trial (for instance, when running a
-        multi-worker model) should have the same ID. If multiple
-        suggestTrialsRequests have the same tuner_id, the service will return
-        the identical suggested trial if the trial is PENDING, and provide a new
-        trial if the last suggest trial was completed.
+        Arguments:
+            client_id: An ID that identifies the `Tuner` requesting a `Trial`.
+                `Tuners` that should run the same trial (for instance, when running a
+                multi-worker model) should have the same ID. If multiple
+                suggestTrialsRequests have the same tuner_id, the service will return
+                the identical suggested trial if the trial is PENDING, and provide a new
+                trial if the last suggest trial was completed.
 
-    Returns:
-      A list of Trials, This may be an empty list in case that a finite search
-      space has been exhausted, if max_num_trials = 1000 has been reached,
-      or if there are no longer any trials that match a supplied Context.
+        Returns:
+            A list of Trials, This may be an empty list in case that a finite search
+            space has been exhausted, if max_num_trials = 1000 has been reached,
+            or if there are no longer any trials that match a supplied Context.
 
-    Raises:
-      SuggestionInactiveError: Indicates that a suggestion was requested from an
-        inactive study. Note that this is NOT raised when a finite Study runs
-        out of suggestions. In such a case, an empty list is returned.
-    """
+        Raises:
+            SuggestionInactiveError: Indicates that a suggestion was requested from an
+                inactive study. Note that this is NOT raised when a finite Study runs
+                out of suggestions. In such a case, an empty list is returned.
+        """
         # Requests a trial.
         try:
             resp = (
@@ -141,13 +141,13 @@ class _OptimizerClient(object):
     ):
         """Calls AddMeasurementToTrial with the provided objective_value.
 
-    Args:
-      step: The number of steps the model has trained for.
-      elapsed_secs: The number of seconds since Trial execution began.
-      metric_list: A list of dictionary from metric names (strings) to values
-        (doubles) for additional metrics to record.
-      trial_id: trial_id.
-    """
+        Args:
+            step: The number of steps the model has trained for.
+            elapsed_secs: The number of seconds since Trial execution began.
+            metric_list: A list of dictionary from metric names (strings) to values
+                (doubles) for additional metrics to record.
+            trial_id: trial_id.
+        """
         measurement = {
             "stepCount": step,
             "elapsedTime": {"seconds": int(elapsed_secs)},
@@ -164,11 +164,11 @@ class _OptimizerClient(object):
     def should_trial_stop(self, trial_id):
         """"Returns whether trial should stop early.
 
-    Args:
-      trial_id: trial_id.
-    Returns:
-      Whether it is recommended to stop the trial early.
-    """
+        Args:
+            trial_id: trial_id.
+        Returns:
+            Whether it is recommended to stop the trial early.
+        """
         trial_name = self._make_trial_name(trial_id)
         try:
             resp = (
@@ -202,15 +202,15 @@ class _OptimizerClient(object):
     def complete_trial(self, trial_id, trial_infeasible, infeasibility_reason=None):
         """Marks the trial as COMPLETED and sets the final measurement.
 
-    Args:
-      trial_id: trial_id.
-      trial_infeasible: If True, the parameter setting is not feasible.
-      infeasibility_reason: The reason the Trial was infeasible. Should only be
-        non-empty if trial_infeasible==True.
+        Args:
+            trial_id: trial_id.
+            trial_infeasible: If True, the parameter setting is not feasible.
+            infeasibility_reason: The reason the Trial was infeasible. Should only be
+                non-empty if trial_infeasible==True.
 
-    Returns:
-      The Completed Optimizer trials.
-    """
+        Returns:
+            The Completed Optimizer trials.
+        """
         try:
             optimizer_trial = (
                 self.service_client.projects()
@@ -285,19 +285,19 @@ class _OptimizerClient(object):
     def _polling_delay(self, num_attempts, time_scale):
         """Computes a delay to the next attempt to poll the Optimizer service.
 
-    This does bounded exponential backoff, starting with $time_scale.
-    If $time_scale == 0, it starts with a small time interval, less than
-    1 second.
+        This does bounded exponential backoff, starting with $time_scale.
+        If $time_scale == 0, it starts with a small time interval, less than
+        1 second.
 
-    Args:
-      num_attempts: The number of times have we polled and found that the
-        desired result was not yet available.
-      time_scale: The shortest polling interval, in seconds, or zero. Zero is
-        treated as a small interval, less than 1 second.
+        Args:
+            num_attempts: The number of times have we polled and found that the
+                desired result was not yet available.
+            time_scale: The shortest polling interval, in seconds, or zero. Zero is
+                treated as a small interval, less than 1 second.
 
-    Returns:
-      A recommended delay interval, in seconds.
-    """
+        Returns:
+            A recommended delay interval, in seconds.
+        """
         small_interval = 0.3  # Seconds
         interval = max(time_scale, small_interval) * 1.41 ** min(num_attempts, 9)
         return datetime.timedelta(seconds=interval)
@@ -316,28 +316,28 @@ class _OptimizerClient(object):
 def create_or_load_study(project_id, region, study_id, study_config):
     """Factory method for creating or loading a CAIP Optimizer client.
 
-  Given an Optimizer study_config, this will either create or open the specified
-  study. It will create it if it doesn't already exist, and open it if someone
-  has already created it.
+    Given an Optimizer study_config, this will either create or open the specified
+    study. It will create it if it doesn't already exist, and open it if someone
+    has already created it.
 
-  Note that once a study is created, you CANNOT modify it with this function.
+    Note that once a study is created, you CANNOT modify it with this function.
 
-  This function is designed for use in a distributed system, where many jobs
-  call create_or_load_study() nearly simultaneously with the same $study_config.
-  In that situation, all clients will end up pointing nicely to the same study.
+    This function is designed for use in a distributed system, where many jobs
+    call create_or_load_study() nearly simultaneously with the same $study_config.
+    In that situation, all clients will end up pointing nicely to the same study.
 
-  Args:
-    project_id: A GCP project id.
-    region: A GCP region. e.g. 'us-central1'.
-    study_id: An identifier of the study. If not supplied, system-determined
-      unique ID is given. The full study name will be
-      projects/{project_id}/locations/{region}/studies/{study_id}. And the full
-      trial name will be {study name}/trials/{trial_id}.
-    study_config: Study configuration for CAIP Optimizer service.
+    Args:
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            study_id: An identifier of the study. If not supplied, system-determined
+            unique ID is given. The full study name will be
+            projects/{project_id}/locations/{region}/studies/{study_id}. And the full
+            trial name will be {study name}/trials/{trial_id}.
+            study_config: Study configuration for CAIP Optimizer service.
 
-  Returns:
-    An _OptimizerClient object with the specified study created or loaded..
-  """
+    Returns:
+            An _OptimizerClient object with the specified study created or loaded.
+    """
     # Build the API client
     # Note that Optimizer service is exposed as a regional endpoint. As such,
     # an API client needs to be created separately from the default.
@@ -391,16 +391,16 @@ def create_or_load_study(project_id, region, study_id, study_config):
 class CloudTunerHttpRequest(googleapiclient_http.HttpRequest):
     """HttpRequest builder that sets a customized user-agent header to Cloud Tuner.
 
-  This is used to track the usage of the Cloud Tuner.
-  """
+    This is used to track the usage of the Cloud Tuner.
+    """
 
     def __init__(self, *args, **kwargs):
         """Construct a HttpRequest.
 
-    Args:
-      *args: Positional arguments to pass to the base class constructor.
-      **kwargs: Keyword arguments to pass to the base class constructor.
-    """
+        Args:
+            *args: Positional arguments to pass to the base class constructor.
+            **kwargs: Keyword arguments to pass to the base class constructor.
+        """
         headers = kwargs.setdefault("headers", {})
         headers["user-agent"] = _USER_AGENT_FOR_CLOUD_TUNER_TRACKING
         super(CloudTunerHttpRequest, self).__init__(*args, **kwargs)
