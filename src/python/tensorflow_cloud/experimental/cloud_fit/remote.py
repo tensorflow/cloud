@@ -65,13 +65,13 @@ def main(unused_argv):
 def run(remote_dir, distribution_strategy_text):
     """deserializes Model and Dataset and runs them.
 
-  Args:
-    remote_dir: Temporary cloud storage folder that contains model and Dataset
-      graph. This folder is also used for job output.
-    distribution_strategy_text: Specifies the distribution strategy for remote
-      execution when a jobspec is provided. Accepted values are strategy names
-      as specified by 'tf.distribute.<strategy>.__name__'.
-  """
+    Args:
+      remote_dir: Temporary cloud storage folder that contains model and Dataset
+        graph. This folder is also used for job output.
+      distribution_strategy_text: Specifies the distribution strategy for remote
+        execution when a jobspec is provided. Accepted values are strategy names
+        as specified by 'tf.distribute.<strategy>.__name__'.
+    """
     logging.info("Setting distribution strategy to %s", distribution_strategy_text)
 
     is_mwms = distribution_strategy_text == MULTI_WORKER_MIRRORED_STRATEGY_NAME
