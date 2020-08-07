@@ -55,7 +55,7 @@ def make_study_config(objective, hyperparams):
 
     Returns:
         A dict that holds the study configuration.
-  """
+    """
     study_config = {}
     # The default algorithm used by the CAIP Optimizer.
     study_config["algorithm"] = "ALGORITHM_UNSPECIFIED"
@@ -98,7 +98,8 @@ def convert_study_config_to_hps(study_config):
         raise ValueError("Parameters are not found in the study_config: ", study_config)
     if not isinstance(study_config["parameters"], list):
         raise ValueError(
-            "Parameters should be a list of parameter with at least 1 parameter, found ",
+            "Parameters should be a list of parameter with at least 1 parameter,"
+            " found ",
             study_config["parameters"],
         )
 
@@ -321,7 +322,7 @@ def format_goal(metric_direction):
 
     Returns:
         'goal' or 'direction'.
-  """
+    """
     if metric_direction == _DIRECTION_MAX:
         return _GOAL_MAXIMIZE
     if metric_direction == _DIRECTION_MIN:

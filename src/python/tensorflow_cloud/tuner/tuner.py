@@ -131,7 +131,7 @@ class CloudOracle(oracle_module.Oracle):
         Raises:
             SuggestionInactiveError: Indicates that a suggestion was requested from an
                 inactive study.
-    """
+        """
         # List all trials from the same study and see if any trial.status=STOPPED or
         # if number of trials >= max_limit.
         trial_list = self.service.list_trials()
