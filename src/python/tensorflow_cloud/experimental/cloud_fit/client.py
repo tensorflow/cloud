@@ -54,31 +54,31 @@ def cloud_fit(
     """Facilitates remote execution of in memory Model and Dataset on AI Platform.
 
     Args:
-      model: A compiled Keras Model.
-      remote_dir: Google Cloud Storage path for temporary assets and AI Platform
-        training output. Will overwrite value in job_spec.
-      region: Target region for running the AI Platform Training job.
-      project_id: Project id where the training should be deployed to.
-      image_uri: based image used to use for AI Platform Training
-      distribution_strategy: Specifies the distribution strategy for remote
-        execution when a jobspec is provided. Accepted values are strategy names
-        as specified by 'tf.distribute.<strategy>.__name__'.
-      job_spec: AI Platform Training job_spec, will take precedence over all other
-        provided values except for remote_dir. If none is provided a default
-        cluster spec and distribution strategy will be used.
-      job_id: A name to use for the AI Platform Training job (mixed-case letters,
-        numbers, and underscores only, starting with a letter).
-      **fit_kwargs: Args to pass to model.fit() including training and eval data.
-        Only keyword arguments are supported. Callback functions will be
-        serialized as is, they must be available in run time environment.
+        model: A compiled Keras Model.
+        remote_dir: Google Cloud Storage path for temporary assets and AI Platform
+            training output. Will overwrite value in job_spec.
+        region: Target region for running the AI Platform Training job.
+        project_id: Project id where the training should be deployed to.
+        image_uri: based image used to use for AI Platform Training
+        distribution_strategy: Specifies the distribution strategy for remote
+            execution when a jobspec is provided. Accepted values are strategy names
+            as specified by 'tf.distribute.<strategy>.__name__'.
+        job_spec: AI Platform Training job_spec, will take precedence over all other
+            provided values except for remote_dir. If none is provided a default
+            cluster spec and distribution strategy will be used.
+        job_id: A name to use for the AI Platform Training job (mixed-case letters,
+            numbers, and underscores only, starting with a letter).
+        **fit_kwargs: Args to pass to model.fit() including training and eval data.
+            Only keyword arguments are supported. Callback functions will be
+            serialized as is, they must be available in run time environment.
 
     Returns:
-      AI Platform job ID
+        AI Platform job ID
 
     Raises:
-      RuntimeError: If executing in graph mode, eager execution is required for
-      cloud_fit.
-      NotImplementedError: Tensorflow v1.x is not supported.
+        RuntimeError: If executing in graph mode, eager execution is required for
+            cloud_fit.
+        NotImplementedError: Tensorflow v1.x is not supported.
     """
     logging.set_verbosity(logging.INFO)
 
@@ -136,12 +136,12 @@ def _serialize_assets(remote_dir, model, **fit_kwargs):
     """Serialize Model and Dataset and store them in the local tmp folder.
 
     Args:
-      remote_dir: A Google Cloud Storage path for assets and outputs
-      model: A compiled Keras Model.
-      **fit_kwargs: Args to pass to model.fit()
+        remote_dir: A Google Cloud Storage path for assets and outputs
+        model: A compiled Keras Model.
+        **fit_kwargs: Args to pass to model.fit()
 
     Raises:
-      NotImplementedError for callback functions and Generator input types.
+        NotImplementedError for callback functions and Generator input types.
     """
     to_export = tf.Module()
     # If x is instance of dataset or generators it needs to be serialized
@@ -193,12 +193,12 @@ def _default_job_spec(
     """Creates a basic job_spec for cloud AI Training.
 
     Args:
-      region: Target region for running the AI Platform Training job.
-      image_uri: based image used to use for AI Platform Training
-      entry_point_args: Args to pass in to the training job.
+        region: Target region for running the AI Platform Training job.
+        image_uri: based image used to use for AI Platform Training
+        entry_point_args: Args to pass in to the training job.
 
     Returns:
-      a dictionary corresponding to AI Platform Training job spec
+        a dictionary corresponding to AI Platform Training job spec
     """
     training_inputs = {}
 
@@ -221,13 +221,13 @@ def _submit_job(job_spec, project_id=None):
     """Submits a training job to cloud AI Training .
 
     Args:
-      job_spec: AI Platform Training job_spec.
-      project_id: Project id where the training should be deployed to.
+        job_spec: AI Platform Training job_spec.
+        project_id: Project id where the training should be deployed to.
 
     Raises:
-      RuntimeError: If fails to submit the job.
-      ValueError: if project id is not provided and can not be retrieved from the
-      environment.
+        RuntimeError: If fails to submit the job.
+        ValueError: if project id is not provided and can not be retrieved from the
+        environment.
     """
     if project_id is None:
         _, project_id = google.auth.default()
