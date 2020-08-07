@@ -1,6 +1,6 @@
-## TensorFlow Enterprise Addons - Tuner
+## CloudTuner
 
-Tuner is an implementation of a library for hyperparameter tuning that is
+CloudTuner is an implementation of a library for hyperparameter tuning that is
 built into the [KerasTuner](https://github.com/keras-team/keras-tuner) and
 creates a seamless integration with
 [Cloud AI Platform Optimizer Beta](https://cloud.google.com/ai-platform/optimizer/docs)
