@@ -173,7 +173,9 @@ COMMON_MACHINE_CONFIGS = {
 
 
 def is_tpu_config(config):
-    return (
-        config.accelerator_type == AcceleratorType.TPU_V2
-        or config.accelerator_type == AcceleratorType.TPU_V3
-    )
+    if config:
+        return (
+            config.accelerator_type == AcceleratorType.TPU_V2
+            or config.accelerator_type == AcceleratorType.TPU_V3
+        )
+    return False

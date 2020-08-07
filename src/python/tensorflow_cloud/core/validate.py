@@ -23,6 +23,13 @@ import re
 from . import machine_config
 from . import gcp
 
+try:
+    from tensorflow.python.framework.versions import VERSION
+except ImportError:
+    # Use TF runtime version 2.1 (latest supported) as the default.
+    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
+    VERSION = "2.1"
+
 
 def validate(
     entry_point,
@@ -149,12 +156,15 @@ def _validate_cluster_config(chief_config, worker_count, worker_config):
             "Received {}.".format(chief_config)
         )
 
-    if worker_count > 1 and machine_config.is_tpu_config(worker_config):
-        raise ValueError(
-            "Invalid `worker_count` input. "
-            "Expected worker_count=1 for TPU `worker_config`. "
-            "Received {}.".format(worker_count)
-        )
+    if machine_config.is_tpu_config(worker_config):
+        if worker_count != 1:
+            raise ValueError(
+                "Invalid `worker_count` input. "
+                "Expected worker_count=1 for TPU `worker_config`. "
+                "Received {}.".format(worker_count)
+            )
+        elif VERSION >= "2.2.0":
+            raise NotImplementedError("TPUs are only supported for TF version <= 2.1.0")
 
 
 def _validate_job_labels(job_labels):
