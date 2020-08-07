@@ -14,13 +14,11 @@
 
 """Setup script."""
 
-from __future__ import absolute_import
-
+import dependencies
 from setuptools import find_packages
 from setuptools import setup
 
 VERSION = "0.1.5"
-
 
 setup(
     name="tensorflow-cloud",
@@ -32,15 +30,27 @@ setup(
     author="The tensorflow cloud authors",
     author_email="tensorflow-cloud@google.com",
     license="Apache License 2.0",
-    install_requires=["docker", "google-api-python-client", "google-cloud-storage",],
-    extras_require={"tests": ["pytest", "flake8", "mock"],},
+    extras_require={"tests": dependencies.make_required_test_packages()},
+    include_package_data=True,
+    install_requires=dependencies.make_required_install_packages(),
     classifiers=[
-        "Programming Language :: Python",
+        "Development Status :: 4 - Beta",
         "Operating System :: Unix",
         "Operating System :: MacOS",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
+    package_data={"tensorflow_cloud": ["tuner/api/*.json"]},
     packages=find_packages(),
 )
