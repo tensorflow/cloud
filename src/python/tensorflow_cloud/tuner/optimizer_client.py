@@ -36,7 +36,7 @@ _SUGGESTION_COUNT_PER_REQUEST = 1
 # Number of tries to retry getting study if it was already created
 _NUM_TRIES_FOR_STUDIES = 3
 
-_USER_AGENT_FOR_CLOUD_TUNER_TRACKING = "cloud-tuner/" + tfc.__version__
+_USER_AGENT_FOR_CLOUD_TUNER_TRACKING = "tf-cloud-tuner/" + tfc.__version__
 
 
 class SuggestionInactiveError(Exception):
