@@ -55,7 +55,7 @@ def main(unused_argv):
         raise ValueError(
             "{} is not supported. Supported Strategies are {}".format(
                 FLAGS.distribution_strategy,
-                [key for key in SUPPORTED_DISTRIBUTION_STRATEGIES.keys()],
+                list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
             )
         )
 
