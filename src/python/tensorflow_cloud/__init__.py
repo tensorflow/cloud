@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Core module in tensorflow_cloud."""
 
 __version__ = "0.1.5"
 
 from .core.machine_config import AcceleratorType
 from .core.machine_config import COMMON_MACHINE_CONFIGS
 from .core.machine_config import MachineConfig
-from .core.run import run
 from .core.run import remote
+from .core.run import run
 
 # Oracle and Tuner APIs for hyperparamter tuning.
 from .tuner.tuner import CloudOracle
