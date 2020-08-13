@@ -15,14 +15,22 @@
 """Setup script."""
 
 import dependencies
+import importlib
+import types
+
 from setuptools import find_packages
 from setuptools import setup
 
-VERSION = "0.1.5"
+loader = importlib.machinery.SourceFileLoader(
+    fullname='version',
+    path='tensorflow_cloud/version.py',
+)
+version = types.ModuleType(loader.name)
+loader.exec_module(version)
 
 setup(
     name="tensorflow-cloud",
-    version=VERSION,
+    version=version.__version__,
     description="The TensorFlow Cloud repository provides APIs that will allow "
     "to easily go from debugging and training your Keras and TensorFlow "
     "code in a local environment to distributed training in the cloud.",
