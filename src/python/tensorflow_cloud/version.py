@@ -11,16 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Contains the version string of TensorFlow Cloud."""
 
-from .version import __version__
-
-# APIs for scaling TensorFlow jobs on GCP
-from .core.machine_config import AcceleratorType
-from .core.machine_config import COMMON_MACHINE_CONFIGS
-from .core.machine_config import MachineConfig
-from .core.run import run
-from .core.run import remote
-
-# Oracle and Tuner APIs for hyperparameter tuning.
-from .tuner.tuner import CloudOracle
-from .tuner.tuner import CloudTuner
+__version__ = "0.1.5"
