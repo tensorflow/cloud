@@ -86,7 +86,7 @@ def cloud_fit(
         raise ValueError(
             "{} is not supported. Supported Strategies are {}".format(
                 distribution_strategy,
-                [key for key in SUPPORTED_DISTRIBUTION_STRATEGIES.keys()],
+                list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
             )
         )
 
