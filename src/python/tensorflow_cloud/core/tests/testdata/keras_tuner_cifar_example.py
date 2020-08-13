@@ -114,7 +114,7 @@ test_dataset = test_dataset.map(scale).batch(BATCH_SIZE)
 
 tuner.search(
     train_dataset,
-    epochs=1000,
+    epochs=2,
     validation_data=test_dataset,
     callbacks=[
         keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, mode="min"),

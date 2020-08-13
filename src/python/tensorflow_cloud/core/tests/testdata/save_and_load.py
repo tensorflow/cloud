@@ -88,7 +88,7 @@ checkpoint_path = "{}/cp.ckpt".format(model_save_path)
 cp_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_path, save_weights_only=True, verbose=1
 )
-model.fit(train_dataset, epochs=10, callbacks=[cp_callback])
+model.fit(train_dataset, epochs=2, callbacks=[cp_callback])
 
 print("Creating new model instance")
 model = get_model()
