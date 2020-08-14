@@ -97,8 +97,12 @@ class TestDeploy(unittest.TestCase):
 
         # Verify discovery API is invoked as expected.
         self.assertEqual(MockDiscovery.build.call_count, 1)
-        args, _ = MockDiscovery.build.call_args
+        args, kwargs = MockDiscovery.build.call_args
         self.assertListEqual(list(args), ["ml", "v1"])
+        self.assertDictEqual(
+            kwargs,
+            {"cache_discovery": False, "requestBuilder": deploy.TFCloudHttpRequest,},
+        )
 
         # Verify job is created as expected
         build_ret_val = MockDiscovery.build.return_value
@@ -245,29 +249,3 @@ class TestDeploy(unittest.TestCase):
                 "body": self.expected_request_dict,
             },
         )
-
-    @patch("sys.stdout", new_callable=io.StringIO)
-    @patch("tensorflow_cloud.core.deploy.discovery")
-    def test_user_agent(self, MockDiscovery, MockStdOut):
-        flag = False
-
-        def _mock_request(uri, headers=None, **kwargs):
-            user_agent = "tf-cloud/" + version.__version__
-            self.assertEqual(headers["user-agent"], user_agent)
-            return True, None
-
-        MockDiscovery.build.return_value._http = mock.Mock()
-        MockDiscovery.build.return_value._http.request = _mock_request
-        self.setup(MockDiscovery)
-        job_name = deploy.deploy_job(
-            self.region,
-            self.docker_img,
-            self.chief_config,
-            self.worker_count,
-            self.worker_config,
-            self.entry_point_args,
-            self.stream_logs,
-        )
-
-        flag, _ = MockDiscovery.build.return_value._http.request("")
-        self.assertTrue(flag)
