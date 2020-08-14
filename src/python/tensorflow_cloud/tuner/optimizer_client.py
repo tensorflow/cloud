@@ -24,7 +24,7 @@ from googleapiclient import discovery
 from googleapiclient import errors
 from googleapiclient import http as googleapiclient_http
 import tensorflow as tf
-import tensorflow_cloud as tfc
+from tensorflow_cloud import version
 
 _OPTIMIZER_API_DOCUMENT_FILE = "api/ml_public_google_rest_v1.json"
 
@@ -36,7 +36,7 @@ _SUGGESTION_COUNT_PER_REQUEST = 1
 # Number of tries to retry getting study if it was already created
 _NUM_TRIES_FOR_STUDIES = 3
 
-_USER_AGENT_FOR_CLOUD_TUNER_TRACKING = "cloud-tuner/" + tfc.__version__
+_USER_AGENT_FOR_CLOUD_TUNER_TRACKING = "cloud-tuner/" + version.__version__
 
 
 class SuggestionInactiveError(Exception):
