@@ -22,6 +22,7 @@ import uuid
 
 from googleapiclient import discovery
 from googleapiclient import errors
+from googleapiclient import http as googleapiclient_http
 
 from . import gcp
 from . import machine_config
@@ -35,7 +36,7 @@ except ImportError:
     VERSION = "2.1"
 
 
-_USER_AGENT_FOR_RUN_DEPLOY_TRACKING = "tf-cloud/" + version.__version__
+_USER_AGENT_FOR_TF_CLOUD_TRACKING = "tf-cloud/" + version.__version__
 
 
 def deploy_job(
@@ -70,8 +71,9 @@ def deploy_job(
     """
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
-    ml_apis = discovery.build("ml", "v1", cache_discovery=False)
-    ml_apis._http = _set_user_agent(ml_apis._http)
+    ml_apis = discovery.build(
+        "ml", "v1", cache_discovery=False, requestBuilder=TFCloudHttpRequest
+    )
 
     request_dict = _create_request_dict(
         job_id,
@@ -240,46 +242,20 @@ def _generate_job_id():
     return "tf_cloud_train_{}".format(unique_tag)
 
 
-def _set_user_agent(http):
-    """Set the user-agent on every request.
+# TODO(pavithrasv): Move this and the discovery API stuff into common repo tools.
+class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
+    """HttpRequest builder that sets a customized user-agent header for TF Cloud.
+
+  This is used to track the usage of the TF Cloud.
+  """
+
+    def __init__(self, *args, **kwargs):
+        """Construct a HttpRequest.
 
     Args:
-        http - An instance of httplib2.Http
-            or something that acts like it.
-
-    Returns:
-        A modified instance of http that was passed in.
+      *args: Positional arguments to pass to the base class constructor.
+      **kwargs: Keyword arguments to pass to the base class constructor.
     """
-
-    request_orig = http.request
-    user_agent = _USER_AGENT_FOR_RUN_DEPLOY_TRACKING
-
-    # Reference:
-    # https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/http.py
-    def new_request(
-        uri,
-        method="GET",
-        body=None,
-        headers=None,
-        redirections=httplib2.DEFAULT_MAX_REDIRECTS,
-        connection_type=None,
-    ):
-        """Modify the request headers to add the user-agent."""
-        if headers is None:
-            headers = {}
-        if "user-agent" in headers:
-            headers["user-agent"] = user_agent + " " + headers["user-agent"]
-        else:
-            headers["user-agent"] = user_agent
-        resp, content = request_orig(
-            uri,
-            method=method,
-            body=body,
-            headers=headers,
-            redirections=redirections,
-            connection_type=connection_type,
-        )
-        return resp, content
-
-    http.request = new_request
-    return http
+        headers = kwargs.setdefault("headers", {})
+        headers["user-agent"] = _USER_AGENT_FOR_TF_CLOUD_TRACKING
+        super(TFCloudHttpRequest, self).__init__(*args, **kwargs)
