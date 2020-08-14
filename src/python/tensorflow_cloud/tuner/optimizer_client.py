@@ -26,7 +26,13 @@ from googleapiclient import http as googleapiclient_http
 import tensorflow as tf
 from tensorflow_cloud import version
 
+# Following placeholder tag is for copybara rule that replace the tag
+# With an import statement of an internal library. The Library is needed
+# to pass file path in build infrastructure for API documentation file.
+# PLACE_HOLDER_FOR_COPYBARA_IMPORT_DO_NOT_DELETE
+
 _OPTIMIZER_API_DOCUMENT_FILE = "api/ml_public_google_rest_v1.json"
+
 
 # By default, the Tuner worker(s) always requests one trial at a time because
 # we would parallelize the tuning loop themselves as opposed to getting multiple
