@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import httplib2
 import subprocess
 import uuid
 
@@ -246,15 +245,15 @@ def _generate_job_id():
 class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
     """HttpRequest builder that sets a customized user-agent header for TF Cloud.
 
-  This is used to track the usage of the TF Cloud.
-  """
+    This is used to track the usage of the TF Cloud.
+    """
 
     def __init__(self, *args, **kwargs):
-        """Construct a HttpRequest.
+    """Construct a HttpRequest.
 
     Args:
-      *args: Positional arguments to pass to the base class constructor.
-      **kwargs: Keyword arguments to pass to the base class constructor.
+        *args: Positional arguments to pass to the base class constructor.
+        **kwargs: Keyword arguments to pass to the base class constructor.
     """
         headers = kwargs.setdefault("headers", {})
         headers["user-agent"] = _USER_AGENT_FOR_TF_CLOUD_TRACKING
