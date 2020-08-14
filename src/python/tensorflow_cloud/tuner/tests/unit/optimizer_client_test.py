@@ -19,7 +19,7 @@ from googleapiclient import http as googleapiclient_http
 import httplib2
 import mock
 import tensorflow as tf
-import tensorflow_cloud as tfc
+from tensorflow_cloud import version
 from tensorflow_cloud.tuner.tuner import optimizer_client
 
 
@@ -318,7 +318,7 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
         self.assertEqual(
-            {"user-agent": "cloud-tuner/" + tfc.__version__}, http_request.headers
+            {"user-agent": "cloud-tuner/" + version.__version__}, http_request.headers
         )
 
 

@@ -32,7 +32,10 @@ class TestDeploy(unittest.TestCase):
     def setup(self, MockDiscovery):
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
-        self.entry_point = "python/tests/testdata/sample_compile_fit.py"
+        self.test_data_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
+        )
+        self.entry_point = os.path.join(self.test_data_path, "sample_compile_fit.py")
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
         self.worker_count = 2
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -210,20 +213,28 @@ class TestDeploy(unittest.TestCase):
         self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
-        ]["type"] = "TPU_V3"
+        ]["type"] = (
+            "TPU_V3"
+        )
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
-        ]["count"] = "8"
+        ]["count"] = (
+            "8"
+        )
         v = deploy.VERSION.split(".")
         self.expected_request_dict["trainingInput"]["workerConfig"]["tpuTfVersion"] = (
             v[0] + "." + v[1]
         )
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
-        ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
+        ]["type"] = (
+            "ACCELERATOR_TYPE_UNSPECIFIED"
+        )
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
-        ]["count"] = "0"
+        ]["count"] = (
+            "0"
+        )
 
         # Verify job creation args
         _, kwargs = jobs_ret_val.create.call_args

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the validation module."""
 
+import os
 import pytest
 import unittest
 
@@ -22,11 +23,24 @@ from tensorflow_cloud.core import validate
 
 
 class TestValidate(unittest.TestCase):
+    def setup(self):
+        self.test_data_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
+        )
+        self.script_entry_point = os.path.join(
+            self.test_data_path, "mnist_example_using_fit.py"
+        )
+        self.notebook_entry_point = os.path.join(
+            self.test_data_path, "mnist_example_using_fit.ipynb"
+        )
+        self.requirements_file = os.path.join(self.test_data_path, "requirements.txt")
+
     def test_valid_args(self):
+        self.setup()
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py",
+            entry_point=self.script_entry_point,
             distribution_strategy="auto",
-            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
+            requirements_txt=self.requirements_file,
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_count=1,
@@ -38,9 +52,9 @@ class TestValidate(unittest.TestCase):
         )
 
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py",
+            entry_point=self.script_entry_point,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
+            requirements_txt=self.requirements_file,
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -52,9 +66,9 @@ class TestValidate(unittest.TestCase):
         )
 
         validate.validate(
-            entry_point="src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.ipynb",
+            entry_point=self.notebook_entry_point,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
+            requirements_txt=self.requirements_file,
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -68,7 +82,7 @@ class TestValidate(unittest.TestCase):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
+            requirements_txt=self.requirements_file,
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
@@ -82,7 +96,7 @@ class TestValidate(unittest.TestCase):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
-            requirements_txt="src/python/tensorflow_cloud/core/tests/testdata/requirements.txt",
+            requirements_txt=self.requirements_file,
             chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_config=None,
             worker_count=0,
