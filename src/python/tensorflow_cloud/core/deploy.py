@@ -249,12 +249,12 @@ class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
     """
 
     def __init__(self, *args, **kwargs):
-    """Construct a HttpRequest.
+        """Construct a HttpRequest.
 
-    Args:
-        *args: Positional arguments to pass to the base class constructor.
-        **kwargs: Keyword arguments to pass to the base class constructor.
-    """
+        Args:
+            *args: Positional arguments to pass to the base class constructor.
+            **kwargs: Keyword arguments to pass to the base class constructor.
+        """
         headers = kwargs.setdefault("headers", {})
         headers["user-agent"] = _USER_AGENT_FOR_TF_CLOUD_TRACKING
         super(TFCloudHttpRequest, self).__init__(*args, **kwargs)
