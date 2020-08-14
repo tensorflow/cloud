@@ -35,7 +35,7 @@ except ImportError:
     VERSION = "2.1"
 
 
-_USER_AGENT_FOR_RUN_DEPLOY_TRACKING = "tf-cloud-run-deploy/" + version.__version__
+_USER_AGENT_FOR_RUN_DEPLOY_TRACKING = "tf-cloud/" + version.__version__
 
 
 def deploy_job(
