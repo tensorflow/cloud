@@ -21,6 +21,7 @@ import sys
 import tarfile
 import unittest
 
+from tensorflow_cloud import version
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 
@@ -214,9 +215,9 @@ class TestDeploy(unittest.TestCase):
             "acceleratorConfig"
         ]["count"] = "8"
         v = deploy.VERSION.split(".")
-        self.expected_request_dict["trainingInput"]["workerConfig"][
-            "tpuTfVersion"
-        ] = v[0] + "." + v[1]
+        self.expected_request_dict["trainingInput"]["workerConfig"]["tpuTfVersion"] = (
+            v[0] + "." + v[1]
+        )
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
         ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
@@ -233,3 +234,29 @@ class TestDeploy(unittest.TestCase):
                 "body": self.expected_request_dict,
             },
         )
+
+    @patch("sys.stdout", new_callable=io.StringIO)
+    @patch("tensorflow_cloud.core.deploy.discovery")
+    def test_user_agent(self, MockDiscovery, MockStdOut):
+        flag = False
+
+        def _mock_request(uri, headers=None, **kwargs):
+            user_agent = "tf-cloud-run-deploy/" + version.__version__
+            self.assertEqual(headers["user-agent"], user_agent)
+            return True, None
+
+        MockDiscovery.build.return_value._http = mock.Mock()
+        MockDiscovery.build.return_value._http.request = _mock_request
+        self.setup(MockDiscovery)
+        job_name = deploy.deploy_job(
+            self.region,
+            self.docker_img,
+            self.chief_config,
+            self.worker_count,
+            self.worker_config,
+            self.entry_point_args,
+            self.stream_logs,
+        )
+
+        flag, _ = MockDiscovery.build.return_value._http.request("")
+        self.assertTrue(flag)

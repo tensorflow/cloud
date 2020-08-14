@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import httplib2
 import subprocess
 import uuid
 
@@ -24,6 +25,7 @@ from googleapiclient import errors
 
 from . import gcp
 from . import machine_config
+from .. import version
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -31,6 +33,9 @@ except ImportError:
     # Use TF runtime version 2.1 (latest supported) as the default.
     # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
     VERSION = "2.1"
+
+
+_USER_AGENT_FOR_RUN_DEPLOY_TRACKING = "tf-cloud-run-deploy/" + version.__version__
 
 
 def deploy_job(
@@ -66,6 +71,7 @@ def deploy_job(
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
     ml_apis = discovery.build("ml", "v1", cache_discovery=False)
+    ml_apis._http = _set_user_agent(ml_apis._http)
 
     request_dict = _create_request_dict(
         job_id,
@@ -232,3 +238,48 @@ def _generate_job_id():
     # CAIP job id can contains only numbers, letters and underscores.
     unique_tag = str(uuid.uuid4()).replace("-", "_")
     return "tf_cloud_train_{}".format(unique_tag)
+
+
+def _set_user_agent(http):
+    """Set the user-agent on every request.
+
+    Args:
+        http - An instance of httplib2.Http
+            or something that acts like it.
+
+    Returns:
+        A modified instance of http that was passed in.
+    """
+
+    request_orig = http.request
+    user_agent = _USER_AGENT_FOR_RUN_DEPLOY_TRACKING
+
+    # Reference:
+    # https://github.com/googleapis/google-api-python-client/blob/master/googleapiclient/http.py
+    def new_request(
+        uri,
+        method="GET",
+        body=None,
+        headers=None,
+        redirections=httplib2.DEFAULT_MAX_REDIRECTS,
+        connection_type=None,
+    ):
+        """Modify the request headers to add the user-agent."""
+        if headers is None:
+            headers = {}
+        if "user-agent" in headers:
+            headers["user-agent"] = user_agent + " " + headers["user-agent"]
+        else:
+            headers["user-agent"] = user_agent
+        resp, content = request_orig(
+            uri,
+            method=method,
+            body=body,
+            headers=headers,
+            redirections=redirections,
+            connection_type=connection_type,
+        )
+        return resp, content
+
+    http.request = new_request
+    return http
