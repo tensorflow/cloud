@@ -31,8 +31,11 @@ except ImportError:
 
 class TestContainerize(unittest.TestCase):
     def setup(self):
-        self.entry_point = (
-            "src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.py"
+        self.test_data_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
+        )
+        self.entry_point = os.path.join(
+            self.test_data_path, "mnist_example_using_fit.py"
         )
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]

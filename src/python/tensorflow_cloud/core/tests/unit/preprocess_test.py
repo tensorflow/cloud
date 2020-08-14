@@ -22,16 +22,18 @@ from tensorflow_cloud.core import preprocess
 
 class TestPreprocess(unittest.TestCase):
     def setup_py(self):
-        self.entry_point = (
-            "src/python/tensorflow_cloud/core/tests/testdata/sample_compile_fit.py"
+        self.entry_point_name = "sample_compile_fit.py"
+        self.test_data_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
         )
-        _, self.entry_point_name = os.path.split(self.entry_point)
+        self.entry_point = os.path.join(self.test_data_path, self.entry_point_name)
 
     def setup_ipython(self):
-        self.entry_point = (
-            "src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.ipynb"
+        self.entry_point_name = "mnist_example_using_fit.ipynb"
+        self.test_data_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
         )
-        _, self.entry_point_name = os.path.split(self.entry_point)
+        self.entry_point = os.path.join(self.test_data_path, self.entry_point_name)
 
     def get_preprocessed_entry_point(
         self,
@@ -92,7 +94,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            "strategy = tf.distribute.experimental." "MultiWorkerMirroredStrategy()\n",
+            "strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -136,7 +138,8 @@ class TestPreprocess(unittest.TestCase):
             "        return tpu_cluster_resolver\n",
             "    except Exception as e:\n",
             "      if i < num_retries - 1:\n",
-            "        logging.info('Still waiting for provisioning of TPU VM instance.')\n",
+            "        logging.info('Still waiting for provisioning of TPU VM"
+            " instance.')\n",
             "      else:\n",
             "        # Preserves the traceback.\n",
             "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",
@@ -145,7 +148,7 @@ class TestPreprocess(unittest.TestCase):
             "resolver = wait_for_tpu_cluster_resolver_ready()\n",
             "tf.config.experimental_connect_to_cluster(resolver)\n",
             "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
-            "strategy = tf.distribute.experimental.TPUStrategy(" "resolver)\n",
+            "strategy = tf.distribute.experimental.TPUStrategy(resolver)\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
