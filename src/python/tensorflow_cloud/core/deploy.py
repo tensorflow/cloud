@@ -21,9 +21,11 @@ import uuid
 
 from googleapiclient import discovery
 from googleapiclient import errors
+from googleapiclient import http as googleapiclient_http
 
 from . import gcp
 from . import machine_config
+from .. import version
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -31,6 +33,9 @@ except ImportError:
     # Use TF runtime version 2.1 (latest supported) as the default.
     # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
     VERSION = "2.1"
+
+
+_USER_AGENT_FOR_TF_CLOUD_TRACKING = "tf-cloud/" + version.__version__
 
 
 def deploy_job(
@@ -65,7 +70,9 @@ def deploy_job(
     """
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
-    ml_apis = discovery.build("ml", "v1", cache_discovery=False)
+    ml_apis = discovery.build(
+        "ml", "v1", cache_discovery=False, requestBuilder=TFCloudHttpRequest
+    )
 
     request_dict = _create_request_dict(
         job_id,
@@ -232,3 +239,22 @@ def _generate_job_id():
     # CAIP job id can contains only numbers, letters and underscores.
     unique_tag = str(uuid.uuid4()).replace("-", "_")
     return "tf_cloud_train_{}".format(unique_tag)
+
+
+# TODO(pavithrasv): Move this and the discovery API stuff into common repo tools.
+class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
+    """HttpRequest builder that sets a customized user-agent header for TF Cloud.
+
+    This is used to track the usage of the TF Cloud.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Construct a HttpRequest.
+
+        Args:
+            *args: Positional arguments to pass to the base class constructor.
+            **kwargs: Keyword arguments to pass to the base class constructor.
+        """
+        headers = kwargs.setdefault("headers", {})
+        headers["user-agent"] = _USER_AGENT_FOR_TF_CLOUD_TRACKING
+        super(TFCloudHttpRequest, self).__init__(*args, **kwargs)

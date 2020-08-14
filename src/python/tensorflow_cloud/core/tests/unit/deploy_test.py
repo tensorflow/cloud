@@ -21,6 +21,7 @@ import sys
 import tarfile
 import unittest
 
+from tensorflow_cloud import version
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 
@@ -96,8 +97,12 @@ class TestDeploy(unittest.TestCase):
 
         # Verify discovery API is invoked as expected.
         self.assertEqual(MockDiscovery.build.call_count, 1)
-        args, _ = MockDiscovery.build.call_args
+        args, kwargs = MockDiscovery.build.call_args
         self.assertListEqual(list(args), ["ml", "v1"])
+        self.assertDictEqual(
+            kwargs,
+            {"cache_discovery": False, "requestBuilder": deploy.TFCloudHttpRequest,},
+        )
 
         # Verify job is created as expected
         build_ret_val = MockDiscovery.build.return_value
