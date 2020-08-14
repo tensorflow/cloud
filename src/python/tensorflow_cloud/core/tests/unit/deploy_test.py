@@ -252,7 +252,7 @@ class TestDeploy(unittest.TestCase):
         flag = False
 
         def _mock_request(uri, headers=None, **kwargs):
-            user_agent = "tf-cloud-run-deploy/" + version.__version__
+            user_agent = "tf-cloud/" + version.__version__
             self.assertEqual(headers["user-agent"], user_agent)
             return True, None
 
