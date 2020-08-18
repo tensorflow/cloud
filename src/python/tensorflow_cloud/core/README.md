@@ -1,14 +1,8 @@
 # TensorFlow Cloud
 
-The TensorFlow Cloud repository provides APIs that will allow to easily go from debugging, training, tuning your Keras and TensorFlow code in a local environment to distributed training/tuning on Cloud.
+## What is this repo?
 
-# Introduction
-
-## [`run` API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/README.md)
-
-## [Cloud Tuner](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/README.md)
-
-# `run` API 
+The TensorFlow Cloud repository provides APIs that will allow to easily go from debugging and training your Keras and TensorFlow code in a local environment to distributed training in the cloud.
 
 ## Installation
 
@@ -407,13 +401,3 @@ Here are some tips for fixing unexpected issues.
 ## Coming up
 
 - Distributed Keras tuner support.
-
-# Contributing
-
-We welcome community contributions, see [CONTRIBUTING.md](CONTRIBUTING.md) and, for style help,
-[Writing TensorFlow documentation](https://www.tensorflow.org/community/documentation)
-guide.
-
-# License
-
-[Apache License 2.0](LICENSE)
