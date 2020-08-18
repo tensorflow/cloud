@@ -401,13 +401,3 @@ Here are some tips for fixing unexpected issues.
 ## Coming up
 
 - Distributed Keras tuner support.
-
-## Contributing
-
-We welcome community contributions, see [CONTRIBUTING.md](CONTRIBUTING.md) and, for style help,
-[Writing TensorFlow documentation](https://www.tensorflow.org/community/documentation)
-guide.
-
-## License
-
-[Apache License 2.0](LICENSE)
