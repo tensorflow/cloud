@@ -15,6 +15,7 @@
 """Tests for optimizer_client."""
 
 from googleapiclient import errors
+from googleapiclient import http as googleapiclient_http
 import httplib2
 import mock
 import tensorflow as tf
