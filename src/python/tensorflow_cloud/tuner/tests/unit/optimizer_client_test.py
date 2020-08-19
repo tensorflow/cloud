@@ -319,7 +319,7 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
         self.assertEqual(
-            {"user-agent": "cloud-tuner/" + version.__version__}, http_request.headers
+            {"user-agent": "tf-cloud/" + version.__version__}, http_request.headers
         )
 
 
