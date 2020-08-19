@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities for deploying jobs to GCP."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import subprocess
 import uuid
@@ -24,6 +21,7 @@ from googleapiclient import errors
 
 from . import gcp
 from . import machine_config
+from ..utils import google_api_client
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -65,7 +63,12 @@ def deploy_job(
     """
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
-    ml_apis = discovery.build("ml", "v1", cache_discovery=False)
+    ml_apis = discovery.build(
+        "ml",
+        "v1",
+        cache_discovery=False,
+        requestBuilder=google_api_client.TFCloudHttpRequest,
+    )
 
     request_dict = _create_request_dict(
         job_id,
@@ -88,7 +91,8 @@ def deploy_job(
         if enable_stream_logs:
             _stream_logs(job_id)
     except errors.HttpError as err:
-        raise RuntimeError("There was an error submitting the job." + err._get_reason())
+        print("There was an error submitting the job.")
+        raise err
     return job_id
 
 
@@ -221,10 +225,9 @@ def _stream_logs(job_id):
                 break
             if output:
                 print(output.decode().replace("\x08", ""))
-    except subprocess.SubprocessError as err:
-        raise RuntimeError(
-            "There was an error streaming the job logs. {}".format(err._get_reason())
-        )
+    except (ValueError, OSError) as err:
+        print("There was an error streaming the job logs.")
+        raise err
 
 
 def _generate_job_id():

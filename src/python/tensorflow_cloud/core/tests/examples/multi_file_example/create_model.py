@@ -16,8 +16,9 @@ import os
 
 import tensorflow as tf
 
+
 def create_keras_model():
-        
+
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Conv2D(32, 3, activation="relu", input_shape=(28, 28, 1)),

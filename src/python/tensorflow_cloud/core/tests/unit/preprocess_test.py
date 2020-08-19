@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the cloud preprocessing module."""
 
+import mock
 import os
 import unittest
 
@@ -22,16 +23,12 @@ from tensorflow_cloud.core import preprocess
 
 class TestPreprocess(unittest.TestCase):
     def setup_py(self):
-        self.entry_point = (
-            "src/python/tensorflow_cloud/core/tests/testdata/sample_compile_fit.py"
-        )
-        _, self.entry_point_name = os.path.split(self.entry_point)
+        self.entry_point_name = "sample_compile_fit.py"
+        self.entry_point = "sample_compile_fit.py"
 
     def setup_ipython(self):
-        self.entry_point = (
-            "src/python/tensorflow_cloud/core/tests/testdata/mnist_example_using_fit.ipynb"
-        )
-        _, self.entry_point_name = os.path.split(self.entry_point)
+        self.entry_point_name = "mnist_example_using_fit.ipynb"
+        self.entry_point = "mnist_example_using_fit.ipynb"
 
     def get_preprocessed_entry_point(
         self,
@@ -92,7 +89,7 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            "strategy = tf.distribute.experimental." "MultiWorkerMirroredStrategy()\n",
+            "strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -136,7 +133,8 @@ class TestPreprocess(unittest.TestCase):
             "        return tpu_cluster_resolver\n",
             "    except Exception as e:\n",
             "      if i < num_retries - 1:\n",
-            "        logging.info('Still waiting for provisioning of TPU VM instance.')\n",
+            "        logging.info('Still waiting for provisioning of TPU VM"
+            " instance.')\n",
             "      else:\n",
             "        # Preserves the traceback.\n",
             "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",
@@ -145,13 +143,22 @@ class TestPreprocess(unittest.TestCase):
             "resolver = wait_for_tpu_cluster_resolver_ready()\n",
             "tf.config.experimental_connect_to_cluster(resolver)\n",
             "tf.tpu.experimental.initialize_tpu_system(resolver)\n",
-            "strategy = tf.distribute.experimental.TPUStrategy(" "resolver)\n",
+            "strategy = tf.distribute.experimental.TPUStrategy(resolver)\n",
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
         self.assert_and_cleanup(expected_lines, script_lines)
 
-    def test_ipython_notebook(self):
+    @mock.patch("tensorflow_cloud.core.preprocess.PythonExporter")
+    def test_ipython_notebook(self, MockPythonExporter):
+        file_contents = (
+            "num_train_examples = info.splits['train'].num_examples\n"
+            "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n"
+        )
+        MockPythonExporter.return_value.from_filename.return_value = (
+            file_contents,
+            None,
+        )
         self.setup_ipython()
         script_lines = self.get_preprocessed_entry_point()
         expected_lines = [
@@ -164,5 +171,12 @@ class TestPreprocess(unittest.TestCase):
         for el in expected_lines:
             self.assertIn(el, script_lines)
         self.assertIn(
+            "num_train_examples = info.splits['train'].num_examples\n", script_lines
+        )
+        self.assertIn(
             "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n", script_lines
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for gcp module."""
 
-import pytest
 import unittest
 
 from tensorflow_cloud.core import gcp
@@ -132,38 +131,42 @@ class TestGcp(unittest.TestCase):
         )
 
         # test invalid config
-        with pytest.raises(ValueError, match=r"Invalid machine configuration"):
+        with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
             gcp.validate_machine_configuration(
                 1, 15, machine_config.AcceleratorType.NVIDIA_TESLA_K80, 4
             )
 
     def test_validate_invalid_job_label(self):
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # must start with lower case
             gcp.validate_job_labels(job_labels={"": ""},)
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # must start with lower case
             gcp.validate_job_labels(job_labels={"test": "-label"})
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # must start with lower case
             gcp.validate_job_labels(job_labels={"Test": "label"})
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # no upper case
             gcp.validate_job_labels(job_labels={"test": "labelA"})
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # no symbol
             gcp.validate_job_labels(job_labels={"test": "label@"})
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # label cannot be too long
             gcp.validate_job_labels(job_labels={"test": "a" * 64})
 
-        with pytest.raises(ValueError, match=r"Invalid job labels"):
+        with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # label cannot be too many
             gcp.validate_job_labels(
                 job_labels={"key{}".format(i): "val{}".format(i) for i in range(65)}
             )
+
+
+if __name__ == "__main__":
+    unittest.main()

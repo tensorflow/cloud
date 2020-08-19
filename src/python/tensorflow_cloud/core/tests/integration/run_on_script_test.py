@@ -34,6 +34,7 @@ import tensorflow_cloud as tfc
 # Unique ID for this build, can be used as a label for an AI Platform training job.
 # BUILD_ID = os.environ['BUILD_ID']
 
+
 class RunOnScriptTest(tf.test.TestCase):
     def setUp(self):
         super(RunOnScriptTest, self).setUp()
@@ -53,17 +54,14 @@ class RunOnScriptTest(tf.test.TestCase):
         """Deletes a directory if exists."""
         if tf.io.gfile.isdir(path):
             tf.io.gfile.rmtree(path)
-      
+
     @mock.patch.object(sys, "exit", autospec=True)
     def test_none_dist_strat_mwms_on_script(self, mock_exit):
         tfc.run(
-            entry_point=os.path.join(
-                self.test_data_path, "mnist_example_using_ctl.py"
-            ),
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
             distribution_strategy=None,
             worker_count=2,
-            requirements_txt=os.path.join(
-                self.test_data_path, "requirements.txt"),
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
         )
         mock_exit.assert_called_once_with(0)
 
