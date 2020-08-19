@@ -24,6 +24,7 @@ import unittest
 from tensorflow_cloud import version
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.utils import google_api_client
 
 from mock import call, patch
 
@@ -101,7 +102,10 @@ class TestDeploy(unittest.TestCase):
         self.assertListEqual(list(args), ["ml", "v1"])
         self.assertDictEqual(
             kwargs,
-            {"cache_discovery": False, "requestBuilder": deploy.TFCloudHttpRequest,},
+            {
+                "cache_discovery": False,
+                "requestBuilder": google_api_client.TFCloudHttpRequest,
+            },
         )
 
         # Verify job is created as expected
@@ -217,28 +221,20 @@ class TestDeploy(unittest.TestCase):
         self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
-        ]["type"] = (
-            "TPU_V3"
-        )
+        ]["type"] = "TPU_V3"
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
-        ]["count"] = (
-            "8"
-        )
+        ]["count"] = "8"
         v = deploy.VERSION.split(".")
         self.expected_request_dict["trainingInput"]["workerConfig"]["tpuTfVersion"] = (
             v[0] + "." + v[1]
         )
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
-        ]["type"] = (
-            "ACCELERATOR_TYPE_UNSPECIFIED"
-        )
+        ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
-        ]["count"] = (
-            "0"
-        )
+        ]["count"] = "0"
 
         # Verify job creation args
         _, kwargs = jobs_ret_val.create.call_args

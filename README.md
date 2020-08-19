@@ -4,11 +4,11 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 
 # Introduction
 
-## [`run` API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/README.md)
+- [run API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/README.md)
 
-## [Cloud Tuner](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/README.md)
+- [Cloud Tuner](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/README.md)
 
-# `run` API 
+# run API for GCP training/tuning
 
 ## Installation
 
