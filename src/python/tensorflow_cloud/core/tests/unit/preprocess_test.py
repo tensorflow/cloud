@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the cloud preprocessing module."""
 
+import mock
 import os
 import unittest
 
@@ -23,17 +24,11 @@ from tensorflow_cloud.core import preprocess
 class TestPreprocess(unittest.TestCase):
     def setup_py(self):
         self.entry_point_name = "sample_compile_fit.py"
-        self.test_data_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
-        )
-        self.entry_point = os.path.join(self.test_data_path, self.entry_point_name)
+        self.entry_point = "sample_compile_fit.py"
 
     def setup_ipython(self):
         self.entry_point_name = "mnist_example_using_fit.ipynb"
-        self.test_data_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
-        )
-        self.entry_point = os.path.join(self.test_data_path, self.entry_point_name)
+        self.entry_point = "mnist_example_using_fit.ipynb"
 
     def get_preprocessed_entry_point(
         self,
@@ -154,7 +149,16 @@ class TestPreprocess(unittest.TestCase):
         ]
         self.assert_and_cleanup(expected_lines, script_lines)
 
-    def test_ipython_notebook(self):
+    @mock.patch("tensorflow_cloud.core.preprocess.PythonExporter")
+    def test_ipython_notebook(self, MockPythonExporter):
+        file_contents = (
+            "num_train_examples = info.splits['train'].num_examples\n"
+            "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n"
+        )
+        MockPythonExporter.return_value.from_filename.return_value = (
+            file_contents,
+            None,
+        )
         self.setup_ipython()
         script_lines = self.get_preprocessed_entry_point()
         expected_lines = [
@@ -167,5 +171,12 @@ class TestPreprocess(unittest.TestCase):
         for el in expected_lines:
             self.assertIn(el, script_lines)
         self.assertIn(
+            "num_train_examples = info.splits['train'].num_examples\n", script_lines
+        )
+        self.assertIn(
             "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n", script_lines
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
