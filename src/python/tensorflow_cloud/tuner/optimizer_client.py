@@ -22,9 +22,9 @@ from typing import Any, Dict, List, Mapping, Text, Union
 
 from googleapiclient import discovery
 from googleapiclient import errors
-from googleapiclient import http as googleapiclient_http
 import tensorflow as tf
 from tensorflow_cloud import version
+from tensorflow_cloud.utils import google_api_client
 
 # Following placeholder tag is for copybara rule that replace the tag
 # With an import statement of an internal library. The Library is needed
@@ -41,8 +41,6 @@ _SUGGESTION_COUNT_PER_REQUEST = 1
 
 # Number of tries to retry getting study if it was already created
 _NUM_TRIES_FOR_STUDIES = 3
-
-_USER_AGENT_FOR_CLOUD_TUNER_TRACKING = "cloud-tuner/" + version.__version__
 
 
 class SuggestionInactiveError(Exception):
@@ -350,7 +348,8 @@ def create_or_load_study(project_id, region, study_id, study_config):
     apidoc_path = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(apidoc_path, _OPTIMIZER_API_DOCUMENT_FILE)) as f:
         service_client = discovery.build_from_document(
-            service=json.load(f), requestBuilder=CloudTunerHttpRequest
+            service=json.load(f),
+            requestBuilder=google_api_client.TFCloudHttpRequest,
         )
 
     # Creates or loads a study.
@@ -392,21 +391,3 @@ def create_or_load_study(project_id, region, study_id, study_config):
                 break
 
     return _OptimizerClient(service_client, project_id, region, study_id)
-
-
-class CloudTunerHttpRequest(googleapiclient_http.HttpRequest):
-    """HttpRequest builder that sets a customized user-agent header to Cloud Tuner.
-
-    This is used to track the usage of the Cloud Tuner.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Construct a HttpRequest.
-
-        Args:
-            *args: Positional arguments to pass to the base class constructor.
-            **kwargs: Keyword arguments to pass to the base class constructor.
-        """
-        headers = kwargs.setdefault("headers", {})
-        headers["user-agent"] = _USER_AGENT_FOR_CLOUD_TUNER_TRACKING
-        super(CloudTunerHttpRequest, self).__init__(*args, **kwargs)
