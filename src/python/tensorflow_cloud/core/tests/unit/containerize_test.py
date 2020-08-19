@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the cloud docker containerization module."""
 
+import mock
 import os
 import tarfile
 import unittest
@@ -31,15 +32,10 @@ except ImportError:
 
 class TestContainerize(unittest.TestCase):
     def setup(self):
-        self.test_data_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
-        )
-        self.entry_point = os.path.join(
-            self.test_data_path, "mnist_example_using_fit.py"
-        )
+        self.entry_point = "sample.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
-        self.entry_point_dir, _ = os.path.split(self.entry_point)
+        self.entry_point_dir = "."
         self.mock_registry = "gcr.io/my-project"
         self.project_id = "my-project"
 
@@ -67,7 +63,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -96,7 +92,7 @@ class TestContainerize(unittest.TestCase):
             "RUN if [ -e requirements.txt ]; "
             "then pip install --no-cache -r requirements.txt; fi\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
 
@@ -120,7 +116,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
             "WORKDIR /my_app/temp/\n",
             "COPY /my_app/temp/ /my_app/temp/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -145,7 +141,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:nightly\n",
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -170,7 +166,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:latest\n",
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -192,7 +188,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:latest\n",
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -213,7 +209,7 @@ class TestContainerize(unittest.TestCase):
             "FROM tensorflow/tensorflow:{}\n".format(VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -235,7 +231,7 @@ class TestContainerize(unittest.TestCase):
             "WORKDIR /app/\n",
             "RUN pip install cloud-tpu-client\n",
             "COPY /app/ /app/\n",
-            'ENTRYPOINT ["python", "mnist_example_using_fit.py"]',
+            'ENTRYPOINT ["python", "sample.py"]',
         ]
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
@@ -332,38 +328,10 @@ class TestContainerize(unittest.TestCase):
             {
                 lcb.docker_file_path: "Dockerfile",
                 self.entry_point_dir: "/my_app/temp/",
-                self.entry_point: "/my_app/temp/mnist_example_using_fit.py",
+                self.entry_point: "/my_app/temp/sample.py",
             },
         )
 
-        self.cleanup(lcb.docker_file_path)
-
-    def test_get_tar_file_path(self):
-        self.setup()
-        req_file = "requirements.txt"
-        with open(req_file, "w") as f:
-            f.writelines(["tensorflow-datasets"])
-
-        lcb = containerize.LocalContainerBuilder(
-            self.entry_point,
-            self.entry_point,
-            self.chief_config,
-            self.worker_config,
-            self.mock_registry,
-            self.project_id,
-            requirements_txt=req_file,
-        )
-
-        lcb._get_tar_file_path()
-        assert tarfile.is_tarfile(lcb.tar_file_path)
-
-        tar_file = tarfile.open(lcb.tar_file_path)
-        tar_file_names = [m.name for m in tar_file.getmembers()]
-        self.assertIn("app/mnist_example_using_fit.py", tar_file_names)
-        self.assertIn("app/requirements.txt", tar_file_names)
-        self.assertIn("Dockerfile", tar_file_names)
-
-        os.remove(req_file)
         self.cleanup(lcb.docker_file_path)
 
     @patch("tensorflow_cloud.core.containerize.logger")
@@ -392,7 +360,11 @@ class TestContainerize(unittest.TestCase):
             return mock_img_tag
 
         lcb._generate_name = _mock_generate_name
-        img_tag = lcb.get_docker_image()
+        lcb._get_file_path_map = mock.Mock()
+        lcb._get_file_path_map.return_value = {}
+        lcb.tar_file_path = ""
+        with mock.patch("builtins.open", mock.mock_open(read_data="")) as mock_file:
+            img_tag = lcb.get_docker_image()
 
         self.assertEqual(img_tag, mock_img_tag)
 
@@ -427,3 +399,7 @@ class TestContainerize(unittest.TestCase):
             ]
         )
         self.cleanup(lcb.docker_file_path)
+
+
+if __name__ == "__main__":
+    unittest.main()

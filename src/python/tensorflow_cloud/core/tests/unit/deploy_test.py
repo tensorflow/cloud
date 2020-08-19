@@ -17,9 +17,12 @@ import io
 import mock
 import os
 import shutil
+import subprocess
 import sys
 import tarfile
 import unittest
+
+from googleapiclient import errors
 
 from tensorflow_cloud import version
 from tensorflow_cloud.core import deploy
@@ -33,10 +36,7 @@ class TestDeploy(unittest.TestCase):
     def setup(self, MockDiscovery):
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
-        self.test_data_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "../testdata/"
-        )
-        self.entry_point = os.path.join(self.test_data_path, "sample_compile_fit.py")
+        self.entry_point = "sample_compile_fit.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
         self.worker_count = 2
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -245,3 +245,52 @@ class TestDeploy(unittest.TestCase):
                 "body": self.expected_request_dict,
             },
         )
+
+    @patch("tensorflow_cloud.core.deploy.discovery")
+    def test_deploy_job_error(self, MockDiscovery):
+        self.setup(MockDiscovery)
+        chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
+        worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
+        worker_count = 1
+
+        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val.projects.side_effect = errors.HttpError(
+            mock.Mock(status=404), b"not found"
+        )
+
+        with self.assertRaises(errors.HttpError):
+            deploy.deploy_job(
+                self.region,
+                self.docker_img,
+                chief_config,
+                worker_count,
+                worker_config,
+                self.entry_point_args,
+                self.stream_logs,
+            )
+
+    @patch("tensorflow_cloud.core.deploy.subprocess")
+    @patch("tensorflow_cloud.core.deploy.discovery")
+    def test_logs_streaming_error(self, MockDiscovery, MockSubprocess):
+        self.setup(MockDiscovery)
+        chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
+        worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
+        worker_count = 1
+
+        MockSubprocess.Popen.side_effect = ValueError("error")
+        self.stream_logs = True
+
+        with self.assertRaises(ValueError):
+            deploy.deploy_job(
+                self.region,
+                self.docker_img,
+                chief_config,
+                worker_count,
+                worker_config,
+                self.entry_point_args,
+                self.stream_logs,
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

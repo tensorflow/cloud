@@ -91,7 +91,8 @@ def deploy_job(
         if enable_stream_logs:
             _stream_logs(job_id)
     except errors.HttpError as err:
-        raise RuntimeError("There was an error submitting the job." + err._get_reason())
+        print("There was an error submitting the job.")
+        raise err
     return job_id
 
 
@@ -224,10 +225,9 @@ def _stream_logs(job_id):
                 break
             if output:
                 print(output.decode().replace("\x08", ""))
-    except subprocess.SubprocessError as err:
-        raise RuntimeError(
-            "There was an error streaming the job logs. {}".format(err._get_reason())
-        )
+    except (ValueError, OSError) as err:
+        print("There was an error streaming the job logs.")
+        raise err
 
 
 def _generate_job_id():
