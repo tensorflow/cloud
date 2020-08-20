@@ -249,6 +249,10 @@ def _called_from_notebook():
     """Detects if we are currently executing in a notebook environment."""
     try:
         import IPython
+    except ImportError:
+        return False
+
+    try:
         shell = IPython.get_ipython().__class__.__name__
         if "Shell" in shell:
             return True
