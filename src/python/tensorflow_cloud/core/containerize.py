@@ -34,7 +34,7 @@ from googleapiclient import discovery
 from googleapiclient import errors
 
 try:
-    from tensorflow.python.framework.versions import VERSION
+    from tensorflow import __version__ as VERSION
 except ImportError:
     # Use the latest TF docker image if a local installation is not available.
     VERSION = "latest"
