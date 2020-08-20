@@ -17,6 +17,7 @@ import docker
 import mock
 import os
 import tarfile
+import tempfile
 import unittest
 
 from tensorflow_cloud.core import containerize
@@ -70,7 +71,7 @@ class TestContainerize(unittest.TestCase):
 
     def test_create_docker_with_requirements(self):
         self.setup()
-        req_file = "requirements.txt"
+        req_file = os.path.join(tempfile.mkdtemp(), "requirements.txt")
         with open(req_file, "w") as f:
             f.writelines(["tensorflow-datasets"])
 
@@ -258,7 +259,7 @@ class TestContainerize(unittest.TestCase):
 
     def test_get_file_path_map_with_requirements(self):
         self.setup()
-        req_file = "requirements.txt"
+        req_file = os.path.join(tempfile.mkdtemp(), "requirements.txt")
         with open(req_file, "w") as f:
             f.writelines(["tensorflow-datasets"])
 
