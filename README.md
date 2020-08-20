@@ -206,7 +206,7 @@ Please note that all the files in the same directory tree as `entry_point` will 
 
 **2. Using a notebook file as `entry_point`.**
 
-If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP. 
+If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP.
 
 ```python
 import tensorflow_cloud as tfc
@@ -217,7 +217,7 @@ Please note that all the files in the same directory tree as `entry_point` will 
 
 **3. Using `run` within a python script that contains the `tf.keras` model.**
 
-You can use the `run` API from within your python file that contains the `tf.keras` model (`mnist_scale.py`). In this use case, `entry_point` should be `None`. The `run` API can be called anywhere and the entire file will be executed remotely. The API can be called at the end to run the script locally for debugging purposes (possibly with fewer epochs and other flags). The recommended workflow is to create a new directory which only contains files directly related to your project In this case as well. 
+You can use the `run` API from within your python file that contains the `tf.keras` model (`mnist_scale.py`). In this use case, `entry_point` should be `None`. The `run` API can be called anywhere and the entire file will be executed remotely. The API can be called at the end to run the script locally for debugging purposes (possibly with fewer epochs and other flags).
 
 ```python
 import tensorflow_datasets as tfds
@@ -268,6 +268,8 @@ model.compile(loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 model.fit(train_dataset, epochs=12)
 ```
+
+Please note that all the files in the same directory tree as the python script will be packaged in the docker image created, along with the python file. It's recommended to create a new directory to house each cloud project which includes necessary files and nothing else, to optimize image build times.
 
 **4. Using `run` within a notebook script that contains the `tf.keras` model.**
 
