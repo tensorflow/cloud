@@ -32,13 +32,15 @@ except ImportError:
 
 @mock.patch("tensorflow_cloud.core.containerize.requests")
 class TestContainerize(unittest.TestCase):
-    def setup(self):
+    def setup(self, mock_requests):
         self.entry_point = "sample.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.entry_point_dir = "."
         self.mock_registry = "gcr.io/my-project"
         self.project_id = "my-project"
+        mock_requests.get.return_value = mock.Mock()
+        mock_requests.get.return_value.ok = True
 
     def cleanup(self, docker_file):
         os.remove(docker_file)
@@ -48,8 +50,8 @@ class TestContainerize(unittest.TestCase):
             actual_lines = f.readlines()
             self.assertListEqual(expected_lines, actual_lines)
 
-    def test_create_docker_file_defaults(self, MockRequests):
-        self.setup()
+    def test_create_docker_file_defaults(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -69,8 +71,8 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_create_docker_with_requirements(self, MockRequests):
-        self.setup()
+    def test_create_docker_with_requirements(self, mock_requests):
+        self.setup(mock_requests)
         req_file = "requirements.txt"
         with open(req_file, "w") as f:
             f.writelines(["tensorflow-datasets"])
@@ -100,8 +102,8 @@ class TestContainerize(unittest.TestCase):
         os.remove(req_file)
         self.cleanup(lcb.docker_file_path)
 
-    def test_create_docker_file_with_destination_dir(self, MockRequests):
-        self.setup()
+    def test_create_docker_file_with_destination_dir(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -122,10 +124,9 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_check_docker_base_image_nightly(self, MockRequests):
-        self.setup()
-        MockRequests.get.return_value = mock.Mock()
-        MockRequests.get.return_value.ok = False
+    def test_check_docker_base_image_nightly(self, mock_requests):
+        self.setup(mock_requests)
+        mock_requests.get.return_value.ok = False
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -149,10 +150,9 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_check_nonexistent_docker_image(self, MockRequests):
-        self.setup()
-        MockRequests.get.return_value = mock.Mock()
-        MockRequests.get.return_value.ok = False
+    def test_check_nonexistent_docker_image(self, mock_requests):
+        self.setup(mock_requests)
+        mock_requests.get.return_value.ok = False
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -176,8 +176,8 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_create_docker_file_with_docker_base_image(self, MockRequests):
-        self.setup()
+    def test_create_docker_file_with_docker_base_image(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -198,8 +198,8 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_create_docker_file_with_cpu_config(self, MockRequests):
-        self.setup()
+    def test_create_docker_file_with_cpu_config(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -219,8 +219,8 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_create_docker_file_with_tpu_config(self, MockRequests):
-        self.setup()
+    def test_create_docker_file_with_tpu_config(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -241,8 +241,8 @@ class TestContainerize(unittest.TestCase):
         self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
-    def test_get_file_path_map_defaults(self, MockRequests):
-        self.setup()
+    def test_get_file_path_map_defaults(self, mock_requests):
+        self.setup(mock_requests)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -261,8 +261,8 @@ class TestContainerize(unittest.TestCase):
 
         self.cleanup(lcb.docker_file_path)
 
-    def test_get_file_path_map_with_requirements(self, MockRequests):
-        self.setup()
+    def test_get_file_path_map_with_requirements(self, mock_requests):
+        self.setup(mock_requests)
         req_file = "requirements.txt"
         with open(req_file, "w") as f:
             f.writelines(["tensorflow-datasets"])
@@ -291,8 +291,8 @@ class TestContainerize(unittest.TestCase):
         os.remove(req_file)
         self.cleanup(lcb.docker_file_path)
 
-    def test_get_file_path_map_with_destination_dir(self, MockRequests):
-        self.setup()
+    def test_get_file_path_map_with_destination_dir(self, mock_requests):
+        self.setup(mock_requests)
 
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
@@ -313,8 +313,8 @@ class TestContainerize(unittest.TestCase):
 
         self.cleanup(lcb.docker_file_path)
 
-    def test_get_file_path_map_with_wrapped_entry_point(self, MockRequests):
-        self.setup()
+    def test_get_file_path_map_with_wrapped_entry_point(self, mock_requests):
+        self.setup(mock_requests)
 
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
@@ -341,15 +341,15 @@ class TestContainerize(unittest.TestCase):
 
     @mock.patch("tensorflow_cloud.core.containerize.logger")
     @mock.patch("docker.APIClient")
-    def test_get_docker_image(self, MockAPIClient, MockLogger, MockRequests):
-        self.setup()
+    def test_get_docker_image(self, mock_api_client, mock_logger, mock_requests):
+        self.setup(mock_requests)
         mock_registry = "gcr.io/my-project"
         mock_img_tag = mock_registry + "/tensorflow-train:abcde"
 
         # Verify mocking is correct and mock img tag.
-        assert MockAPIClient is docker.APIClient
-        assert MockLogger is containerize.logger
-        docker_client = MockAPIClient.return_value
+        assert mock_api_client is docker.APIClient
+        assert mock_logger is containerize.logger
+        docker_client = mock_api_client.return_value
 
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
@@ -374,8 +374,8 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(img_tag, mock_img_tag)
 
         # Verify docker APIClient is invoked as expected.
-        self.assertEqual(MockAPIClient.call_count, 1)
-        _, kwargs = MockAPIClient.call_args
+        self.assertEqual(mock_api_client.call_count, 1)
+        _, kwargs = mock_api_client.call_args
         self.assertDictEqual(kwargs, {"version": "auto"})
 
         # Verify APIClient().build is invoked as expected.
@@ -396,8 +396,8 @@ class TestContainerize(unittest.TestCase):
         self.assertDictEqual(kwargs, {"decode": True, "stream": True})
 
         # Verify logger info calls.
-        self.assertEqual(MockLogger.info.call_count, 2)
-        MockLogger.info.assert_has_calls(
+        self.assertEqual(mock_logger.info.call_count, 2)
+        mock_logger.info.assert_has_calls(
             [
                 mock.call(r"Building docker image: " + img_tag),
                 mock.call(r"Publishing docker image: " + img_tag),

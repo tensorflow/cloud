@@ -33,7 +33,7 @@ import mock
 
 
 class TestDeploy(unittest.TestCase):
-    def setup(self, MockDiscovery):
+    def setup(self, mock_discovery):
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
         self.entry_point = "sample_compile_fit.py"
@@ -67,7 +67,7 @@ class TestDeploy(unittest.TestCase):
         }
 
         # Verify mocking is correct and setup method mocks.
-        assert MockDiscovery is deploy.discovery
+        assert mock_discovery is deploy.discovery
 
         def _mock_generate_job_id():
             return self.mock_job_id
@@ -81,8 +81,8 @@ class TestDeploy(unittest.TestCase):
 
     @mock.patch("sys.stdout", new_callable=io.StringIO)
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_deploy_job(self, MockDiscovery, MockStdOut):
-        self.setup(MockDiscovery)
+    def test_deploy_job(self, mock_discovery, mock_stdout):
+        self.setup(mock_discovery)
 
         job_name = deploy.deploy_job(
             self.region,
@@ -97,8 +97,8 @@ class TestDeploy(unittest.TestCase):
         self.assertEqual(job_name, self.mock_job_id)
 
         # Verify discovery API is invoked as expected.
-        self.assertEqual(MockDiscovery.build.call_count, 1)
-        args, kwargs = MockDiscovery.build.call_args
+        self.assertEqual(mock_discovery.build.call_count, 1)
+        args, kwargs = mock_discovery.build.call_args
         self.assertListEqual(list(args), ["ml", "v1"])
         self.assertDictEqual(
             kwargs,
@@ -109,7 +109,7 @@ class TestDeploy(unittest.TestCase):
         )
 
         # Verify job is created as expected
-        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val = mock_discovery.build.return_value
         self.assertEqual(build_ret_val.projects.call_count, 1)
         proj_ret_val = build_ret_val.projects.return_value
         self.assertEqual(proj_ret_val.jobs.call_count, 1)
@@ -128,7 +128,7 @@ class TestDeploy(unittest.TestCase):
 
         # Verify print statement
         self.assertEqual(
-            MockStdOut.getvalue(),
+            mock_stdout.getvalue(),
             "Job submitted successfully.\nYour job ID is:  {}\nPlease access "
             "your job logs at the following URL:\nhttps://"
             "console.cloud.google.com/mlengine/jobs/{}?project={}\n".format(
@@ -137,8 +137,8 @@ class TestDeploy(unittest.TestCase):
         )
 
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_without_workers(self, MockDiscovery):
-        self.setup(MockDiscovery)
+    def test_request_dict_without_workers(self, mock_discovery):
+        self.setup(mock_discovery)
         worker_count = 0
 
         job_name = deploy.deploy_job(
@@ -150,7 +150,7 @@ class TestDeploy(unittest.TestCase):
             self.entry_point_args,
             self.stream_logs,
         )
-        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val = mock_discovery.build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
@@ -169,8 +169,8 @@ class TestDeploy(unittest.TestCase):
         )
 
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_without_user_args(self, MockDiscovery):
-        self.setup(MockDiscovery)
+    def test_request_dict_without_user_args(self, mock_discovery):
+        self.setup(mock_discovery)
         job_name = deploy.deploy_job(
             self.region,
             self.docker_img,
@@ -180,7 +180,7 @@ class TestDeploy(unittest.TestCase):
             None,
             self.stream_logs,
         )
-        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val = mock_discovery.build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
@@ -197,8 +197,8 @@ class TestDeploy(unittest.TestCase):
         )
 
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_with_TPU_worker(self, MockDiscovery):
-        self.setup(MockDiscovery)
+    def test_request_dict_with_TPU_worker(self, mock_discovery):
+        self.setup(mock_discovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
@@ -212,7 +212,7 @@ class TestDeploy(unittest.TestCase):
             self.entry_point_args,
             self.stream_logs,
         )
-        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val = mock_discovery.build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
@@ -247,13 +247,13 @@ class TestDeploy(unittest.TestCase):
         )
 
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_deploy_job_error(self, MockDiscovery):
-        self.setup(MockDiscovery)
+    def test_deploy_job_error(self, mock_discovery):
+        self.setup(mock_discovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
 
-        build_ret_val = MockDiscovery.build.return_value
+        build_ret_val = mock_discovery.build.return_value
         build_ret_val.projects.side_effect = errors.HttpError(
             mock.Mock(status=404), b"not found"
         )
@@ -271,13 +271,13 @@ class TestDeploy(unittest.TestCase):
 
     @mock.patch("tensorflow_cloud.core.deploy.subprocess")
     @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_logs_streaming_error(self, MockDiscovery, MockSubprocess):
-        self.setup(MockDiscovery)
+    def test_logs_streaming_error(self, mock_discovery, mock_subprocess):
+        self.setup(mock_discovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
 
-        MockSubprocess.Popen.side_effect = ValueError("error")
+        mock_subprocess.Popen.side_effect = ValueError("error")
         self.stream_logs = True
 
         with self.assertRaises(ValueError):
