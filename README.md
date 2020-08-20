@@ -189,6 +189,7 @@ run(entry_point=None,
     entry_point_args=None,
     stream_logs=False,
     docker_image_bucket_name=None,
+    job_labels=None,
     **kwargs)
 ```
 
