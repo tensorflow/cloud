@@ -29,6 +29,7 @@ from googleapiclient import discovery
 import tensorflow as tf
 import google.auth
 from tensorflow_cloud.experimental.cloud_fit import utils
+from tensorflow_cloud.utils import google_api_client
 
 MULTI_WORKER_MIRRORED_STRATEGY_NAME = utils.MULTI_WORKER_MIRRORED_STRATEGY_NAME
 MIRRORED_STRATEGY_NAME = utils.MIRRORED_STRATEGY_NAME
@@ -85,8 +86,7 @@ def cloud_fit(
     if distribution_strategy not in SUPPORTED_DISTRIBUTION_STRATEGIES:
         raise ValueError(
             "{} is not supported. Supported Strategies are {}".format(
-                distribution_strategy,
-                list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
+                distribution_strategy, list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
             )
         )
 
@@ -247,7 +247,13 @@ def _submit_job(job_spec, project_id=None):
     # Configure AI Platform Training job
     # Disabling cache discovery to suppress noisy warning. More details at:
     # https://github.com/googleapis/google-api-python-client/issues/299
-    api_client = discovery.build("ml", "v1", cache_discovery=False)
+    api_client = discovery.build(
+        "ml",
+        "v1",
+        cache_discovery=False,
+        requestBuilder=google_api_client.TFCloudHttpRequest,
+    )
+
     try:
         request = api_client.projects().jobs().create(body=job_spec, parent=project_id)
         request.execute()
