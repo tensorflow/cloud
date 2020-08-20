@@ -31,7 +31,7 @@ except ImportError:
 
 
 class TestContainerize(unittest.TestCase):
-    def setup(self, mock_requests_get=True):
+    def setup(self, requests_get_return_value=True):
         self.entry_point = "sample.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
         self.worker_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -41,7 +41,7 @@ class TestContainerize(unittest.TestCase):
 
         self._mock_request_get = mock.patch("requests.get").start()
         self._mock_request_get.return_value = mock.Mock()
-        self._mock_request_get.return_value.ok = mock_requests_get
+        self._mock_request_get.return_value.ok = requests_get_return_value
 
     def cleanup(self, docker_file):
         mock.patch.stopall()
@@ -127,7 +127,7 @@ class TestContainerize(unittest.TestCase):
         self.cleanup(lcb.docker_file_path)
 
     def test_check_docker_base_image_nightly(self):
-        self.setup(mock_requests_get=False)
+        self.setup(requests_get_return_value=False)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
@@ -152,7 +152,7 @@ class TestContainerize(unittest.TestCase):
         self.cleanup(lcb.docker_file_path)
 
     def test_check_nonexistent_docker_image(self):
-        self.setup(mock_requests_get=False)
+        self.setup(requests_get_return_value=False)
         lcb = containerize.LocalContainerBuilder(
             self.entry_point,
             None,
