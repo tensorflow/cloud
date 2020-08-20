@@ -189,6 +189,7 @@ run(entry_point=None,
     entry_point_args=None,
     stream_logs=False,
     docker_image_bucket_name=None,
+    job_labels=None,
     **kwargs)
 ```
 
@@ -201,7 +202,7 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.py')
 ```
 
-Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file. It's recommended to create a new directory to house each cloud project which includes necessary files and nothing else, to optimize image build times. 
 
 **2. Using a notebook file as `entry_point`.**
 
@@ -212,7 +213,7 @@ import tensorflow_cloud as tfc
 tfc.run(entry_point='mnist_example.ipynb')
 ```
 
-Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file.
+Please note that all the files in the same directory tree as `entry_point` will be packaged in the docker image created, along with the `entry_point` file. Like the python script `entry_point` above, we recommended creating a new directory to house each cloud project which includes necessary files and nothing else, to optimize image build times. 
 
 **3. Using `run` within a python script that contains the `tf.keras` model.**
 
@@ -267,6 +268,8 @@ model.compile(loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 model.fit(train_dataset, epochs=12)
 ```
+
+Please note that all the files in the same directory tree as the python script will be packaged in the docker image created, along with the python file. It's recommended to create a new directory to house each cloud project which includes necessary files and nothing else, to optimize image build times.
 
 **4. Using `run` within a notebook script that contains the `tf.keras` model.**
 
@@ -391,6 +394,11 @@ Here are some tips for fixing unexpected issues.
 **Error like**: Creating a generator within a strategy scope is disallowed, because there is ambiguity on how to replicate a generator (e.g. should it be copied so that each replica gets the same random numbers, or 'split' so that each replica gets different random numbers).
 
 **Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/testdata/save_and_load.py) example.
+
+#### Docker image build timeout
+**Error like**: requests.exceptions.ConnectionError: ('Connection aborted.', timeout('The write operation timed out'))
+
+**Solution**: The directory being used as an entry point likely has too much data for the image to successfully build, and there may be extraneous data included in the build. Reformat your directory structure such that the folder which contains the entry point only includes files necessary for the current project. 
 
 #### Version not supported for TPU training
 
