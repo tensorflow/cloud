@@ -21,7 +21,6 @@ import unittest
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import machine_config
 
-from mock import call, patch
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -334,8 +333,8 @@ class TestContainerize(unittest.TestCase):
 
         self.cleanup(lcb.docker_file_path)
 
-    @patch("tensorflow_cloud.core.containerize.logger")
-    @patch("tensorflow_cloud.core.containerize.APIClient")
+    @mock.patch("tensorflow_cloud.core.containerize.logger")
+    @mock.patch("tensorflow_cloud.core.containerize.APIClient")
     def test_get_docker_image(self, MockAPIClient, MockLogger):
         self.setup()
         mock_registry = "gcr.io/my-project"

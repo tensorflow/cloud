@@ -17,12 +17,10 @@ import mock
 import os
 import unittest
 
-from mock import patch
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
 
 
-@mock.patch("os.path")
 class TestValidate(unittest.TestCase):
     def setup(self):
         self.script_entry_point = "mnist_example_using_fit.py"

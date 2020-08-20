@@ -27,7 +27,7 @@ import requests
 import warnings
 
 from . import machine_config
-from docker import APIClient
+import docker
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from googleapiclient import discovery
@@ -299,7 +299,7 @@ class LocalContainerBuilder(ContainerBuilder):
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
         """
-        self.docker_client = APIClient(version="auto")
+        self.docker_client = docker.APIClient(version="auto")
         self._get_tar_file_path()
 
         # create docker image from tarball
