@@ -206,7 +206,7 @@ Please note that all the files in the same directory tree as `entry_point` will 
 
 **2. Using a notebook file as `entry_point`.**
 
-If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP.
+If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`), then you can write the following simple script (`scale_mnist.py`) to scale your model on GCP. Like the python script `entry_point` above, we recommended creating a new directory to house each cloud project which includes necessary files and nothing else, to optimize image build times. 
 
 ```python
 import tensorflow_cloud as tfc
