@@ -27,14 +27,14 @@ import requests
 import warnings
 
 from . import machine_config
-from docker import APIClient
+import docker
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from googleapiclient import discovery
 from googleapiclient import errors
 
 try:
-    from tensorflow.python.framework.versions import VERSION
+    from tensorflow import __version__ as VERSION
 except ImportError:
     # Use the latest TF docker image if a local installation is not available.
     VERSION = "latest"
@@ -101,6 +101,10 @@ class ContainerBuilder(object):
         self.docker_image_bucket_name = docker_image_bucket_name
         self.called_from_notebook = called_from_notebook
         self.project_id = project_id
+
+        # Those will be populated lazily.
+        self.tar_file_path = None
+        self.docker_client = None
 
     def get_docker_image(
         self, max_status_check_attempts=None, delay_between_status_checks=None
@@ -299,7 +303,7 @@ class LocalContainerBuilder(ContainerBuilder):
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
         """
-        self.docker_client = APIClient(version="auto")
+        self.docker_client = docker.APIClient(version="auto")
         self._get_tar_file_path()
 
         # create docker image from tarball

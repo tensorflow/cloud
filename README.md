@@ -2,17 +2,17 @@
 
 The TensorFlow Cloud repository provides APIs that will allow to easily go from debugging, training, tuning your Keras and TensorFlow code in a local environment to distributed training/tuning on Cloud.
 
-# Introduction
+## Introduction
 
 - [TensorFlow Cloud `run` API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/README.md)
 
 - [TensorFlow Cloud Tuner](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/README.md)
 
-# TensorFlow Cloud `run` API for GCP training/tuning
+## TensorFlow Cloud `run` API for GCP training/tuning
 
-## Installation
+### Installation
 
-### Requirements
+#### Requirements
 
 - Python >= 3.5
 - [A Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
@@ -24,13 +24,13 @@ The TensorFlow Cloud repository provides APIs that will allow to easily go from 
 
 For detailed end to end setup instructions, please see [Setup instructions](#setup-instructions).
 
-### Install latest release
+#### Install latest release
 
 ```shell
 pip install -U tensorflow-cloud
 ```
 
-### Install from source
+#### Install from source
 
 ```shell
 git clone https://github.com/tensorflow/cloud.git
@@ -38,7 +38,7 @@ cd cloud
 pip install src/python/.
 ```
 
-## High level overview
+### High level overview
 
 TensorFlow Cloud package provides the `run` API for training your models on GCP. To start, let's walk through a simple workflow using this API.
 
@@ -84,7 +84,7 @@ Please access your job logs at the following URL:
 https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
 ```
 
-## Setup instructions
+### Setup instructions
 
 End to end instructions to help set up your environment for Tensorflow Cloud.
 
@@ -173,7 +173,7 @@ pip install nbconvert
 pip install tensorflow-cloud
 ```
 
-## Usage guide
+### Usage guide
 
 As described in the [high level overview](#high-level-overview), the `run` API allows you to train your models at scale on GCP. The [`run`](https://github.com/tensorflow/cloud/blob/master/src/python/core/run.py#L31) API can be used in four different ways. This is defined by where you are running the API (Terminal vs IPython notebook), and your `entry_point` parameter. `entry_point` is an optional Python script or notebook file path to the file that contains your TensorFlow Keras training code. This is the most important parameter in the API.
 
@@ -277,7 +277,7 @@ Please note that all the files in the same directory tree as the python script w
 
 In this use case, `entry_point` should be `None` and `docker_image_bucket_name` must be specified, to ensure the build can be stored and published.
 
-## Cluster and distribution strategy configuration
+### Cluster and distribution strategy configuration
 
 By default, `run` API takes care of wrapping your model code in a TensorFlow distribution strategy based on the cluster configuration you have provided.
 
@@ -342,7 +342,7 @@ tfc.run(entry_point='mnist_example.py',
         worker_count=2)
 ```
 
-### What happens when you call run?
+#### What happens when you call run?
 
 The API call will encompass the following:
 1. Making code entities such as a Keras script/notebook, **cloud and distribution ready**.
@@ -358,7 +358,7 @@ Please note that, when `entry_point` argument is specified, all the files in the
 
 Please see `run` API documentation for detailed information on the parameters and how you can modify the above processes to suit your needs. 
 
-## End to end examples
+### End to end examples
 
 ```shell
 cd src/python/tensorflow_cloud/core
@@ -373,54 +373,55 @@ python tests/examples/call_run_on_script_with_keras_fit.py
 - [Using cloud build instead of local docker](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_on_script_with_keras_fit_cloud_build.py).
 - [Run AutoKeras with TensorFlow Cloud](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/examples/call_run_within_script_with_autokeras.py).
 
-## Running unit tests
+### Running unit tests
 
 ```shell
 pytest src/python/tensorflow_cloud/core/tests/unit/
 ```
 
-## Local vs remote training
+### Local vs remote training
 
 Things to keep in mind when running your jobs remotely:
 
 [Coming soon]
 
-## Debugging workflow
+### Debugging workflow
 
 Here are some tips for fixing unexpected issues.
 
-### Operation disallowed within distribution strategy scope
+#### Operation disallowed within distribution strategy scope
 
 **Error like**: Creating a generator within a strategy scope is disallowed, because there is ambiguity on how to replicate a generator (e.g. should it be copied so that each replica gets the same random numbers, or 'split' so that each replica gets different random numbers).
 
 **Solution**: Passing `distribution_strategy='auto'` to `run` API wraps all of your script in a TF distribution strategy based on the cluster configuration provided. You will see the above error or something similar to it, if for some reason an operation is not allowed inside distribution strategy scope. To fix the error, please pass `None` to the `distribution_strategy` param and create a strategy instance as part of your training code as shown in [this](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/tests/testdata/save_and_load.py) example.
 
+#### Docker image build timeout
 **Error like**: requests.exceptions.ConnectionError: ('Connection aborted.', timeout('The write operation timed out'))
 
 **Solution**: The directory being used as an entry point likely has too much data for the image to successfully build, and there may be extraneous data included in the build. Reformat your directory structure such that the folder which contains the entry point only includes files necessary for the current project. 
 
-### Version not supported for TPU training
+#### Version not supported for TPU training
 
 **Error like**: There was an error submitting the job.Field: tpu_tf_version Error: The specified runtime version '2.3' is not supported for TPU training. Please specify a different runtime version.
 
 **Solution**: Please use TF version 2.1. See TPU Strategy in [Cluster and distribution strategy configuration section](#cluster-and-distribution-strategy-configuration).
 
-### TF nightly build.
+#### TF nightly build.
 
 **Warning like**: Docker base image '2.4.0.dev20200720' does not exist. Using the latest TF nightly build.
 
 **Solution**: If you do not provide `docker_base_image` param, then by default we use pre-built TF docker images as base image. If you do not have TF installed on the environment where `run` is called, then TF docker image for the `latest` stable release will be used. Otherwise, the version of the docker image will match the locally installed TF version. However, pre-built TF docker images aren't available for TF nightlies except for the latest. So, if your local TF is an older nightly version, we upgrade to the latest nightly automatically and raise this warning.
 
-## Coming up
+### Coming up
 
 - Distributed Keras tuner support.
 
-# Contributing
+## Contributing
 
 We welcome community contributions, see [CONTRIBUTING.md](CONTRIBUTING.md) and, for style help,
 [Writing TensorFlow documentation](https://www.tensorflow.org/community/documentation)
 guide.
 
-# License
+## License
 
 [Apache License 2.0](LICENSE)

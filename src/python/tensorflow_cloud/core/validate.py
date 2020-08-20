@@ -24,7 +24,7 @@ from . import machine_config
 from . import gcp
 
 try:
-    from tensorflow.python.framework.versions import VERSION
+    from tensorflow import __version__ as VERSION
 except ImportError:
     # Use TF runtime version 2.1 (latest supported) as the default.
     # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
