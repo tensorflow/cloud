@@ -28,7 +28,7 @@ class TestValidate(unittest.TestCase):
         self.notebook_entry_point = "mnist_example_using_fit.ipynb"
         self.requirements_file = "requirements.txt"
 
-    def test_valid_args(self, MockOsPath):
+    def test_valid_args(self, mock_os_path):
         self.setup()
         validate.validate(
             entry_point=self.script_entry_point,
@@ -101,8 +101,8 @@ class TestValidate(unittest.TestCase):
             job_labels={"a": "b"},
         )
 
-    def test_invalid_entry_point(self, MockOsPath):
-        MockOsPath.isfile.return_value = False
+    def test_invalid_entry_point(self, mock_os_path):
+        mock_os_path.isfile.return_value = False
         with self.assertRaisesRegex(ValueError, r"Invalid `entry_point`"):
             validate.validate(
                 entry_point="/mnist_example_using_fit.py",
@@ -133,8 +133,8 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_requirements_txt(self, MockOsPath):
-        MockOsPath.isfile.return_value = False
+    def test_invalid_requirements_txt(self, mock_os_path):
+        mock_os_path.isfile.return_value = False
         with self.assertRaisesRegex(ValueError, r"Invalid `requirements_txt`"):
             validate.validate(
                 entry_point=None,
@@ -150,7 +150,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_distribution_strategy(self, MockOsPath):
+    def test_invalid_distribution_strategy(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `distribution_strategy`"):
             validate.validate(
                 entry_point=None,
@@ -166,7 +166,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_chief_config(self, MockOsPath):
+    def test_invalid_chief_config(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `chief_config`"):
             validate.validate(
                 entry_point=None,
@@ -182,7 +182,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_worker_config(self, MockOsPath):
+    def test_invalid_worker_config(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_config`"):
             validate.validate(
                 entry_point=None,
@@ -198,7 +198,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_worker_count(self, MockOsPath):
+    def test_invalid_worker_count(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_count`"):
             validate.validate(
                 entry_point=None,
@@ -214,7 +214,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_region(self, MockOsPath):
+    def test_invalid_region(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `region`"):
             validate.validate(
                 entry_point=None,
@@ -230,7 +230,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_args(self, MockOsPath):
+    def test_invalid_args(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `entry_point_args`"):
             validate.validate(
                 entry_point=None,
@@ -246,7 +246,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_stream_logs(self, MockOsPath):
+    def test_invalid_stream_logs(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `stream_logs`"):
             validate.validate(
                 entry_point=None,
@@ -262,7 +262,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_cloud_bucket_name(self, MockOsPath):
+    def test_invalid_cloud_bucket_name(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `docker_image_bucket_name`"):
             validate.validate(
                 entry_point=None,
@@ -278,7 +278,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=True,
             )
 
-    def test_invalid_tpu_chief_config(self, MockOsPath):
+    def test_invalid_tpu_chief_config(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `chief_config`"):
             validate.validate(
                 entry_point=None,
@@ -294,7 +294,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_tpu_worker_count(self, MockOsPath):
+    def test_invalid_tpu_worker_count(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_count`"):
             validate.validate(
                 entry_point=None,
@@ -310,7 +310,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    def test_invalid_tpu_accelerator_count(self, MockOsPath):
+    def test_invalid_tpu_accelerator_count(self, mock_os_path):
         with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
             validate.validate(
                 entry_point=None,
@@ -329,7 +329,7 @@ class TestValidate(unittest.TestCase):
             )
 
     @mock.patch("tensorflow_cloud.core.validate.VERSION", "2.2.0")
-    def test_invalid_tpu_accelerator_tf_version(self, MockOsPath):
+    def test_invalid_tpu_accelerator_tf_version(self, mock_os_path):
         with self.assertRaisesRegex(
             NotImplementedError, r"TPUs are only supported for TF version <= 2.1.0"
         ):

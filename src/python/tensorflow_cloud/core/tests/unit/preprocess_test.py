@@ -150,12 +150,12 @@ class TestPreprocess(unittest.TestCase):
         self.assert_and_cleanup(expected_lines, script_lines)
 
     @mock.patch("tensorflow_cloud.core.preprocess.PythonExporter")
-    def test_ipython_notebook(self, MockPythonExporter):
+    def test_ipython_notebook(self, mock_python_exporter):
         file_contents = (
             "num_train_examples = info.splits['train'].num_examples\n"
             "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n"
         )
-        MockPythonExporter.return_value.from_filename.return_value = (
+        mock_python_exporter.return_value.from_filename.return_value = (
             file_contents,
             None,
         )
