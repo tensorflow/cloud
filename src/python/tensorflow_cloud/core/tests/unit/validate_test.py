@@ -17,7 +17,6 @@ import mock
 import os
 import unittest
 
-from mock import patch
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
 
@@ -329,7 +328,7 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    @patch("tensorflow_cloud.core.validate.VERSION", "2.2.0")
+    @mock.patch("tensorflow_cloud.core.validate.VERSION", "2.2.0")
     def test_invalid_tpu_accelerator_tf_version(self, MockOsPath):
         with self.assertRaisesRegex(
             NotImplementedError, r"TPUs are only supported for TF version <= 2.1.0"

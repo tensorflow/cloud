@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the cloud docker containerization module."""
 
+import docker
 import mock
 import os
 import tarfile
@@ -21,7 +22,6 @@ import unittest
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import machine_config
 
-from mock import call, patch
 
 try:
     from tensorflow.python.framework.versions import VERSION
@@ -334,15 +334,15 @@ class TestContainerize(unittest.TestCase):
 
         self.cleanup(lcb.docker_file_path)
 
-    @patch("tensorflow_cloud.core.containerize.logger")
-    @patch("tensorflow_cloud.core.containerize.APIClient")
+    @mock.patch("tensorflow_cloud.core.containerize.logger")
+    @mock.patch("docker.APIClient")
     def test_get_docker_image(self, MockAPIClient, MockLogger):
         self.setup()
         mock_registry = "gcr.io/my-project"
         mock_img_tag = mock_registry + "/tensorflow-train:abcde"
 
         # Verify mocking is correct and mock img tag.
-        assert MockAPIClient is containerize.APIClient
+        assert MockAPIClient is docker.APIClient
         assert MockLogger is containerize.logger
         docker_client = MockAPIClient.return_value
 
@@ -394,8 +394,8 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(MockLogger.info.call_count, 2)
         MockLogger.info.assert_has_calls(
             [
-                call(r"Building docker image: " + img_tag),
-                call(r"Publishing docker image: " + img_tag),
+                mock.call(r"Building docker image: " + img_tag),
+                mock.call(r"Publishing docker image: " + img_tag),
             ]
         )
         self.cleanup(lcb.docker_file_path)

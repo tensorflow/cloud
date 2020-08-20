@@ -29,7 +29,7 @@ from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.utils import google_api_client
 
-from mock import call, patch
+import mock
 
 
 class TestDeploy(unittest.TestCase):
@@ -79,8 +79,8 @@ class TestDeploy(unittest.TestCase):
 
         deploy.gcp.get_project_name = _mock_get_project_name
 
-    @patch("sys.stdout", new_callable=io.StringIO)
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("sys.stdout", new_callable=io.StringIO)
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_deploy_job(self, MockDiscovery, MockStdOut):
         self.setup(MockDiscovery)
 
@@ -136,7 +136,7 @@ class TestDeploy(unittest.TestCase):
             ),
         )
 
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_without_workers(self, MockDiscovery):
         self.setup(MockDiscovery)
         worker_count = 0
@@ -168,7 +168,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_without_user_args(self, MockDiscovery):
         self.setup(MockDiscovery)
         job_name = deploy.deploy_job(
@@ -196,7 +196,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_request_dict_with_TPU_worker(self, MockDiscovery):
         self.setup(MockDiscovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
@@ -246,7 +246,7 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_deploy_job_error(self, MockDiscovery):
         self.setup(MockDiscovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
@@ -269,8 +269,8 @@ class TestDeploy(unittest.TestCase):
                 self.stream_logs,
             )
 
-    @patch("tensorflow_cloud.core.deploy.subprocess")
-    @patch("tensorflow_cloud.core.deploy.discovery")
+    @mock.patch("tensorflow_cloud.core.deploy.subprocess")
+    @mock.patch("tensorflow_cloud.core.deploy.discovery")
     def test_logs_streaming_error(self, MockDiscovery, MockSubprocess):
         self.setup(MockDiscovery)
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
