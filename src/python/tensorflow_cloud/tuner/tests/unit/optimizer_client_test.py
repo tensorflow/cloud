@@ -20,7 +20,7 @@ import httplib2
 import mock
 import tensorflow as tf
 from tensorflow_cloud import version
-from tensorflow_cloud.tuner.tuner import optimizer_client
+from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.utils import google_api_client
 
 
