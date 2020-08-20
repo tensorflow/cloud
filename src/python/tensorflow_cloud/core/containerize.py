@@ -102,6 +102,10 @@ class ContainerBuilder(object):
         self.called_from_notebook = called_from_notebook
         self.project_id = project_id
 
+        # Those will be populated lazily.
+        self.tar_file_path = None
+        self.docker_client = None
+
     def get_docker_image(
         self, max_status_check_attempts=None, delay_between_status_checks=None
     ):
