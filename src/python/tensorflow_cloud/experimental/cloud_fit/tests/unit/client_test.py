@@ -24,6 +24,7 @@ import tensorflow_datasets as tfds
 
 from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.experimental.cloud_fit import utils
+from tensorflow_cloud.utils import google_api_client
 
 # Can only export Datasets which were created executing eagerly
 utils.enable_eager_for_tf_1()
@@ -109,7 +110,12 @@ class CloudFitClientTest(tf.test.TestCase):
         self._set_up_training_mocks()
 
         client._submit_job(self._job_spec, self._project_id)
-        mock_discovery_build.assert_called_once_with("ml", "v1", cache_discovery=False)
+        mock_discovery_build.assert_called_once_with(
+            "ml",
+            "v1",
+            cache_discovery=False,
+            requestBuilder=google_api_client.TFCloudHttpRequest,
+        )
 
         self._mock_create.assert_called_with(
             body=mock.ANY, parent="projects/{}".format(self._project_id)
