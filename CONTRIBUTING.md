@@ -24,6 +24,5 @@ information on using pull requests.
 
 ## Community Guidelines
 
-This project follows
-[TensorFlow's Code of Conduct](CODE_OF_CONDUCT.md), which is mirrored in our
-repository.
+This project follows [TensorFlow's Code of Conduct](CODE_OF_CONDUCT.md), which
+is mirrored in our repository.
