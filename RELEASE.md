@@ -1,3 +1,7 @@
+# Current Version (Still in Development)
+
+* Add notes for next release here.
+
 # Release 0.1.6
 
 * New Module CloudTuner - Implementation of a library for hyperparameter tuning that is built into the KerasTuner and creates a seamless integration with Cloud AI Platform Optimizer Beta as a backend to get suggestions of hyperparameters and run trials. 
