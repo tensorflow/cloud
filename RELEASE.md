@@ -1,3 +1,10 @@
+# Release 0.1.6
+
+* New module CloudTuner - Implementation of a library for hyperparameter tuning that is built into the KerasTuner and creates a seamless integration with [Cloud AI Platform Optimizer](https://cloud.google.com/ai-platform/optimizer/docs/overview) as a backend to get suggestions of hyperparameters and run trials. 
+* New application Monitoring - TensorFlow extension that exports its metrics to Stackdriver backend, allowing users to monitor the training and inference jobs in real time.
+* New experimental project cloud_fit - an experimental module that enables training keras models on [Cloud AI Platform Training](https://cloud.google.com/ai-platform/training/docs/overview) by serializing the model, and datasets for remote execution.
+* Small bug fixes
+
 # Release 0.1.5
 
 * Restructuring of source code for new projects
