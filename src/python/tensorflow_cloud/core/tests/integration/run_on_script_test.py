@@ -34,6 +34,7 @@ import tensorflow_cloud as tfc
 # Unique ID for this build, can be used as a label for an AI Platform training job.
 # BUILD_ID = os.environ['BUILD_ID']
 
+MACHINES = ["K80", "P100", "V100", "P4", "T4", "TPU_V2", "TPU_V3"]
 
 class RunOnScriptTest(tf.test.TestCase):
     def setUp(self):
@@ -55,8 +56,9 @@ class RunOnScriptTest(tf.test.TestCase):
         if tf.io.gfile.isdir(path):
             tf.io.gfile.rmtree(path)
 
+    #Custom dist strat with 2 workers and reqs
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_mwms_on_script(self, mock_exit):
+    def test_none_dist_strat_mwms_2w(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
             distribution_strategy=None,
@@ -65,6 +67,273 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         mock_exit.assert_called_once_with(0)
 
+    #Custom dist strat with 1 worker and reqs
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_none_dist_strat_mwms_1w(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            distribution_strategy=None,
+            worker_count=1,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
 
+    #Custom dist strat with 0 workers and reqs
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_none_dist_strat_mwms_0w(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            distribution_strategy=None,
+            worker_count=0,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    #Auto dist strat with 2 workers and reqs
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_dist_strat_2w(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            worker_count=2,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    #Auto dist strat with 1 workers and reqs
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_dist_strat_1w(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            worker_count=1,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    #Auto dist strat with 0 workers and reqs
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_dist_strat_0w(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            worker_count=0,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_1x_K80(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["K80"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_K80(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["K80"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["K80"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_3x_K80(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["K80"],
+            worker_count=2,
+            worker_config=COMMON_MACHINE_CONFIGS["K80"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_K80_bucket_img(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["K80"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["K80"],
+            docker_image_bucket_name="TEST_BUCKET",
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_1x_P100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_P100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P100"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["P100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_3x_P100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P100"],
+            worker_count=2,
+            worker_config=COMMON_MACHINE_CONFIGS["P100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_P100_bucket_img(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P100"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["P100"],
+            docker_image_bucket_name="TEST_BUCKET",
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_1x_V100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["V100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_V100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["V100"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["V100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_3x_V100(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["V100"],
+            worker_count=2,
+            worker_config=COMMON_MACHINE_CONFIGS["V100"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_V100_bucket_img(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["V100"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["V100"],
+            docker_image_bucket_name="TEST_BUCKET",
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_1x_P4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_P4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P4"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["P4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_3x_P4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P4"],
+            worker_count=2,
+            worker_config=COMMON_MACHINE_CONFIGS["P4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_P4_bucket_img(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["P4"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["P4"],
+            docker_image_bucket_name="TEST_BUCKET",
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+   @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_1x_T4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["T4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_T4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["T4"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["T4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_3x_T4(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["T4"],
+            worker_count=2,
+            worker_config=COMMON_MACHINE_CONFIGS["T4"],
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_2x_T4_bucket_img(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
+            chief_config=COMMON_MACHINE_CONFIGS["T4"],
+            worker_count=1,
+            worker_config=COMMON_MACHINE_CONFIGS["T4"],
+            docker_image_bucket_name="TEST_BUCKET",
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+        )
+        mock_exit.assert_called_once_with(0)
+
+        
 if __name__ == "__main__":
     tf.test.main()
