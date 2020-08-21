@@ -23,24 +23,10 @@ from typing import Any, Dict, List, Mapping, Text, Union
 from googleapiclient import discovery
 from googleapiclient import errors
 import tensorflow as tf
+
 from tensorflow_cloud import version
+from tensorflwo_cloud.tuner import constants
 from tensorflow_cloud.utils import google_api_client
-
-# Following placeholder tag is for copybara rule that replace the tag
-# With an import statement of an internal library. The Library is needed
-# to pass file path in build infrastructure for API documentation file.
-# PLACE_HOLDER_FOR_COPYBARA_IMPORT_DO_NOT_DELETE
-
-_OPTIMIZER_API_DOCUMENT_FILE = "api/ml_public_google_rest_v1.json"
-
-
-# By default, the Tuner worker(s) always requests one trial at a time because
-# we would parallelize the tuning loop themselves as opposed to getting multiple
-# trial suggestions in one tuning loop.
-_SUGGESTION_COUNT_PER_REQUEST = 1
-
-# Number of tries to retry getting study if it was already created
-_NUM_TRIES_FOR_STUDIES = 3
 
 
 class SuggestionInactiveError(Exception):
@@ -108,7 +94,7 @@ class _OptimizerClient(object):
                     parent=self._make_study_name(),
                     body={
                         "client_id": client_id,
-                        "suggestion_count": _SUGGESTION_COUNT_PER_REQUEST,
+                        "suggestion_count": constants.SUGGESTION_COUNT_PER_REQUEST,
                     },
                 )
                 .execute()
@@ -345,8 +331,7 @@ def create_or_load_study(project_id, region, study_id, study_config):
     # Build the API client
     # Note that Optimizer service is exposed as a regional endpoint. As such,
     # an API client needs to be created separately from the default.
-    apidoc_path = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(apidoc_path, _OPTIMIZER_API_DOCUMENT_FILE)) as f:
+    with open(constants.OPTIMIZER_API_DOCUMENT_FILE) as f:
         service_client = discovery.build_from_document(
             service=json.load(f),
             requestBuilder=google_api_client.TFCloudHttpRequest,
@@ -379,10 +364,10 @@ def create_or_load_study(project_id, region, study_id, study_config):
                     name=study_name
                 ).execute()
             except errors.HttpError as err:
-                if x >= _NUM_TRIES_FOR_STUDIES:
+                if x >= constants.NUM_TRIES_FOR_STUDIES:
                     raise RuntimeError(
                         "GetStudy wasn't successful after {0} tries: {1!s}".format(
-                            _NUM_TRIES_FOR_STUDIES, err
+                            constants.NUM_TRIES_FOR_STUDIES, err
                         )
                     )
                 x += 1
