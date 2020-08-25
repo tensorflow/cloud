@@ -16,7 +16,7 @@
     training keras models on
     [Cloud AI Platform Training](https://cloud.google.com/ai-platform/training/docs/overview)
     by serializing the model, and datasets for remote execution.
-*   Small bug fixes
+*   Small bug fixes.
 
 # Release 0.1.5
 
