@@ -178,7 +178,7 @@ class RunOnScriptTest(tf.test.TestCase):
     @mock.patch.object(sys, "exit", autospec=True)
     def test_tpu_dist_strat_mwms(self, mock_exit):
         tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
@@ -189,7 +189,7 @@ class RunOnScriptTest(tf.test.TestCase):
     @mock.patch.object(sys, "exit", autospec=True)
     def test_tpu_dist_strat_mwms_bucket_build(self, mock_exit):
         tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
@@ -201,7 +201,7 @@ class RunOnScriptTest(tf.test.TestCase):
     @mock.patch.object(sys, "exit", autospec=True)
     def test_tpu_dist_strat_mwms_custom_img(self, mock_exit):
         tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
@@ -213,7 +213,7 @@ class RunOnScriptTest(tf.test.TestCase):
     @mock.patch.object(sys, "exit", autospec=True)
     def test_tpu_dist_strat_mwms_bucket_build_custom_img(self, mock_exit):
         tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
