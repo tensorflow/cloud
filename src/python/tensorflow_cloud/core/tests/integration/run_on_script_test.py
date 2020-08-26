@@ -82,7 +82,7 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_multi_worker(self, mock_exit):
+    def test_auto_multi_worker_strategy(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             worker_count=1,
@@ -91,17 +91,7 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_multi_worker_bucket_build(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=1,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_multi_worker(self, mock_exit):
+    def test_none_dist_strat_multi_worker_strategy(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
             distribution_strategy=None,
@@ -111,7 +101,7 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_multi_worker_bucket_build(self, mock_exit):
+    def test_none_dist_strat_multi_worker_strategy_bucket_build(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
             worker_count=2,
