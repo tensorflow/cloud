@@ -20,19 +20,8 @@ from unittest import mock
 import tensorflow as tf
 import tensorflow_cloud as tfc
 
-# Following are the env variables available in test infrastructure:
-
 # The staging bucket to use for cloudbuild as well as save the model and data.
 _TEST_BUCKET = os.environ["TEST_BUCKET"]
-
-# The project id to use to run tests.
-# _PROJECT_ID = os.environ['PROJECT_ID']
-#
-# The GCP region in which the end-to-end test is run.
-# _REGION = os.environ['REGION']
-#
-# Unique ID for this build, can be used as a label for an AI Platform training job.
-# _BUILD_ID = os.environ['BUILD_ID']
 
 
 class RunOnScriptTest(tf.test.TestCase):
