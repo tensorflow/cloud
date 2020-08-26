@@ -54,7 +54,7 @@ BUFFER_SIZE = len(train_images)
 BATCH_SIZE_PER_REPLICA = 64
 GLOBAL_BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
 
-EPOCHS = 10
+EPOCHS = 2
 
 train_dataset = (
     tf.data.Dataset.from_tensor_slices((train_images, train_labels))

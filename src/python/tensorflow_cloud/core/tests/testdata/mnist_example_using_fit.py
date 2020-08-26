@@ -92,4 +92,4 @@ class PrintLR(tf.keras.callbacks.Callback):
 
 callbacks = [tf.keras.callbacks.LearningRateScheduler(decay), PrintLR()]
 
-model.fit(train_dataset, epochs=12, callbacks=callbacks)
+model.fit(train_dataset, epochs=2, callbacks=callbacks)
