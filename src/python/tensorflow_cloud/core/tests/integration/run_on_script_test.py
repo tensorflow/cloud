@@ -62,8 +62,8 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS['T4_2X'],
         )
-        mock_exit.assert_called_once_with(0)            
-            
+        mock_exit.assert_called_once_with(0)
+
     @mock.patch.object(sys, "exit", autospec=True)
     def test_auto_one_device_strategy(self, mock_exit):
         tfc.run(
@@ -120,7 +120,7 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
         )
         mock_exit.assert_called_once_with(0)
-        
+
     @mock.patch.object(sys, "exit", autospec=True)
     def test_auto_one_device_stream_logs(self, mock_exit):
         tfc.run(
