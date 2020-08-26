@@ -56,26 +56,33 @@ class RunOnScriptTest(tf.test.TestCase):
             tf.io.gfile.rmtree(path)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows(self, mock_exit):
+    def test_auto_mirrored_strategy(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
+            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
+            chief_config=tfc.COMMON_MACHINE_CONFIGS['T4_2X'],
+        )
+        mock_exit.assert_called_once_with(0)            
+            
+    @mock.patch.object(sys, "exit", autospec=True)
+    def test_auto_one_device_strategy(self, mock_exit):
+        tfc.run(
+            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
         )
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_bucket_build(self, mock_exit):
+    def test_auto_one_device_strategy_bucket_build(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
             docker_image_bucket_name="TEST_BUCKET",
         )
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms(self, mock_exit):
+    def test_auto_multi_worker(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             worker_count=1,
@@ -84,7 +91,7 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms_bucket_build(self, mock_exit):
+    def test_auto_multi_worker_bucket_build(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             worker_count=1,
@@ -94,58 +101,17 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_bucket_build_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=1,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms_bucket_build_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=1,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_mwms(self, mock_exit):
+    def test_none_dist_strat_multi_worker(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
+            distribution_strategy=None,
             worker_count=2,
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
         )
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_mwms_bucket_build(self, mock_exit):
+    def test_none_dist_strat_multi_worker_bucket_build(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
             worker_count=2,
@@ -155,28 +121,7 @@ class RunOnScriptTest(tf.test.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_mwms_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
-            worker_count=2,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_none_dist_strat_mwms_bucket_build_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_ctl.py"),
-            worker_count=2,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_tpu_dist_strat_mwms(self, mock_exit):
+    def test_auto_tpu(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
@@ -185,102 +130,24 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
         )
         mock_exit.assert_called_once_with(0)
-
+        
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_tpu_dist_strat_mwms_bucket_build(self, mock_exit):
+    def test_auto_one_device_stream_logs(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
-            worker_count=1,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_tpu_dist_strat_mwms_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
-            worker_count=1,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_tpu_dist_strat_mwms_bucket_build_custom_img(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
-            worker_count=1,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_stream_logs(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
             stream_logs=True,
         )
         mock_exit.assert_called_once_with(0)
 
     @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_job_labels(self, mock_exit):
+    def test_auto_one_device_job_labels(self, mock_exit):
         tfc.run(
             entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
             requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
             job_labels={"job": "on_script_tests", "team": "keras"},
         )
         mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_ows_job_labels_stream_logs(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=0,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            job_labels={"job": "on_script_tests", "team": "keras"},
-            stream_logs=True,
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms_custom_img_job_labels_stream_logs(self, mock_exit):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=1,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-            job_labels={"job": "on_script_tests", "team": "keras"},
-            stream_logs=True,
-        )
-        mock_exit.assert_called_once_with(0)
-
-    @mock.patch.object(sys, "exit", autospec=True)
-    def test_auto_dist_strat_mwms_bucket_build_custom_img_job_labels_stream_logs(
-        self, mock_exit
-    ):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path, "mnist_example_using_fit.py"),
-            worker_count=1,
-            requirements_txt=os.path.join(self.test_data_path, "requirements.txt"),
-            docker_image_bucket_name="TEST_BUCKET",
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
-            job_labels={"job": "on_script_tests", "team": "keras"},
-            stream_logs=True,
-        )
-        mock_exit.assert_called_once_with(0)
-
 
 if __name__ == "__main__":
     tf.test.main()
