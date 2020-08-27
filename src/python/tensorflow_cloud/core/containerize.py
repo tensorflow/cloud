@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import docker
 import logging
 import os
 import sys
@@ -27,7 +28,8 @@ import requests
 import warnings
 
 from . import machine_config
-import docker
+from ..utils import google_api_client
+
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from googleapiclient import discovery
@@ -390,7 +392,12 @@ class CloudContainerBuilder(ContainerBuilder):
             "Building and publishing docker image using Google "
             "Cloud Build: {}".format(image_uri)
         )
-        build_service = discovery.build("cloudbuild", "v1", cache_discovery=False)
+        build_service = discovery.build(
+            "cloudbuild",
+            "v1",
+            cache_discovery=False,
+            requestBuilder=google_api_client.TFCloudHttpRequest,
+        )
         request_dict = self._create_cloud_build_request_dict(
             image_uri, storage_object_name
         )
