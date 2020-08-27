@@ -401,7 +401,7 @@ def _get_valid_machine_configurations():
 
 
 def validate_job_labels(job_labels):
-    """Validates job labels conform guidelines at 
+    """Validates job labels conform guidelines at
        https://cloud.google.com/ai-platform/training/docs/resource-labels"""
 
     if not job_labels:

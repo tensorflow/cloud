@@ -121,7 +121,7 @@ def _create_request_dict(
             the general workers in a distribution cluster.
         entry_point_args: Command line arguments to pass to the
             `entry_point` program.
-        job_labels: Dict of str: str. Labels to organize jobs. See 
+        job_labels: Dict of str: str. Labels to organize jobs. See
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
 
     Returns:

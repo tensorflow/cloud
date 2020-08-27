@@ -72,7 +72,7 @@ def validate(
         docker_image_bucket_name: Optional string. Cloud storage bucket name.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
-        job_labels: Dict of str: str. Labels to organize jobs. See 
+        job_labels: Dict of str: str. Labels to organize jobs. See
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
 
     # Raises:

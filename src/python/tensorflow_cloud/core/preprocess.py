@@ -69,7 +69,7 @@ def get_preprocessed_entry_point(
 
     The distribution strategy instance created is based on the machine
     configurations provided using the `chief_config`, `worker_count` params.
-    - If the number of workers > 0, 
+    - If the number of workers > 0,
         - If accelerator type is TPU, we will create an instance of
         `tf.distribute.experimental.TPUStrategy`.
         - Otherwise, we will create a default instance of

@@ -102,7 +102,7 @@ def run(
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
             `COMMON_MACHINE_CONFIGS.T4_1X` (8 cpu cores, 30GB memory,
             1 Nvidia Tesla T4).
-            For TPU strategy, `worker_config` should be a TPU config with 
+            For TPU strategy, `worker_config` should be a TPU config with
             8 TPU cores (eg. `COMMON_MACHINE_CONFIGS.TPU`).
         worker_count: Optional integer that represents the number of general
             workers in a distribution cluster. Defaults to 0. This count does
@@ -126,7 +126,7 @@ def run(
             so `docker_image_bucket_name` must be specified for this use case.
         job_labels: Dict of str: str. Labels to organize jobs. You can specify
             up to 64 key-value pairs in lowercase letters and numbers, where
-            the first character must be lowercase letter. For more details see 
+            the first character must be lowercase letter. For more details see
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
         **kwargs: Additional keyword arguments.
     """
