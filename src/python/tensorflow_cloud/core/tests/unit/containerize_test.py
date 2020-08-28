@@ -14,7 +14,6 @@
 """Tests for the cloud docker containerization module."""
 
 import docker
-import logging
 import mock
 import os
 import tarfile
@@ -23,7 +22,7 @@ import unittest
 
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import machine_config
-from tensorflow_cloud.utils import google_api_client
+
 
 try:
     from tensorflow import __version__ as VERSION
@@ -405,121 +404,6 @@ class TestContainerize(unittest.TestCase):
                 mock.call(r"Publishing docker image: " + img_tag),
             ]
         )
-        self.cleanup(lcb.docker_file_path)
-
-    @mock.patch("logging.getLogger")
-    @mock.patch("googleapiclient.discovery.build")
-    @mock.patch("google.cloud.storage.Client")
-    def test_get_docker_image_cloud_build(
-        self, mock_gcs_client, mock_discovery_build, mock_logger
-    ):
-        self.setup()
-
-        lcb = containerize.CloudContainerBuilder(
-            self.entry_point,
-            self.entry_point,
-            self.chief_config,
-            self.worker_config,
-            self.mock_registry,
-            self.project_id,
-            destination_dir="/my_app/temp/",
-            docker_image_bucket_name="test_gcs_bucket",
-        )
-
-        # Mock image name
-        mock_registry = "gcr.io/my-project"
-        mock_img_tag = mock_registry + "/tensorflow-train:abcde"
-
-        def _mock_generate_name():
-            return mock_img_tag
-
-        lcb._generate_name = _mock_generate_name
-
-        # Mock tar file generation
-        lcb._get_file_path_map = mock.Mock()
-        lcb._get_file_path_map.return_value = {}
-
-        # Mock cloud build return value
-        proj_ret_val = mock_discovery_build.return_value.projects.return_value
-        builds_ret_val = proj_ret_val.builds.return_value
-        create_ret_val = builds_ret_val.create.return_value
-        create_ret_val.execute.return_value = {
-            "metadata": {"build": {"id": "test_build_id"}}
-        }
-
-        get_ret_val = builds_ret_val.get.return_value
-        get_ret_val.execute.return_value = {"status": "SUCCESS"}
-
-        # Get docker image
-        img_tag = lcb.get_docker_image()
-        self.assertEqual(img_tag, mock_img_tag)
-
-        # Verify gcs get_bucket is invoked
-        client_ret_val = mock_gcs_client.return_value
-        self.assertEqual(client_ret_val.get_bucket.call_count, 1)
-        args, _ = client_ret_val.get_bucket.call_args
-        self.assertListEqual(list(args), ["test_gcs_bucket"])
-
-        # Verify that a new blob is created in the bucket
-        get_bucket_ret_val = client_ret_val.get_bucket.return_value
-        self.assertEqual(get_bucket_ret_val.blob.call_count, 1)
-        args, _ = get_bucket_ret_val.blob.call_args
-        self.assertEqual(len(args), 1)
-        storage_object_name = args[0]
-        self.assertTrue(storage_object_name, "tf_cloud_train_tar_")
-
-        # Verify that tarfile is added to the blob
-        blob_ret_val = get_bucket_ret_val.blob.return_value
-        self.assertEqual(blob_ret_val.upload_from_filename.call_count, 1)
-
-        # Verify discovery API is invoked as expected
-        self.assertEqual(mock_discovery_build.call_count, 1)
-        args, kwargs = mock_discovery_build.call_args
-        self.assertListEqual(list(args), ["cloudbuild", "v1"])
-        self.assertDictEqual(
-            kwargs,
-            {
-                "cache_discovery": False,
-                "requestBuilder": google_api_client.TFCloudHttpRequest,
-            },
-        )
-
-        # Verify cloud build create is invoked as expected
-        self.assertEqual(builds_ret_val.create.call_count, 1)
-        _, kwargs = builds_ret_val.create.call_args
-
-        request_dict = {}
-        request_dict["projectId"] = self.project_id
-        request_dict["images"] = [[mock_img_tag]]
-        request_dict["steps"] = {
-            "name": "gcr.io/cloud-builders/docker",
-            "args": ["build", "-t", mock_img_tag, "."],
-        }
-        request_dict["source"] = {
-            "storageSource": {
-                "bucket": "test_gcs_bucket",
-                "object": storage_object_name,
-            }
-        }
-        self.assertDictEqual(
-            kwargs,
-            {
-                "projectId": self.project_id,
-                "body": request_dict,
-            },
-        )
-
-        # Verify cloud build get is invoked as expected
-        self.assertEqual(builds_ret_val.get.call_count, 1)
-        _, kwargs = builds_ret_val.get.call_args
-        self.assertDictEqual(
-            kwargs,
-            {
-                "projectId": self.project_id,
-                "id": "test_build_id",
-            },
-        )
-
         self.cleanup(lcb.docker_file_path)
 
 
