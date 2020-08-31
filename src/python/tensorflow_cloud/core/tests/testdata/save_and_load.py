@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Test module that exercises model save and load."""
 
 # Example from TF tutorials
 # https://www.tensorflow.org/tutorials/distribute/save_and_load
@@ -22,13 +23,14 @@ from __future__ import print_function
 
 import argparse
 
-import tensorflow_datasets as tfds
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 tfds.disable_progress_bar()
 
 parser = argparse.ArgumentParser(description="A tutorial of argparse!")
-parser.add_argument("--path", required=True, type=str, help="Keras model save path")
+parser.add_argument("--path",
+                    required=True, type=str, help="Keras model save path")
 args = parser.parse_args()
 model_save_path = args.path
 
@@ -37,14 +39,16 @@ mirrored_strategy = tf.distribute.MirroredStrategy()
 
 
 def get_data():
-    datasets, ds_info = tfds.load(name="mnist", with_info=True, as_supervised=True)
+    """Creates datasets."""
+    datasets, _ = tfds.load(name="mnist",
+                            with_info=True, as_supervised=True)
     mnist_train, mnist_test = datasets["train"], datasets["test"]
 
-    BUFFER_SIZE = 10000
+    buffer_size = 10000
 
-    BATCH_SIZE_PER_REPLICA = 64
-    NUM_REPLICAS = mirrored_strategy.num_replicas_in_sync
-    BATCH_SIZE = BATCH_SIZE_PER_REPLICA * NUM_REPLICAS
+    batch_size_per_replica = 64
+    num_replicas = mirrored_strategy.num_replicas_in_sync
+    batch_size = batch_size_per_replica * num_replicas
 
     def scale(image, label):
         image = tf.cast(image, tf.float32)
@@ -52,16 +56,17 @@ def get_data():
 
         return image, label
 
-    train_dataset = mnist_train.map(scale).cache()
-    train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-    eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
+    train_dataset_ = mnist_train.map(scale).cache()
+    train_dataset_ = train_dataset_.shuffle(buffer_size).batch(batch_size)
+    eval_dataset_ = mnist_test.map(scale).batch(batch_size)
 
-    return train_dataset, eval_dataset
+    return train_dataset_, eval_dataset_
 
 
 def get_model():
+    """Constracts a model."""
     with mirrored_strategy.scope():
-        model = tf.keras.Sequential(
+        model_ = tf.keras.Sequential(
             [
                 tf.keras.layers.Conv2D(
                     32, 3, activation="relu", input_shape=(28, 28, 1)
@@ -73,12 +78,12 @@ def get_model():
             ]
         )
 
-    model.compile(
+    model_.compile(
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         optimizer="adam",
         metrics=["accuracy"],
     )
-    return model
+    return model_
 
 
 print("Initial training + saving model weights")

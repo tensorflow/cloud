@@ -16,15 +16,13 @@
 
 import datetime
 import json
-import os
 import time
-from typing import Any, Dict, List, Mapping, Text, Union
+from typing import Any, Dict, List, Mapping, Optional, Text, Union
 
 from googleapiclient import discovery
 from googleapiclient import errors
 import tensorflow as tf
 
-from tensorflow_cloud import version
 from tensorflow_cloud.tuner import constants
 from tensorflow_cloud.utils import google_api_client
 
@@ -36,7 +34,11 @@ class SuggestionInactiveError(Exception):
 class _OptimizerClient(object):
     """A wrapper class that allows for easy interaction with a Study."""
 
-    def __init__(self, service_client, project_id, region, study_id=None):
+    def __init__(self,
+                 service_client: discovery.Resource,
+                 project_id: Text,
+                 region: Text,
+                 study_id: Text = None):
         """Create an OptimizerClient object.
 
         Use this constructor when you know the study_id, and when the Study
@@ -49,8 +51,8 @@ class _OptimizerClient(object):
             project_id: A GCP project id.
             region: A GCP region. e.g. 'us-central1'.
             study_id: An identifier of the study. The full study name will be
-                projects/{project_id}/locations/{region}/studies/{study_id}. And the
-                full trial name will be {study name}/trials/{trial_id}.
+                `projects/{project_id}/locations/{region}/studies/{study_id}`.
+                The full trial name will be `{study name}/trials/{trial_id}`.
         """
         self.service_client = service_client
         self.project_id = project_id
@@ -62,26 +64,29 @@ class _OptimizerClient(object):
             )
         self.study_id = study_id
 
-    def get_suggestions(self, client_id):
+    def get_suggestions(self, client_id: Text):
         """Gets a list of suggested Trials.
 
-        Arguments:
+        Args:
             client_id: An ID that identifies the `Tuner` requesting a `Trial`.
-                `Tuners` that should run the same trial (for instance, when running a
-                multi-worker model) should have the same ID. If multiple
-                suggestTrialsRequests have the same tuner_id, the service will return
-                the identical suggested trial if the trial is PENDING, and provide a new
-                trial if the last suggest trial was completed.
+                `Tuners` that should run the same trial (for instance, when
+                running a multi-worker model) should have the same ID. If
+                multiple suggestTrialsRequests have the same tuner_id, the
+                service will return the identical suggested trial if the trial
+                is PENDING, and provide a new trial if the last suggest trial
+                was completed.
 
         Returns:
-            A list of Trials, This may be an empty list in case that a finite search
-            space has been exhausted, if max_num_trials = 1000 has been reached,
-            or if there are no longer any trials that match a supplied Context.
+            A list of Trials, This may be an empty list in case that a finite
+            search space has been exhausted, if max_num_trials = 1000 has been
+            reached, or if there are no longer any trials that match a supplied
+            Context.
 
         Raises:
-            SuggestionInactiveError: Indicates that a suggestion was requested from an
-                inactive study. Note that this is NOT raised when a finite Study runs
-                out of suggestions. In such a case, an empty list is returned.
+            SuggestionInactiveError: Indicates that a suggestion was requested
+                from an inactive study. Note that this is NOT raised when a
+                finite Study runs out of suggestions. In such a case, an empty
+                list is returned.
         """
         # Requests a trial.
         try:
@@ -94,19 +99,20 @@ class _OptimizerClient(object):
                     parent=self._make_study_name(),
                     body={
                         "client_id": client_id,
-                        "suggestion_count": constants.SUGGESTION_COUNT_PER_REQUEST,
+                        "suggestion_count":
+                            constants.SUGGESTION_COUNT_PER_REQUEST,
                     },
                 )
                 .execute()
             )
         except errors.HttpError as e:
             if e.resp.status == 429:
-                # Status 429 'RESOURCE_EXAUSTED' is raised when trials more than the
-                # maximum limit (1000) of the Optimizer service for a study are
-                # requested, or the number of finite search space. For distributed
-                # tuning, a tuner worker may request the 1001th trial, while the other
-                # tuner worker has not completed training the 1000th trial, and triggers
-                # this error.
+                # Status 429 'RESOURCE_EXAUSTED' is raised when trials more than
+                # the maximum limit (1000) of the Optimizer service for a study
+                # are requested, or the number of finite search space.
+                # For distributed tuning, a tuner worker may request the 1001th
+                # trial, while the other tuner worker has not completed training
+                # the 1000th trial, and triggers this error.
                 tf.get_logger().info("Reached max number of trials.")
                 return {}
             else:
@@ -127,15 +133,19 @@ class _OptimizerClient(object):
         return suggestions
 
     def report_intermediate_objective_value(
-        self, step, elapsed_secs, metric_list, trial_id
-    ):
+        self,
+        step: int,
+        elapsed_secs: float,
+        metric_list: List[Mapping[Text, Union[int, float]]],
+        trial_id: Text,
+    ) -> None:
         """Calls AddMeasurementToTrial with the provided objective_value.
 
         Args:
             step: The number of steps the model has trained for.
             elapsed_secs: The number of seconds since Trial execution began.
-            metric_list: A list of dictionary from metric names (strings) to values
-                (doubles) for additional metrics to record.
+            metric_list: A list of dictionary from metric names (strings) to
+                values (doubles) for additional metrics to record.
             trial_id: trial_id.
         """
         measurement = {
@@ -144,14 +154,15 @@ class _OptimizerClient(object):
             "metrics": metric_list,
         }
         try:
-            self.service_client.projects().locations().studies().trials().addMeasurement(
-                name=self._make_trial_name(trial_id), body={"measurement": measurement}
-            ).execute()
+            self.service_client.projects().locations().studies().trials(
+                ).addMeasurement(
+                    name=self._make_trial_name(trial_id),
+                    body={"measurement": measurement}).execute()
         except errors.HttpError as e:
             tf.get_logger().info("AddMeasurement failed.")
             raise e
 
-    def should_trial_stop(self, trial_id):
+    def should_trial_stop(self, trial_id: Text) -> bool:
         """"Returns whether trial should stop early.
 
         Args:
@@ -180,23 +191,25 @@ class _OptimizerClient(object):
             # Stops a trial.
             try:
                 tf.get_logger().info("Stop the Trial.")
-                self.service_client.projects().locations().studies().trials().stop(
-                    name=trial_name
-                ).execute()
+                self.service_client.projects().locations().studies().trials(
+                    ).stop(name=trial_name).execute()
             except errors.HttpError as e:
                 tf.get_logger().info("StopTrial failed.")
                 raise e
             return True
         return False
 
-    def complete_trial(self, trial_id, trial_infeasible, infeasibility_reason=None):
+    def complete_trial(self,
+                       trial_id: Text,
+                       trial_infeasible: bool,
+                       infeasibility_reason: Text = None):
         """Marks the trial as COMPLETED and sets the final measurement.
 
         Args:
             trial_id: trial_id.
             trial_infeasible: If True, the parameter setting is not feasible.
-            infeasibility_reason: The reason the Trial was infeasible. Should only be
-                non-empty if trial_infeasible==True.
+            infeasibility_reason: The reason the Trial was infeasible. Should
+                only be non-empty if trial_infeasible==True.
 
         Returns:
             The Completed Optimizer trials.
@@ -221,7 +234,7 @@ class _OptimizerClient(object):
             raise e
         return optimizer_trial
 
-    def list_trials(self):
+    def list_trials(self) -> List[Text]:
         """List trials."""
         study_name = self._make_study_name()
         try:
@@ -262,7 +275,8 @@ class _OptimizerClient(object):
             sleep_time = self._polling_delay(num_attempts, polling_secs)
             num_attempts += 1
             tf.get_logger().info(
-                "Waiting for operation; attempt {}; sleeping for {} seconds".format(
+                "Waiting for operation; attempt {}; "
+                "sleeping for {} seconds".format(
                     num_attempts, sleep_time
                 )
             )
@@ -282,14 +296,15 @@ class _OptimizerClient(object):
         Args:
             num_attempts: The number of times have we polled and found that the
                 desired result was not yet available.
-            time_scale: The shortest polling interval, in seconds, or zero. Zero is
-                treated as a small interval, less than 1 second.
+            time_scale: The shortest polling interval, in seconds, or zero.
+                Zero is treated as a small interval, less than 1 second.
 
         Returns:
             A recommended delay interval, in seconds.
         """
         small_interval = 0.3  # Seconds
-        interval = max(time_scale, small_interval) * 1.41 ** min(num_attempts, 9)
+        interval = max(
+            time_scale, small_interval) * 1.41 ** min(num_attempts, 9)
         return datetime.timedelta(seconds=interval)
 
     def _make_study_name(self):
@@ -303,30 +318,36 @@ class _OptimizerClient(object):
         )
 
 
-def create_or_load_study(project_id, region, study_id, study_config):
+def create_or_load_study(
+    project_id: Text,
+    region: Text,
+    study_id: Text,
+    study_config: Optional[Dict[Text, Any]] = None,
+) -> _OptimizerClient:
     """Factory method for creating or loading a CAIP Optimizer client.
 
-    Given an Optimizer study_config, this will either create or open the specified
-    study. It will create it if it doesn't already exist, and open it if someone
-    has already created it.
+    Given an Optimizer study_config, this will either create or open the
+    specified study. It will create it if it doesn't already exist, and open
+    it if someone has already created it.
 
     Note that once a study is created, you CANNOT modify it with this function.
 
     This function is designed for use in a distributed system, where many jobs
-    call create_or_load_study() nearly simultaneously with the same $study_config.
-    In that situation, all clients will end up pointing nicely to the same study.
+    call create_or_load_study() nearly simultaneously with the same
+    `study_config`. In that situation, all clients will end up pointing nicely
+    to the same study.
 
     Args:
-            project_id: A GCP project id.
-            region: A GCP region. e.g. 'us-central1'.
-            study_id: An identifier of the study. If not supplied, system-determined
+        project_id: A GCP project id.
+        region: A GCP region. e.g. 'us-central1'.
+        study_id: An identifier of the study. If not supplied, system-determined
             unique ID is given. The full study name will be
-            projects/{project_id}/locations/{region}/studies/{study_id}. And the full
-            trial name will be {study name}/trials/{trial_id}.
-            study_config: Study configuration for CAIP Optimizer service.
+            projects/{project_id}/locations/{region}/studies/{study_id}.
+            And the full trial name will be {study name}/trials/{trial_id}.
+        study_config: Study configuration for CAIP Optimizer service.
 
     Returns:
-            An _OptimizerClient object with the specified study created or loaded.
+        An _OptimizerClient object with the specified study created or loaded.
     """
     # Build the API client
     # Note that Optimizer service is exposed as a regional endpoint. As such,
@@ -345,13 +366,14 @@ def create_or_load_study(project_id, region, study_id, study_config):
         .locations()
         .studies()
         .create(
-            body={"study_config": study_config}, parent=study_parent, studyId=study_id
+            body={"study_config": study_config},
+            parent=study_parent, studyId=study_id
         )
     )
     try:
         tf.get_logger().info(request.execute())
     except errors.HttpError as e:
-        if e.resp.status != 409:  # 409 implies study exists, will be handled below
+        if e.resp.status != 409:  # 409 implies study exists. Handled below.
             raise e
 
         tf.get_logger().info("Study already existed. Load existing study...")
@@ -366,12 +388,12 @@ def create_or_load_study(project_id, region, study_id, study_config):
             except errors.HttpError as err:
                 if x >= constants.NUM_TRIES_FOR_STUDIES:
                     raise RuntimeError(
-                        "GetStudy wasn't successful after {0} tries: {1!s}".format(
-                            constants.NUM_TRIES_FOR_STUDIES, err
-                        )
+                        "GetStudy wasn't successful after {0} tries: "
+                        "{1!s}".format(constants.NUM_TRIES_FOR_STUDIES, err)
                     )
                 x += 1
-                time.sleep(1)  # wait 1 second before trying to get the study again
+                # wait 1 second before trying to get the study again
+                time.sleep(1)
             else:
                 break
 

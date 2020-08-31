@@ -17,8 +17,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import google.auth
 import re
+
+import google.auth
 
 
 def get_project_name():
@@ -53,7 +54,8 @@ def validate_machine_configuration(
         cpu_cores = None
         memory = None
 
-    current_config = (cpu_cores, memory, accelerator_type.value, accelerator_count)
+    current_config = (
+        cpu_cores, memory, accelerator_type.value, accelerator_count)
     if current_config not in valid_configurations:
         raise ValueError(
             "Invalid machine configuration: cpu_cores:{}, memory:{}, "
@@ -137,7 +139,7 @@ def _get_valid_machine_configurations():
         (64, 57.6, "CPU", 0),
         (96, 86.4, "CPU", 0),
         # GPU configs:
-        # https://cloud.google.com/ml-engine/docs/using-gpus#compute-engine-machine-types-with-gpu
+        # https://cloud.google.com/ml-engine/docs/using-gpus#compute-engine-machine-types-with-gpu  # pylint: disable=line-too-long
         # 'n1-standard-4', 'K80'
         (4, 15, "K80", 1),
         (4, 15, "K80", 2),
@@ -401,8 +403,15 @@ def _get_valid_machine_configurations():
 
 
 def validate_job_labels(job_labels):
-    """Validates job labels conform guidelines at
-       https://cloud.google.com/ai-platform/training/docs/resource-labels"""
+    """Validates job labels conform guidelines.
+
+    Ref. https://cloud.google.com/ai-platform/training/docs/resource-labels
+
+    Args:
+        job_labels: String job label to validate.
+    Raises:
+        ValueError if the given job label is not conformant.
+    """
 
     if not job_labels:
         print(

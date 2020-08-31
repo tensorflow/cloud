@@ -13,26 +13,25 @@
 # limitations under the License.
 """Tests for the cloud docker containerization module."""
 
-import docker
-import logging
-import mock
 import os
-import tarfile
 import tempfile
 import unittest
+import docker
+import mock
 
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.utils import google_api_client
 
 try:
-    from tensorflow import __version__ as VERSION
+    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
 except ImportError:
     # Use the latest TF docker image if a local installation is not available.
     VERSION = "latest"
 
 
 class TestContainerize(unittest.TestCase):
+
     def setup(self, requests_get_return_value=True):
         self.entry_point = "sample.py"
         self.chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
@@ -72,7 +71,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_create_docker_with_requirements(self):
@@ -101,7 +101,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
 
         os.remove(req_file)
         self.cleanup(lcb.docker_file_path)
@@ -125,7 +126,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /my_app/temp/ /my_app/temp/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_check_docker_base_image_nightly(self):
@@ -150,7 +152,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_check_nonexistent_docker_image(self):
@@ -175,7 +178,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_create_docker_file_with_docker_base_image(self):
@@ -197,7 +201,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_create_docker_file_with_cpu_config(self):
@@ -218,7 +223,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_create_docker_file_with_tpu_config(self):
@@ -240,7 +246,8 @@ class TestContainerize(unittest.TestCase):
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
         ]
-        self.assert_docker_file(expected_docker_file_lines, lcb.docker_file_path)
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
     def test_get_file_path_map_defaults(self):
@@ -310,7 +317,8 @@ class TestContainerize(unittest.TestCase):
 
         self.assertDictEqual(
             file_map,
-            {lcb.docker_file_path: "Dockerfile", self.entry_point_dir: "/my_app/temp/"},
+            {lcb.docker_file_path: "Dockerfile",
+             self.entry_point_dir: "/my_app/temp/"},
         )
 
         self.cleanup(lcb.docker_file_path)
@@ -341,7 +349,7 @@ class TestContainerize(unittest.TestCase):
 
         self.cleanup(lcb.docker_file_path)
 
-    @mock.patch("tensorflow_cloud.core.containerize.logger")
+    @mock.patch("tensorflow_cloud.core.containerize.logger")  # pylint: disable=line-too-long
     @mock.patch("docker.APIClient")
     def test_get_docker_image(self, mock_api_client, mock_logger):
         self.setup()
@@ -370,7 +378,7 @@ class TestContainerize(unittest.TestCase):
         lcb._get_file_path_map = mock.Mock()
         lcb._get_file_path_map.return_value = {}
         lcb.tar_file_path = ""
-        with mock.patch("builtins.open", mock.mock_open(read_data="")) as mock_file:
+        with mock.patch("builtins.open", mock.mock_open(read_data="")):
             img_tag = lcb.get_docker_image()
 
         self.assertEqual(img_tag, mock_img_tag)
@@ -401,17 +409,16 @@ class TestContainerize(unittest.TestCase):
         self.assertEqual(mock_logger.info.call_count, 2)
         mock_logger.info.assert_has_calls(
             [
-                mock.call(r"Building docker image: " + img_tag),
-                mock.call(r"Publishing docker image: " + img_tag),
+                mock.call("Building docker image: %s", img_tag),
+                mock.call("Publishing docker image: %s", img_tag),
             ]
         )
         self.cleanup(lcb.docker_file_path)
 
-    @mock.patch("logging.getLogger")
     @mock.patch("googleapiclient.discovery.build")
     @mock.patch("google.cloud.storage.Client")
     def test_get_docker_image_cloud_build(
-        self, mock_gcs_client, mock_discovery_build, mock_logger
+        self, mock_gcs_client, mock_discovery_build
     ):
         self.setup()
 

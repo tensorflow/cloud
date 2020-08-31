@@ -16,18 +16,19 @@
 import subprocess
 import uuid
 
+from . import gcp
+from . import machine_config
+
 from googleapiclient import discovery
 from googleapiclient import errors
 
-from . import gcp
-from . import machine_config
 from ..utils import google_api_client
 
 try:
-    from tensorflow import __version__ as VERSION
+    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
 except ImportError:
     # Use TF runtime version 2.1 (latest supported) as the default.
-    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
+    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
     VERSION = "2.1"
 
 
@@ -39,7 +40,7 @@ def deploy_job(
     worker_config,
     entry_point_args,
     enable_stream_logs,
-    job_labels={},
+    job_labels=None,
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -57,6 +58,11 @@ def deploy_job(
             `entry_point` program.
         enable_stream_logs: Boolean flag which when enabled streams logs
             back from the cloud job.
+        job_labels: Dict of str: str. Labels to organize jobs. See
+            https://cloud.google.com/ai-platform/training/docs/resource-labels.
+
+    Returns:
+        ID of the invoked remote Cloud AI Platform job.
 
     Raises:
         RuntimeError, if there was an error submitting the job.
@@ -78,10 +84,10 @@ def deploy_job(
         worker_count,
         worker_config,
         entry_point_args,
-        job_labels=job_labels,
+        job_labels=job_labels or {},
     )
     try:
-        response = (
+        unused_response = (
             ml_apis.projects()
             .jobs()
             .create(parent="projects/{}".format(project_id), body=request_dict)
@@ -104,35 +110,15 @@ def _create_request_dict(
     worker_count,
     worker_config,
     entry_point_args,
-    job_labels={},
+    job_labels,
 ):
-    """Creates request dictionary for the CAIP training service.
-
-    Args:
-        job_id: String, unique job id.
-        region: GCP region name.
-        image_uri: The docker image uri.
-        chief_config: `MachineConfig` that represents the configuration for
-            the chief worker in a distribution cluster.
-        worker_count: Integer that represents the number of general workers
-            in a distribution cluster. This count does not include the
-            chief worker.
-        worker_config: `MachineConfig` that represents the configuration for
-            the general workers in a distribution cluster.
-        entry_point_args: Command line arguments to pass to the
-            `entry_point` program.
-        job_labels: Dict of str: str. Labels to organize jobs. See
-            https://cloud.google.com/ai-platform/training/docs/resource-labels.
-
-    Returns:
-        The job request dictionary.
-    """
+    """Creates request dictionary for the CAIP training service."""
     training_input = {}
     training_input["region"] = region
     training_input["scaleTier"] = "custom"
     training_input["masterType"] = gcp.get_machine_type(
-        chief_config.cpu_cores, chief_config.memory, chief_config.accelerator_type
-    )
+        chief_config.cpu_cores, chief_config.memory,
+        chief_config.accelerator_type)
 
     # Set master config
     chief_machine_config = {}
@@ -141,9 +127,8 @@ def _create_request_dict(
     chief_machine_config["acceleratorConfig"]["count"] = str(
         chief_config.accelerator_count
     )
-    chief_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
-        chief_config.accelerator_type.value
-    )
+    chief_machine_config["acceleratorConfig"][
+        "type"] = gcp.get_accelerator_type(chief_config.accelerator_type.value)
 
     training_input["masterConfig"] = chief_machine_config
     training_input["workerCount"] = str(worker_count)
@@ -161,9 +146,9 @@ def _create_request_dict(
         worker_machine_config["acceleratorConfig"]["count"] = str(
             worker_config.accelerator_count
         )
-        worker_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
-            worker_config.accelerator_type.value
-        )
+        worker_machine_config["acceleratorConfig"][
+            "type"] = gcp.get_accelerator_type(
+                worker_config.accelerator_type.value)
 
         if machine_config.is_tpu_config(worker_config):
             # AI Platform runtime version spec is required for training

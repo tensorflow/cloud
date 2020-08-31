@@ -17,12 +17,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from enum import Enum
+import enum
 
 from . import gcp
 
 
-class AcceleratorType(Enum):
+class AcceleratorType(enum.Enum):
     """Types of accelerators."""
 
     NO_ACCELERATOR = "CPU"
@@ -56,21 +56,24 @@ class AcceleratorType(Enum):
 
 
 class MachineConfig(object):
-    """Represents the configuration or type of machine to be used.
+    """Represents the configuration or type of machine to be used."""
 
-    Args:
-      cpu_cores: Number of virtual CPU cores. Defaults to 8.
-      memory: Amount of memory in GB. Defaults to 30GB.
-      accelerator_type: Type of the accelerator to be used
-        ('K80', 'P100', 'V100', 'P4', 'T4', 'TPU_V2', 'TPU_V3') or 'CPU'
-        for no accelerator. Defaults to `auto`, which maps to a standard
-        gpu config such as 'T4'.
-      accelerator_count: Number of accelerators. Defaults to 1.
-    """
+    def __init__(self,
+                 cpu_cores=8,
+                 memory=30,
+                 accelerator_type="auto",
+                 accelerator_count=1):
+        """Constructor.
 
-    def __init__(
-        self, cpu_cores=8, memory=30, accelerator_type="auto", accelerator_count=1
-    ):
+        Args:
+          cpu_cores: Number of virtual CPU cores. Defaults to 8.
+          memory: Amount of memory in GB. Defaults to 30GB.
+          accelerator_type: Type of the accelerator to be used
+            ('K80', 'P100', 'V100', 'P4', 'T4', 'TPU_V2', 'TPU_V3') or 'CPU'
+            for no accelerator. Defaults to 'auto', which maps to a standard
+            gpu config such as 'P100'.
+          accelerator_count: Number of accelerators. Defaults to 1.
+        """
         self.cpu_cores = cpu_cores
         self.memory = memory
         self.accelerator_type = accelerator_type
@@ -84,9 +87,10 @@ class MachineConfig(object):
     def validate(self):
         """Checks that the machine configuration created is valid for GCP."""
         AcceleratorType.validate(self.accelerator_type)
-        gcp.validate_machine_configuration(
-            self.cpu_cores, self.memory, self.accelerator_type, self.accelerator_count
-        )
+        gcp.validate_machine_configuration(self.cpu_cores,
+                                           self.memory,
+                                           self.accelerator_type,
+                                           self.accelerator_count)
 
 
 # Dictionary with common machine configurations.

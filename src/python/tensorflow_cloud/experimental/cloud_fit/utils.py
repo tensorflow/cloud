@@ -22,7 +22,8 @@ MULTI_WORKER_MIRRORED_STRATEGY_NAME = (
 MIRRORED_STRATEGY_NAME = tf.distribute.MirroredStrategy.__name__
 
 SUPPORTED_DISTRIBUTION_STRATEGIES = {
-    MULTI_WORKER_MIRRORED_STRATEGY_NAME: tf.distribute.experimental.MultiWorkerMirroredStrategy,
+    MULTI_WORKER_MIRRORED_STRATEGY_NAME:
+        tf.distribute.experimental.MultiWorkerMirroredStrategy,
     MIRRORED_STRATEGY_NAME: tf.distribute.MirroredStrategy,
 }
 

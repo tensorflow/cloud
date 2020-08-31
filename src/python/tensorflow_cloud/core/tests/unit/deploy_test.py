@@ -14,26 +14,26 @@
 """Tests for the cloud deploy module."""
 
 import io
-import mock
-import os
-import shutil
-import subprocess
-import sys
-import tarfile
 import unittest
 
+from googleapiclient import discovery
 from googleapiclient import errors
+import mock
 
-from tensorflow_cloud import version
 from tensorflow_cloud.core import deploy
+from tensorflow_cloud.core import gcp
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.utils import google_api_client
 
-import mock
-
 
 class TestDeploy(unittest.TestCase):
-    def setup(self, mock_discovery):
+
+    def setUp(self):
+        super(TestDeploy, self).setUp()
+
+        self._mock_discovery_build = mock.patch.object(
+            discovery, "build", autospec=True).start()
+
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
         self.entry_point = "sample_compile_fit.py"
@@ -56,34 +56,34 @@ class TestDeploy(unittest.TestCase):
                 "workerType": "n1-standard-8",
                 "workerCount": str(self.worker_count),
                 "workerConfig": {
-                    "acceleratorConfig": {"count": "1", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {
+                        "count": "1", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
                 "masterConfig": {
-                    "acceleratorConfig": {"count": "4", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {
+                        "count": "4", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
             },
         }
 
-        # Verify mocking is correct and setup method mocks.
-        assert mock_discovery is deploy.discovery
+        mock.patch.object(
+            deploy, "_generate_job_id",
+            autospec=True, return_value=self.mock_job_id,
+        ).start()
 
-        def _mock_generate_job_id():
-            return self.mock_job_id
+        mock.patch.object(
+            gcp, "get_project_name",
+            autospec=True, return_value=self.mock_project_name
+        ).start()
 
-        deploy._generate_job_id = _mock_generate_job_id
-
-        def _mock_get_project_name():
-            return self.mock_project_name
-
-        deploy.gcp.get_project_name = _mock_get_project_name
+    def tearDown(self):
+        mock.patch.stopall()
+        super(TestDeploy, self).tearDown()
 
     @mock.patch("sys.stdout", new_callable=io.StringIO)
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_deploy_job(self, mock_discovery, mock_stdout):
-        self.setup(mock_discovery)
-
+    def test_deploy_job(self, mock_stdout):
         job_name = deploy.deploy_job(
             self.region,
             self.docker_img,
@@ -97,8 +97,8 @@ class TestDeploy(unittest.TestCase):
         self.assertEqual(job_name, self.mock_job_id)
 
         # Verify discovery API is invoked as expected.
-        self.assertEqual(mock_discovery.build.call_count, 1)
-        args, kwargs = mock_discovery.build.call_args
+        self.assertEqual(self._mock_discovery_build.call_count, 1)
+        args, kwargs = self._mock_discovery_build.call_args
         self.assertListEqual(list(args), ["ml", "v1"])
         self.assertDictEqual(
             kwargs,
@@ -109,10 +109,12 @@ class TestDeploy(unittest.TestCase):
         )
 
         # Verify job is created as expected
-        build_ret_val = mock_discovery.build.return_value
+        build_ret_val = self._mock_discovery_build.return_value
         self.assertEqual(build_ret_val.projects.call_count, 1)
+
         proj_ret_val = build_ret_val.projects.return_value
         self.assertEqual(proj_ret_val.jobs.call_count, 1)
+
         jobs_ret_val = proj_ret_val.jobs.return_value
         self.assertEqual(jobs_ret_val.create.call_count, 1)
 
@@ -136,12 +138,10 @@ class TestDeploy(unittest.TestCase):
             ),
         )
 
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_without_workers(self, mock_discovery):
-        self.setup(mock_discovery)
+    def test_request_dict_without_workers(self):
         worker_count = 0
 
-        job_name = deploy.deploy_job(
+        _ = deploy.deploy_job(
             self.region,
             self.docker_img,
             self.chief_config,
@@ -150,11 +150,12 @@ class TestDeploy(unittest.TestCase):
             self.entry_point_args,
             self.stream_logs,
         )
-        build_ret_val = mock_discovery.build.return_value
+        build_ret_val = self._mock_discovery_build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
-        self.expected_request_dict["trainingInput"]["workerCount"] = str(worker_count)
+        self.expected_request_dict["trainingInput"]["workerCount"] = str(
+            worker_count)
         del self.expected_request_dict["trainingInput"]["workerType"]
         del self.expected_request_dict["trainingInput"]["workerConfig"]
 
@@ -168,10 +169,8 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_without_user_args(self, mock_discovery):
-        self.setup(mock_discovery)
-        job_name = deploy.deploy_job(
+    def test_request_dict_without_user_args(self):
+        _ = deploy.deploy_job(
             self.region,
             self.docker_img,
             self.chief_config,
@@ -180,7 +179,7 @@ class TestDeploy(unittest.TestCase):
             None,
             self.stream_logs,
         )
-        build_ret_val = mock_discovery.build.return_value
+        build_ret_val = self._mock_discovery_build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
@@ -196,14 +195,12 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_request_dict_with_TPU_worker(self, mock_discovery):
-        self.setup(mock_discovery)
+    def test_request_dict_with_tpu_worker(self):
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
 
-        job_name = deploy.deploy_job(
+        _ = deploy.deploy_job(
             self.region,
             self.docker_img,
             chief_config,
@@ -212,13 +209,14 @@ class TestDeploy(unittest.TestCase):
             self.entry_point_args,
             self.stream_logs,
         )
-        build_ret_val = mock_discovery.build.return_value
+        build_ret_val = self._mock_discovery_build.return_value
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
         self.expected_request_dict["trainingInput"]["workerCount"] = "1"
         self.expected_request_dict["trainingInput"]["workerType"] = "cloud_tpu"
-        self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
+        self.expected_request_dict["trainingInput"]["masterType"] = (
+            "n1-standard-4")
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["type"] = "TPU_V3"
@@ -226,9 +224,8 @@ class TestDeploy(unittest.TestCase):
             "acceleratorConfig"
         ]["count"] = "8"
         v = deploy.VERSION.split(".")
-        self.expected_request_dict["trainingInput"]["workerConfig"]["tpuTfVersion"] = (
-            v[0] + "." + v[1]
-        )
+        self.expected_request_dict["trainingInput"]["workerConfig"][
+            "tpuTfVersion"] = v[0] + "." + v[1]
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
         ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
@@ -246,14 +243,12 @@ class TestDeploy(unittest.TestCase):
             },
         )
 
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_deploy_job_error(self, mock_discovery):
-        self.setup(mock_discovery)
+    def test_deploy_job_error(self):
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
 
-        build_ret_val = mock_discovery.build.return_value
+        build_ret_val = self._mock_discovery_build.return_value
         build_ret_val.projects.side_effect = errors.HttpError(
             mock.Mock(status=404), b"not found"
         )
@@ -269,15 +264,13 @@ class TestDeploy(unittest.TestCase):
                 self.stream_logs,
             )
 
-    @mock.patch("tensorflow_cloud.core.deploy.subprocess")
-    @mock.patch("tensorflow_cloud.core.deploy.discovery")
-    def test_logs_streaming_error(self, mock_discovery, mock_subprocess):
-        self.setup(mock_discovery)
+    @mock.patch("subprocess.Popen")
+    def test_logs_streaming_error(self, mock_subprocess_popen):
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["TPU"]
         worker_count = 1
 
-        mock_subprocess.Popen.side_effect = ValueError("error")
+        mock_subprocess_popen.side_effect = ValueError("error")
         self.stream_logs = True
 
         with self.assertRaises(ValueError):

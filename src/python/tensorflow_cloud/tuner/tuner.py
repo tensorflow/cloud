@@ -23,45 +23,48 @@ from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
-import tensorflow as tf  # pylint: disable=g-explicit-tensorflow-version-import
+import tensorflow as tf
 
-from tensorflow_cloud.tuner import utils
 from tensorflow_cloud.tuner import optimizer_client
+from tensorflow_cloud.tuner import utils
 
 
 class CloudOracle(oracle_module.Oracle):
-    """KerasTuner Oracle interface implemented by talking to CAIP Optimizer Service."""
+    """KerasTuner Oracle interface for CAIP Optimizer Service backend."""
 
     def __init__(
         self,
-        project_id,
-        region,
-        objective=None,
-        hyperparameters=None,
-        study_config=None,
-        max_trials=None,
-        study_id=None,
+        project_id: Text,
+        region: Text,
+        objective: Union[Text, oracle_module.Objective] = None,
+        hyperparameters: hp_module.HyperParameters = None,
+        study_config: Optional[Dict[Text, Any]] = None,
+        max_trials: int = None,
+        study_id: Optional[Text] = None,
     ):
-        """KerasTuner Oracle interface implmemented by talking to CAIP Optimizer Service.
+        """KerasTuner Oracle interface implmemented with Optimizer backend.
 
-        Arguments:
+        Args:
             project_id: A GCP project id.
             region: A GCP region. e.g. 'us-central1'.
-            objective: If a string, the direction of the optimization (min or max)
-                will be inferred.
+            objective: If a string, the direction of the optimization (min or
+                max) will be inferred.
             hyperparameters: Mandatory and must include definitions for all
-                hyperparameters used during the search. Can be used to override (or
-                register in advance) hyperparameters in the search space.
+                hyperparameters used during the search. Can be used to override
+                (or register in advance) hyperparameters in the search space.
             study_config: Study configuration for CAIP Optimizer service.
-            max_trials: Total number of trials (model configurations) to test at most.
-                If None, it continues the search until it reaches the Optimizer trial
-                limit for each study. Users may stop the search externally (e.g. by
-                killing the job). Note that the oracle may interrupt the search before
-                `max_trials` models have been tested.
-            study_id: An identifier of the study. If not supplied, system-determined
-                unique ID is given. The full study name will be
-                projects/{project_id}/locations/{region}/studies/{study_id}. And the
-                full trial name will be {study name}/trials/{trial_id}.
+            max_trials: Total number of trials (model configurations) to test at
+                most. If None, it continues the search until it reaches the
+                Optimizer trial limit for each study. Users may stop the search
+                externally (e.g. by killing the job). Note that the Oracle may
+                interrupt the search before `max_trials` models have been
+                tested.
+            study_id: An identifier of the study. If not supplied,
+                system-determined unique ID is given.
+                The full study name will be
+                `projects/{project_id}/locations/{region}/studies/{study_id}`,
+                and the full trial name will be
+                `{study name}/trials/{trial_id}`.
         """
         if study_config:
             if objective or hyperparameters:
@@ -78,7 +81,8 @@ class CloudOracle(oracle_module.Oracle):
                     "If study_config is not set, "
                     "objective and hyperparameters must be set."
                 )
-            self.study_config = utils.make_study_config(objective, hyperparameters)
+            self.study_config = utils.make_study_config(objective,
+                                                        hyperparameters)
 
         super(CloudOracle, self).__init__(
             objective=objective,
@@ -114,31 +118,34 @@ class CloudOracle(oracle_module.Oracle):
         self.trials = {}
         self._start_time = None
 
-    def create_trial(self, tuner_id):
+    def create_trial(self, tuner_id: Text) -> trial_module.Trial:
         """Create a new `Trial` to be run by the `Tuner`.
 
-        Arguments:
-            tuner_id: An ID that identifies the `Tuner` requesting a `Trial`. `Tuners`
-                that should run the same trial (for instance, when running a
-                multi-worker model) should have the same ID. If multiple
-                suggestTrialsRequests have the same tuner_id, the service will return
-                the identical suggested trial if the trial is PENDING, and provide a new
-                trial if the last suggest trial was completed.
+        Args:
+            tuner_id: An ID that identifies the `Tuner` requesting a `Trial`.
+                `Tuners` that should run the same trial (for instance, when
+                running a multi-worker model) should have the same ID. If
+                multiple suggestTrialsRequests have the same tuner_id, the
+                service will return the identical suggested trial if the trial
+                is PENDING, and provide a new trial if the last suggest trial
+                was completed.
 
         Returns:
             A `Trial` object containing a set of hyperparameter values to run
             in a `Tuner`.
+
         Raises:
-            SuggestionInactiveError: Indicates that a suggestion was requested from an
-                inactive study.
+            SuggestionInactiveError: Indicates that a suggestion was requested
+                from an inactive study.
         """
-        # List all trials from the same study and see if any trial.status=STOPPED or
-        # if number of trials >= max_limit.
+        # List all trials from the same study and see if any
+        # trial.status=STOPPED or if number of trials >= max_limit.
         trial_list = self.service.list_trials()
         # Note that KerasTunerTrialStatus - 'STOPPED' is equivalent to
         # OptimizerTrialState - 'STOPPING'.
         stopping_trials = [t for t in trial_list if t["state"] == "STOPPING"]
-        if (self.max_trials and len(trial_list) >= self.max_trials) or stopping_trials:
+        if (self.max_trials and
+            len(trial_list) >= self.max_trials) or stopping_trials:
             trial_id = "n"
             hyperparameters = self.hyperparameters.copy()
             hyperparameters.values = None
@@ -184,15 +191,20 @@ class CloudOracle(oracle_module.Oracle):
         self.save()
         return kerastuner_trial
 
-    def update_trial(self, trial_id, metrics, step=0):
+    def update_trial(self,
+                     trial_id: Text,
+                     metrics: Mapping[Text, Union[int, float]],
+                     step: int = 0):
         """Used by a worker to report the status of a trial."""
         # Constructs the measurement.
         # Adds the measurement of the objective functions to a trial.
         elapsed_secs = time.time() - self._start_time
         if elapsed_secs < 0 or step < 0:
-            raise ValueError("Both elapsed_secs and step must be non-negative.")
+            raise ValueError(
+                "Both elapsed_secs and step must be non-negative.")
         if elapsed_secs == 0 and step == 0:
-            raise ValueError("At least one of {elapsed_secs, step} must be positive")
+            raise ValueError(
+                "At least one of {elapsed_secs, step} must be positive")
 
         metric_list = []
         for ob in self.objective:
@@ -219,7 +231,7 @@ class CloudOracle(oracle_module.Oracle):
             kerastuner_trial.status = trial_module.TrialStatus.STOPPED
         return kerastuner_trial.status
 
-    def end_trial(self, trial_id, status="COMPLETED"):
+    def end_trial(self, trial_id: Text, status: Text = "COMPLETED"):
         """Record the measured objective for a set of parameter values."""
         kerastuner_trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
@@ -231,7 +243,8 @@ class CloudOracle(oracle_module.Oracle):
                 break
 
         if not kerastuner_trial:
-            raise ValueError("Ongoing trial with id: {} not found.".format(trial_id))
+            raise ValueError(
+                "Ongoing trial with id: {} not found.".format(trial_id))
 
         kerastuner_trial.status = status
         if status == trial_module.TrialStatus.COMPLETED:
@@ -258,7 +271,7 @@ class CloudOracle(oracle_module.Oracle):
         self._save_trial(kerastuner_trial)
         self.save()
 
-    def get_best_trials(self, num_trials=1):
+    def get_best_trials(self, num_trials: int = 1) -> List[trial_module.Trial]:
         """Returns the trials with the best objective values found so far.
 
         Arguments:
@@ -272,7 +285,8 @@ class CloudOracle(oracle_module.Oracle):
                 "is not supported. "
             )
 
-        maximizing = utils.format_goal(self.objective[0].direction) == "MAXIMIZE"
+        maximizing = (
+            utils.format_goal(self.objective[0].direction) == "MAXIMIZE")
 
         # List all trials associated with the same study
         trial_list = self.service.list_trials()
@@ -300,8 +314,8 @@ class CloudOracle(oracle_module.Oracle):
                 trial_id=utils.get_trial_id(optimizer_trial),
                 status=trial_module.TrialStatus.COMPLETED,
             )
-            # If trial had ended before having intermediate metric reporting, set
-            # epoch = 1.
+            # If trial had ended before having intermediate metric reporting,
+            # set epoch = 1.
             kerastuner_trial.best_step = final_measurement.get("stepCount", 1)
             kerastuner_trial.score = final_measurement["metrics"][0]["value"]
             best_trials.append(kerastuner_trial)
@@ -309,39 +323,44 @@ class CloudOracle(oracle_module.Oracle):
 
 
 class CloudTuner(tuner_module.Tuner):
-    """KerasTuner interface implementation backed by CAIP Optimizer Service.
-
-    Arguments:
-        hypermodel: Instance of HyperModel class (or callable that takes
-            hyperparameters and returns a Model instance).
-        project_id: A GCP project id.
-        region: A GCP region. e.g. 'us-central1'.
-        objective: Name of model metric to minimize or maximize, e.g.
-            "val_accuracy".
-        hyperparameters: Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        study_config: Study configuration for CAIP Optimizer service.
-        max_trials: Total number of trials (model configurations) to test at most.
-            Note that the oracle may interrupt the search before `max_trials` models
-            have been tested if the search space has been exhausted.
-        study_id: An identifier of the study. The full study name will be
-            projects/{project_id}/locations/{region}/studies/{study_id}.
-        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please see
-            the docstring for `Tuner`.
-    """
+    """KerasTuner interface implementation backed by CAIP Optimizer Service."""
 
     def __init__(
         self,
-        hypermodel,
-        project_id,
-        region,
-        objective=None,
-        hyperparameters=None,
-        study_config=None,
-        max_trials=None,
-        study_id=None,
+        hypermodel: Union[hypermodel_module.HyperModel,
+                          Callable[[hp_module.HyperParameters],
+                                   tf.keras.Model]],
+        project_id: Text,
+        region: Text,
+        objective: Union[Text, oracle_module.Objective] = None,
+        hyperparameters: hp_module.HyperParameters = None,
+        study_config: Optional[Dict[Text, Any]] = None,
+        max_trials: int = None,
+        study_id: Optional[Text] = None,
         **kwargs
     ):
+
+        """Constructor.
+
+        Args:
+            hypermodel: Instance of HyperModel class (or callable that takes
+                hyperparameters and returns a Model instance).
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            objective: Name of model metric to minimize or maximize, e.g.
+                "val_accuracy".
+            hyperparameters: Can be used to override (or register in advance)
+                hyperparamters in the search space.
+            study_config: Study configuration for CAIP Optimizer service.
+            max_trials: Total number of trials (model configurations) to test at
+                most. Note that the oracle may interrupt the search before
+                `max_trials` models have been tested if the search space has
+                been exhausted.
+            study_id: An identifier of the study. The full study name will be
+                projects/{project_id}/locations/{region}/studies/{study_id}.
+            **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+                Please see the docstring for `Tuner`.
+        """
 
         oracle = CloudOracle(
             project_id=project_id,

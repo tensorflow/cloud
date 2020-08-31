@@ -20,6 +20,7 @@ from tensorflow_cloud.core import machine_config
 
 
 class TestGcp(unittest.TestCase):
+
     def test_get_region(self):
         assert gcp.get_region() == "us-central1"
 
@@ -35,67 +36,78 @@ class TestGcp(unittest.TestCase):
 
     def test_get_machine_type(self):
         assert (
-            gcp.get_machine_type(4, 15, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(4, 15,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-4"
         )
         assert (
-            gcp.get_machine_type(8, 30, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(8, 30,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-8"
         )
         assert (
-            gcp.get_machine_type(16, 60, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(16, 60,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-16"
         )
         assert (
-            gcp.get_machine_type(32, 120, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(32, 120,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-32"
         )
         assert (
-            gcp.get_machine_type(64, 240, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(64, 240,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-64"
         )
         assert (
-            gcp.get_machine_type(96, 360, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(96, 360,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-standard-96"
         )
         assert (
-            gcp.get_machine_type(2, 13, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(2, 13,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-2"
         )
         assert (
-            gcp.get_machine_type(4, 26, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(4, 26,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-4"
         )
         assert (
-            gcp.get_machine_type(8, 52, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(8, 52,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-8"
         )
         assert (
-            gcp.get_machine_type(16, 104, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(16, 104,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-16"
         )
         assert (
-            gcp.get_machine_type(32, 208, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(32, 208,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-32"
         )
         assert (
-            gcp.get_machine_type(64, 416, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(64, 416,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-64"
         )
         assert (
-            gcp.get_machine_type(96, 624, machine_config.AcceleratorType.NO_ACCELERATOR)
+            gcp.get_machine_type(96, 624,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highmem-96"
         )
         assert (
-            gcp.get_machine_type(
-                16, 14.4, machine_config.AcceleratorType.NO_ACCELERATOR
-            )
+            gcp.get_machine_type(16, 14.4,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highcpu-16"
         )
         assert (
-            gcp.get_machine_type(
-                32, 28.8, machine_config.AcceleratorType.NO_ACCELERATOR
-            )
+            gcp.get_machine_type(32, 28.8,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highcpu-32"
         )
         assert (
@@ -105,17 +117,18 @@ class TestGcp(unittest.TestCase):
             == "n1-highcpu-64"
         )
         assert (
-            gcp.get_machine_type(
-                96, 86.4, machine_config.AcceleratorType.NO_ACCELERATOR
-            )
+            gcp.get_machine_type(96, 86.4,
+                                 machine_config.AcceleratorType.NO_ACCELERATOR)
             == "n1-highcpu-96"
         )
         assert (
-            gcp.get_machine_type(96, 86.4, machine_config.AcceleratorType.TPU_V3)
+            gcp.get_machine_type(96, 86.4,
+                                 machine_config.AcceleratorType.TPU_V3)
             == "cloud_tpu"
         )
         assert (
-            gcp.get_machine_type(96, 86.4, machine_config.AcceleratorType.TPU_V2)
+            gcp.get_machine_type(96, 86.4,
+                                 machine_config.AcceleratorType.TPU_V2)
             == "cloud_tpu"
         )
 
@@ -131,7 +144,8 @@ class TestGcp(unittest.TestCase):
         )
 
         # test invalid config
-        with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
+        with self.assertRaisesRegex(ValueError,
+                                    r"Invalid machine configuration"):
             gcp.validate_machine_configuration(
                 1, 15, machine_config.AcceleratorType.NVIDIA_TESLA_K80, 4
             )
@@ -164,7 +178,8 @@ class TestGcp(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r"Invalid job labels"):
             # label cannot be too many
             gcp.validate_job_labels(
-                job_labels={"key{}".format(i): "val{}".format(i) for i in range(65)}
+                job_labels={"key{}".format(i):
+                            "val{}".format(i) for i in range(65)}
             )
 
 

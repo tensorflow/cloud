@@ -24,13 +24,13 @@ import tempfile
 from . import machine_config
 
 try:
-    from nbconvert import PythonExporter
+    from nbconvert import PythonExporter  # pylint: disable=g-import-not-at-top
 except ImportError:
     PythonExporter = None
 
 try:
     # Available in a colab environment.
-    from google.colab import _message
+    from google.colab import _message  # pylint: disable=g-import-not-at-top
 except ImportError:
     _message = None
 
@@ -81,8 +81,8 @@ def get_preprocessed_entry_point(
     Args:
         entry_point: Optional string. File path to the python file or iPython
             notebook that contains the TensorFlow code.
-            Note: This path must be in the current working directory tree.
-            Example: 'train.py', 'training/mnist.py', 'mnist.ipynb'
+            Note) This path must be in the current working directory tree.
+            Example) 'train.py', 'training/mnist.py', 'mnist.ipynb'
             If `entry_point` is not provided, then
             - If you are in an iPython notebook environment, then the
                 current notebook is taken as the `entry_point`.
@@ -105,6 +105,10 @@ def get_preprocessed_entry_point(
 
     Returns:
         The `preprocessed_entry_point` file path.
+
+    Raises:
+        RuntimeError: If invoked from Notebook but unable to access it.
+                      Typically, this is due to missing the `nbconvert` package.
     """
 
     # Set `TF_KERAS_RUNNING_REMOTELY` env variable. This is required in order
@@ -138,9 +142,11 @@ def get_preprocessed_entry_point(
         elif chief_config.accelerator_count > 1:
             strategy = ["strategy = tf.distribute.MirroredStrategy()\n"]
         else:
-            strategy = ["strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n"]
+            strategy = [
+                "strategy = tf.distribute.OneDeviceStrategy(device='/gpu:0')\n"]
         script_lines.extend(strategy)
-        script_lines.append("tf.distribute.experimental_set_strategy(strategy)\n")
+        script_lines.append(
+            "tf.distribute.experimental_set_strategy(strategy)\n")
 
     # If `entry_point` is not provided, detect if we are in a notebook
     # or a python script. Fetch the `entry_point`.
@@ -154,7 +160,8 @@ def get_preprocessed_entry_point(
         # This will support use case where the user's program has a
         # main method.
         _, entry_point_file_name = os.path.split(entry_point)
-        script_lines.append('exec(open("{}").read())\n'.format(entry_point_file_name))
+        script_lines.append(
+            'exec(open("{}").read())\n'.format(entry_point_file_name))
     else:
         if called_from_notebook:
             py_content = _get_colab_notebook_content()
@@ -173,7 +180,9 @@ def get_preprocessed_entry_point(
         # to script_lines.
         for line in py_content:
             if not (
-                line.startswith("!") or line.startswith("%") or line.startswith("#")
+                line.startswith("!") or
+                line.startswith("%") or
+                line.startswith("#")
             ):
                 script_lines.append(line)
 
@@ -186,7 +195,9 @@ def get_preprocessed_entry_point(
 
 def _get_colab_notebook_content():
     """Returns the colab notebook python code contents."""
-    response = _message.blocking_request("get_ipynb", request="", timeout_sec=200)
+    response = _message.blocking_request("get_ipynb",
+                                         request="",
+                                         timeout_sec=200)
     if response is None:
         raise RuntimeError("Unable to get the notebook contents.")
     cells = response["ipynb"]["cells"]
@@ -236,11 +247,13 @@ def get_tpu_cluster_resolver_fn():
         "      tpu_cluster_resolver_dict = "
         "tpu_cluster_resolver.cluster_spec().as_dict()\n",
         "      if 'worker' in tpu_cluster_resolver_dict:\n",
-        "        logging.info('Found TPU worker: %s', tpu_cluster_resolver_dict)\n",
+        ("        logging.info('Found TPU worker: %s', "
+         "tpu_cluster_resolver_dict)\n"),
         "        return tpu_cluster_resolver\n",
         "    except Exception as e:\n",
         "      if i < num_retries - 1:\n",
-        "        logging.info('Still waiting for provisioning of TPU VM instance.')\n",
+        ("        logging.info('Still waiting for provisioning of TPU VM "
+         "instance.')\n"),
         "      else:\n",
         "        # Preserves the traceback.\n",
         "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",

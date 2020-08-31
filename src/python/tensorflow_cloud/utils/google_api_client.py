@@ -22,7 +22,7 @@ _USER_AGENT_FOR_TF_CLOUD_TRACKING = "tf-cloud/" + version.__version__
 
 
 class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
-    """HttpRequest builder that sets a customized user-agent header for TF Cloud.
+    """HttpRequest builder that sets a customized useragent header for TF Cloud.
 
     This is used to track the usage of the TF Cloud.
     """

@@ -13,23 +13,27 @@
 # limitations under the License.
 """Tests for the validation module."""
 
-import mock
 import os
 import unittest
+import mock
 
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
+from tensorflow_cloud.core.tests.unit import constants
 
 
-@mock.patch("os.path")
 class TestValidate(unittest.TestCase):
-    def setup(self):
-        self.script_entry_point = "mnist_example_using_fit.py"
-        self.notebook_entry_point = "mnist_example_using_fit.ipynb"
-        self.requirements_file = "requirements.txt"
 
-    def test_valid_args(self, mock_os_path):
-        self.setup()
+    def setUp(self):
+        super(TestValidate, self).setUp()
+        self.script_entry_point = os.path.join(
+            constants.TESTDATA_DIR, "mnist_example_using_fit.py")
+        self.notebook_entry_point = os.path.join(
+            constants.TESTDATA_DIR, "mnist_example_using_fit.ipynb")
+        self.requirements_file = os.path.join(
+            constants.TESTDATA_DIR, "requirements.txt")
+
+    def test_valid_args_chief_worker(self):
         validate.validate(
             entry_point=self.script_entry_point,
             distribution_strategy="auto",
@@ -38,12 +42,13 @@ class TestValidate(unittest.TestCase):
             worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
             worker_count=1,
             region="us-central1",
-            args=None,
+            entry_point_args=None,
             stream_logs=True,
             docker_image_bucket_name=None,
             called_from_notebook=False,
         )
 
+    def test_valid_args_chief_only(self):
         validate.validate(
             entry_point=self.script_entry_point,
             distribution_strategy=None,
@@ -52,12 +57,13 @@ class TestValidate(unittest.TestCase):
             worker_config=None,
             worker_count=0,
             region="us-central1",
-            args=["1000"],
+            entry_point_args=["1000"],
             stream_logs=False,
             docker_image_bucket_name=None,
             called_from_notebook=False,
         )
 
+    def test_valid_args_notebook_entry_point(self):
         validate.validate(
             entry_point=self.notebook_entry_point,
             distribution_strategy=None,
@@ -66,12 +72,13 @@ class TestValidate(unittest.TestCase):
             worker_config=None,
             worker_count=0,
             region="us-central1",
-            args=["1000"],
+            entry_point_args=["1000"],
             stream_logs=False,
             docker_image_bucket_name=None,
             called_from_notebook=False,
         )
 
+    def test_valid_args_no_entry_point(self):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
@@ -80,12 +87,13 @@ class TestValidate(unittest.TestCase):
             worker_config=None,
             worker_count=0,
             region="us-central1",
-            args=["1000"],
+            entry_point_args=["1000"],
             stream_logs=False,
             docker_image_bucket_name="abc",
             called_from_notebook=True,
         )
 
+    def test_valid_args_no_entry_point_with_job_label(self):
         validate.validate(
             entry_point=None,
             distribution_strategy=None,
@@ -94,64 +102,48 @@ class TestValidate(unittest.TestCase):
             worker_config=None,
             worker_count=0,
             region="us-central1",
-            args=["1000"],
+            entry_point_args=["1000"],
             stream_logs=False,
             docker_image_bucket_name="abc",
             called_from_notebook=True,
             job_labels={"a": "b"},
         )
 
-    def test_invalid_entry_point(self, mock_os_path):
-        mock_os_path.isfile.return_value = False
+    def test_invalid_entry_point(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `entry_point`"):
             validate.validate(
-                entry_point="/mnist_example_using_fit.py",
+                entry_point="/path/to/nonexistent.py",
                 distribution_strategy="auto",
                 requirements_txt=None,
                 chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-        with self.assertRaisesRegex(ValueError, r"Invalid `entry_point`"):
-            validate.validate(
-                entry_point="/mnist_example_using_fit.txt",
-                distribution_strategy="auto",
-                requirements_txt=None,
-                chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
-                worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
-                worker_count=1,
-                region="us-central1",
-                args=None,
-                stream_logs=True,
-                docker_image_bucket_name=None,
-                called_from_notebook=False,
-            )
-
-    def test_invalid_requirements_txt(self, mock_os_path):
-        mock_os_path.isfile.return_value = False
+    def test_invalid_requirements_txt(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `requirements_txt`"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
-                requirements_txt="temp.txt",
+                requirements_txt="/path/to/nonexistent/requirements.txt",
                 chief_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_distribution_strategy(self, mock_os_path):
-        with self.assertRaisesRegex(ValueError, r"Invalid `distribution_strategy`"):
+    def test_invalid_distribution_strategy(self):
+        with self.assertRaisesRegex(ValueError,
+                                    r"Invalid `distribution_strategy`"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="MirroredStrategy",
@@ -160,13 +152,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_chief_config(self, mock_os_path):
+    def test_invalid_chief_config(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `chief_config`"):
             validate.validate(
                 entry_point=None,
@@ -176,13 +168,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_worker_config(self, mock_os_path):
+    def test_invalid_worker_config(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_config`"):
             validate.validate(
                 entry_point=None,
@@ -192,13 +184,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=None,
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_worker_count(self, mock_os_path):
+    def test_invalid_worker_count(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_count`"):
             validate.validate(
                 entry_point=None,
@@ -208,13 +200,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=-1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_region(self, mock_os_path):
+    def test_invalid_region(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `region`"):
             validate.validate(
                 entry_point=None,
@@ -224,13 +216,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region=["us-region-a"],
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_args(self, mock_os_path):
+    def test_invalid_args(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `entry_point_args`"):
             validate.validate(
                 entry_point=None,
@@ -240,13 +232,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args="1000",
+                entry_point_args="1000",
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_stream_logs(self, mock_os_path):
+    def test_invalid_stream_logs(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `stream_logs`"):
             validate.validate(
                 entry_point=None,
@@ -256,14 +248,15 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs="True",
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_cloud_bucket_name(self, mock_os_path):
-        with self.assertRaisesRegex(ValueError, r"Invalid `docker_image_bucket_name`"):
+    def test_invalid_cloud_bucket_name(self):
+        with self.assertRaisesRegex(ValueError,
+                                    r"Invalid `docker_image_bucket_name`"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -272,13 +265,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=False,
                 docker_image_bucket_name=None,
                 called_from_notebook=True,
             )
 
-    def test_invalid_tpu_chief_config(self, mock_os_path):
+    def test_invalid_tpu_chief_config(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `chief_config`"):
             validate.validate(
                 entry_point=None,
@@ -288,13 +281,13 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["K80_1X"],
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_tpu_worker_count(self, mock_os_path):
+    def test_invalid_tpu_worker_count(self):
         with self.assertRaisesRegex(ValueError, r"Invalid `worker_count`"):
             validate.validate(
                 entry_point=None,
@@ -304,14 +297,15 @@ class TestValidate(unittest.TestCase):
                 worker_config=machine_config.COMMON_MACHINE_CONFIGS["TPU"],
                 worker_count=2,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    def test_invalid_tpu_accelerator_count(self, mock_os_path):
-        with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
+    def test_invalid_tpu_accelerator_count(self):
+        with self.assertRaisesRegex(ValueError,
+                                    r"Invalid machine configuration"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -322,16 +316,18 @@ class TestValidate(unittest.TestCase):
                 ),
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
             )
 
-    @mock.patch("tensorflow_cloud.core.validate.VERSION", "2.2.0")
-    def test_invalid_tpu_accelerator_tf_version(self, mock_os_path):
+    @mock.patch("tensorflow_cloud.core.validate.VERSION",  # pylint: disable=line-too-long
+                "2.2.0")
+    def test_invalid_tpu_accelerator_tf_version(self):
         with self.assertRaisesRegex(
-            NotImplementedError, r"TPUs are only supported for TF version <= 2.1.0"
+            NotImplementedError,
+            r"TPUs are only supported for TF version <= 2.1.0"
         ):
             validate.validate(
                 entry_point=None,
@@ -344,7 +340,7 @@ class TestValidate(unittest.TestCase):
                 ),
                 worker_count=1,
                 region="us-central1",
-                args=None,
+                entry_point_args=None,
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,

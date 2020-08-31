@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Test module that instantiates custom training loop."""
 
 # From TF tutorials
 # https://www.tensorflow.org/tutorials/distribute/custom_training
@@ -19,9 +20,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
 import numpy as np
-import os
+
+import tensorflow as tf
 
 print(tf.__version__)
 
@@ -61,16 +62,16 @@ train_dataset = (
     .shuffle(BUFFER_SIZE)
     .batch(GLOBAL_BATCH_SIZE)
 )
-test_dataset = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(
-    GLOBAL_BATCH_SIZE
-)
+test_dataset = tf.data.Dataset.from_tensor_slices(
+    (test_images, test_labels)).batch(GLOBAL_BATCH_SIZE)
 
 train_dist_dataset = strategy.experimental_distribute_dataset(train_dataset)
 test_dist_dataset = strategy.experimental_distribute_dataset(test_dataset)
 
 
 def create_model():
-    model = tf.keras.Sequential(
+    """Constructs a model."""
+    model_ = tf.keras.Sequential(
         [
             tf.keras.layers.Conv2D(32, 3, activation="relu"),
             tf.keras.layers.MaxPooling2D(),
@@ -82,7 +83,7 @@ def create_model():
         ]
     )
 
-    return model
+    return model_
 
 
 # Define loss function
@@ -104,8 +105,10 @@ with strategy.scope():
 with strategy.scope():
     test_loss = tf.keras.metrics.Mean(name="test_loss")
 
-    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name="train_accuracy")
-    test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name="test_accuracy")
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+        name="train_accuracy")
+    test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+        name="test_accuracy")
 
 # Training loop# model and optimizer must be created under `strategy.scope`.
 with strategy.scope():
@@ -115,6 +118,7 @@ with strategy.scope():
 with strategy.scope():
 
     def train_step(inputs):
+        """Defines a custom training step."""
         images, labels = inputs
 
         with tf.GradientTape() as tape:
@@ -128,6 +132,7 @@ with strategy.scope():
         return loss
 
     def test_step(inputs):
+        """Defines a custom test step."""
         images, labels = inputs
 
         predictions = model(images, training=False)
@@ -138,10 +143,12 @@ with strategy.scope():
 
 
 with strategy.scope():
+
     # `experimental_run_v2` replicates the provided computation and runs it
     # with the distributed input.
     @tf.function
     def distributed_train_step(dataset_inputs):
+        """Defines a custom distributed training step."""
         per_replica_losses = strategy.experimental_run_v2(
             train_step, args=(dataset_inputs,)
         )
@@ -151,6 +158,7 @@ with strategy.scope():
 
     @tf.function
     def distributed_test_step(dataset_inputs):
+        """Defines a custom distributed test step."""
         return strategy.experimental_run_v2(test_step, args=(dataset_inputs,))
 
     for epoch in range(EPOCHS):
@@ -167,7 +175,8 @@ with strategy.scope():
             distributed_test_step(x)
 
         template = (
-            "Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, " "Test Accuracy: {}"
+            "Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, "
+            "Test Accuracy: {}"
         )
         print(
             template.format(

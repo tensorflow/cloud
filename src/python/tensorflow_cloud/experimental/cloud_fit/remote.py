@@ -27,8 +27,10 @@ from absl import app
 from absl import flags
 from absl import logging
 import cloudpickle
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
+
 from tensorflow_cloud.experimental.cloud_fit import utils
 
 MULTI_WORKER_MIRRORED_STRATEGY_NAME = utils.MULTI_WORKER_MIRRORED_STRATEGY_NAME
@@ -39,7 +41,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string(
     "distribution_strategy",
     None,
-    "String representing distribution strategy. Must match DistributionStrategy values",
+    "String representing distribution strategy. "
+    "Must match DistributionStrategy values",
 )
 
 flags.DEFINE_string(
@@ -62,17 +65,21 @@ def main(unused_argv):
     run(FLAGS.remote_dir, FLAGS.distribution_strategy)
 
 
-def run(remote_dir, distribution_strategy_text):
+def run(
+    remote_dir: Text,
+    distribution_strategy_text: Text
+) -> None:
     """deserializes Model and Dataset and runs them.
 
     Args:
-        remote_dir: Temporary cloud storage folder that contains model and Dataset
-            graph. This folder is also used for job output.
-        distribution_strategy_text: Specifies the distribution strategy for remote
-            execution when a jobspec is provided. Accepted values are strategy names
-            as specified by 'tf.distribute.<strategy>.__name__'.
+        remote_dir: Temporary cloud storage folder that contains model and
+            Dataset graph. This folder is also used for job output.
+        distribution_strategy_text: Specifies the distribution strategy for
+            remote execution when a jobspec is provided. Accepted values are
+            strategy names as specified by 'tf.distribute.<strategy>.__name__'.
     """
-    logging.info("Setting distribution strategy to %s", distribution_strategy_text)
+    logging.info("Setting distribution strategy to %s",
+                 distribution_strategy_text)
 
     is_mwms = distribution_strategy_text == MULTI_WORKER_MIRRORED_STRATEGY_NAME
 
@@ -83,8 +90,8 @@ def run(remote_dir, distribution_strategy_text):
     with distribution_strategy.scope():
         if utils.is_tf_v1():
             training_assets_graph = tf.compat.v2.saved_model.load(
-                export_dir=os.path.join(remote_dir, "training_assets"), tags=None
-            )
+                export_dir=os.path.join(remote_dir, "training_assets"),
+                tags=None)
         else:
             training_assets_graph = tf.saved_model.load(
                 os.path.join(remote_dir, "training_assets")
@@ -104,16 +111,19 @@ def run(remote_dir, distribution_strategy_text):
             logging.info("y was loaded successfully.")
 
         if hasattr(training_assets_graph, "validation_data_fn"):
-            fit_kwargs["validation_data"] = training_assets_graph.validation_data_fn()
+            fit_kwargs["validation_data"] = (
+                training_assets_graph.validation_data_fn())
 
         if hasattr(training_assets_graph, "callbacks_fn"):
-            pickled_callbacks = tfds.as_numpy(training_assets_graph.callbacks_fn())
+            pickled_callbacks = tfds.as_numpy(
+                training_assets_graph.callbacks_fn())
             fit_kwargs["callbacks"] = cloudpickle.loads(pickled_callbacks)
             logging.info("callbacks were loaded successfully.")
 
         model = tf.keras.models.load_model(os.path.join(remote_dir, "model"))
         logging.info(
-            "Model was loaded from %s successfully.", os.path.join(remote_dir, "model")
+            "Model was loaded from %s successfully.",
+            os.path.join(remote_dir, "model")
         )
         model.fit(**fit_kwargs)
 
@@ -124,7 +134,8 @@ def run(remote_dir, distribution_strategy_text):
         tmp_worker_dir = os.path.join(
             remote_dir, "output/tmp/workers_" + str(uuid.uuid4())
         )
-        logging.info("Saving model from worker in temporary folder %s.", tmp_worker_dir)
+        logging.info("Saving model from worker in temporary folder %s.",
+                     tmp_worker_dir)
         model.save(tmp_worker_dir)
 
         logging.info("Removing temporary folder %s.", tmp_worker_dir)
@@ -138,13 +149,14 @@ def _is_current_worker_chief():
     if os.environ.get("TF_CONFIG", False):
         config_task = json.loads(os.environ["TF_CONFIG"])["task"]
         return (
-            config_task.get("type", "") == "chief" or config_task.get("index", -1) == 0
+            config_task.get("type", "") == "chief"
+            or config_task.get("index", -1) == 0
         )
     else:
         raise ValueError("Could not access TF_CONFIG in environment")
 
 
-def _delete_dir(path):
+def _delete_dir(path: Text) -> None:
     """Deletes a directory if exists."""
 
     if tf.io.gfile.isdir(path):

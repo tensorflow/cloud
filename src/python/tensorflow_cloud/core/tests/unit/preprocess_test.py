@@ -13,15 +13,16 @@
 # limitations under the License.
 """Tests for the cloud preprocessing module."""
 
-import mock
 import os
 import unittest
+import mock
 
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import preprocess
 
 
 class TestPreprocess(unittest.TestCase):
+
     def setup_py(self):
         self.entry_point_name = "sample_compile_fit.py"
         self.entry_point = "sample_compile_fit.py"
@@ -71,7 +72,8 @@ class TestPreprocess(unittest.TestCase):
     def test_auto_mirrored_strategy(self):
         self.setup_py()
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["K80_4X"]
-        script_lines = self.get_preprocessed_entry_point(chief_config=chief_config)
+        script_lines = self.get_preprocessed_entry_point(
+            chief_config=chief_config)
         expected_lines = [
             "import os\n",
             "import tensorflow as tf\n",
@@ -89,7 +91,8 @@ class TestPreprocess(unittest.TestCase):
             "import os\n",
             "import tensorflow as tf\n",
             'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
-            "strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()\n",
+            ("strategy = tf.distribute.experimental."
+             "MultiWorkerMirroredStrategy()\n"),
             "tf.distribute.experimental_set_strategy(strategy)\n",
             'exec(open("{}").read())\n'.format(self.entry_point_name),
         ]
@@ -113,7 +116,8 @@ class TestPreprocess(unittest.TestCase):
             "def wait_for_tpu_cluster_resolver_ready():\n",
             "  tpu_config_env = os.environ.get('TPU_CONFIG')\n",
             "  if not tpu_config_env:\n",
-            "    logging.info('Missing TPU_CONFIG, use CPU/GPU for training.')\n",
+            ("    logging.info('Missing TPU_CONFIG, "
+             "use CPU/GPU for training.')\n"),
             "    return None\n",
             "  tpu_node = json.loads(tpu_config_env)\n",
             "  logging.info('Waiting for TPU to be ready: %s.', tpu_node)\n",
@@ -129,7 +133,8 @@ class TestPreprocess(unittest.TestCase):
             "      tpu_cluster_resolver_dict = "
             "tpu_cluster_resolver.cluster_spec().as_dict()\n",
             "      if 'worker' in tpu_cluster_resolver_dict:\n",
-            "        logging.info('Found TPU worker: %s', tpu_cluster_resolver_dict)\n",
+            ("        logging.info('Found TPU worker: %s', "
+             "tpu_cluster_resolver_dict)\n"),
             "        return tpu_cluster_resolver\n",
             "    except Exception as e:\n",
             "      if i < num_retries - 1:\n",
@@ -137,7 +142,8 @@ class TestPreprocess(unittest.TestCase):
             " instance.')\n",
             "      else:\n",
             "        # Preserves the traceback.\n",
-            "        raise RuntimeError('Failed to schedule TPU: {}'.format(e))\n",
+            ("        raise RuntimeError('Failed to schedule TPU: "
+             "{}'.format(e))\n"),
             "    time.sleep(10)\n",
             "  raise RuntimeError('Failed to schedule TPU.')\n",
             "resolver = wait_for_tpu_cluster_resolver_ready()\n",
@@ -149,7 +155,7 @@ class TestPreprocess(unittest.TestCase):
         ]
         self.assert_and_cleanup(expected_lines, script_lines)
 
-    @mock.patch("tensorflow_cloud.core.preprocess.PythonExporter")
+    @mock.patch("tensorflow_cloud.core.preprocess.PythonExporter")  # pylint: disable=line-too-long
     def test_ipython_notebook(self, mock_python_exporter):
         file_contents = (
             "num_train_examples = info.splits['train'].num_examples\n"
@@ -171,10 +177,12 @@ class TestPreprocess(unittest.TestCase):
         for el in expected_lines:
             self.assertIn(el, script_lines)
         self.assertIn(
-            "num_train_examples = info.splits['train'].num_examples\n", script_lines
+            "num_train_examples = info.splits['train'].num_examples\n",
+            script_lines
         )
         self.assertIn(
-            "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n", script_lines
+            "eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)\n",
+            script_lines
         )
 
 

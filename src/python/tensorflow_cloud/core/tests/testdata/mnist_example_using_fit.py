@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Test module that calls model.fit()."""
 
 # Example from TF tutorials
 # https://www.tensorflow.org/tutorials/distribute/keras
@@ -19,10 +20,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-
-import tensorflow_datasets as tfds
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 tfds.disable_progress_bar()
 
@@ -54,7 +53,8 @@ eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
 # Create the model
 model = tf.keras.Sequential(
     [
-        tf.keras.layers.Conv2D(32, 3, activation="relu", input_shape=(28, 28, 1)),
+        tf.keras.layers.Conv2D(32, 3,
+                               activation="relu", input_shape=(28, 28, 1)),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(64, activation="relu"),
@@ -80,9 +80,11 @@ def decay(epoch):
         return 1e-5
 
 
-# Callback for printing the LR at the end of each epoch.
 class PrintLR(tf.keras.callbacks.Callback):
+    """Callback for printing the LR at the end of each epoch."""
+
     def on_epoch_end(self, epoch, logs=None):
+        """Implements on_epoch_end() callback."""
         print(
             "\nLearning rate for epoch {} is {}".format(
                 epoch + 1, model.optimizer.lr.numpy()

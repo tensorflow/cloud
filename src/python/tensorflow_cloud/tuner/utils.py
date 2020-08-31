@@ -44,12 +44,14 @@ _SAMPLING_LOG = "log"
 _SAMPLING_REVERSE_LOG = "reverse_log"
 
 
-def make_study_config(objective, hyperparams):
-    """Generates CAIP Optimizer StudyConfig from kerastuner objective, max_trials and hyperparameters.
+def make_study_config(
+    objective: Union[Text, oracle_module.Objective],
+    hyperparams: hp_module.HyperParameters) -> Dict[Text, Any]:
+    """Generates Optimizer study_config from kerastuner configurations.
 
     Arguments:
-        objective: String or `oracle_module.Objective`. If a string, the direction
-            of the optimization (min or max) will be inferred.
+        objective: String or `oracle_module.Objective`. If a string,
+            the direction of the optimization (min or max) will be inferred.
         hyperparams: HyperParameters class instance. Can be used to override (or
             register in advance) hyperparamters in the search space.
 
@@ -73,17 +75,21 @@ def make_study_config(objective, hyperparams):
         )
 
     # Converts hp_module.HyperParameters to parameters.
-    study_config["parameters"] = _convert_hyperparams_to_optimizer_params(hyperparams)
+    study_config["parameters"] = _convert_hyperparams_to_optimizer_params(
+        hyperparams)
 
     return study_config
 
 
-def convert_study_config_to_objective(study_config):
-    """Converts CAIP Optimizer study_config to a list of oracle_module.Objective."""
+def convert_study_config_to_objective(
+    study_config: Dict[Text, Any]) -> List[oracle_module.Objective]:
+    """Converts Optimizer study_config to a list of oracle_module.Objective."""
     if not study_config.get("metrics"):
-        raise ValueError('"metrics" not found in study_config {}'.format(study_config))
+        raise ValueError('"metrics" not found in study_config {}'.format(
+            study_config))
     if not isinstance(study_config["metrics"], list):
-        raise ValueError('study_config["metrics"] should be a list of {"metric": ...}')
+        raise ValueError(
+            'study_config["metrics"] should be a list of {"metric": ...}')
     if not study_config["metrics"][0].get("metric"):
         raise ValueError('"metric" not found in study_config["metrics"][0]')
     return [
@@ -92,15 +98,16 @@ def convert_study_config_to_objective(study_config):
     ]
 
 
-def convert_study_config_to_hps(study_config):
+def convert_study_config_to_hps(
+    study_config: Dict[Text, Any]) -> hp_module.HyperParameters:
     """Converts CAIP Optimizer study_config to HyperParameters."""
     if not study_config.get("parameters"):
-        raise ValueError("Parameters are not found in the study_config: ", study_config)
+        raise ValueError("Parameters are not found in the study_config: ",
+                         study_config)
     if not isinstance(study_config["parameters"], list):
         raise ValueError(
-            "Parameters should be a list of parameter with at least 1 parameter,"
-            " found ",
-            study_config["parameters"],
+            "Parameters should be a list of parameter with at least 1 "
+            "parameter, found ", study_config["parameters"],
         )
 
     hps = hp_module.HyperParameters()
@@ -146,11 +153,12 @@ def convert_study_config_to_hps(study_config):
                     max_value=param["integer_value_spec"]["max_value"],
                 )
         else:
-            raise ValueError("Unknown parameter type: {}.".format(param["type"]))
+            raise ValueError(
+                "Unknown parameter type: {}.".format(param["type"]))
     return hps
 
 
-def _is_parameter_valid(param):
+def _is_parameter_valid(param: Dict[Text, Any]):
     """Checks if study_config parameter is valid."""
     if not param.get("parameter"):
         raise ValueError('"parameter" (name) is not specified.')
@@ -180,16 +188,16 @@ def _is_parameter_valid(param):
             )
     elif param["type"] == _DOUBLE:
         if not param.get("double_value_spec"):
-            raise ValueError("Parameter {} is missing double_value_spec.".format(param))
+            raise ValueError(
+                "Parameter {} is missing double_value_spec.".format(param))
         spec = param["double_value_spec"]
         if not (
             isinstance(spec.get("min_value"), float)
             and isinstance(spec.get("max_value"), float)
         ):
             raise ValueError(
-                'Parameter spec {} requires both "min_value" and "max_value".'.format(
-                    spec
-                )
+                'Parameter spec {} requires both "min_value" and '
+                '"max_value".'.format(spec)
             )
     elif param["type"] == _INTEGER:
         if not param.get("integer_value_spec"):
@@ -202,16 +210,16 @@ def _is_parameter_valid(param):
             and isinstance(spec.get("max_value"), int)
         ):
             raise ValueError(
-                'Parameter spec {} requires both "min_value" and "max_value".'.format(
-                    spec
-                )
+                'Parameter spec {} requires both "min_value" and '
+                '"max_value".'.format(spec)
             )
     else:
         raise ValueError("Unknown parameter type: {}.".format(param["type"]))
 
 
-def _convert_hyperparams_to_optimizer_params(hyperparams):
-    """Converts HyperParameters to a list of ParameterSpec in CAIP Optimizer study_config."""
+def _convert_hyperparams_to_optimizer_params(
+    hyperparams: hp_module.HyperParameters) -> List[Any]:
+    """Converts HyperParameters to a list of ParameterSpec in study_config."""
     param_type = []
     for hp in hyperparams.space:
         param = {}
@@ -266,19 +274,22 @@ def _convert_hyperparams_to_optimizer_params(hyperparams):
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": [float(hp.value)]}
         else:
-            raise ValueError("`HyperParameter` type not recognized: {}".format(hp))
+            raise ValueError(
+                "`HyperParameter` type not recognized: {}".format(hp))
 
         param_type.append(param)
 
     return param_type
 
 
-def format_objective(objective, direction=None):
+def format_objective(
+    objective: Union[Text, oracle_module.Objective],
+    direction: Text = None) -> Optional[List[oracle_module.Objective]]:
     """Formats objective to a list of oracle_module.Objective.
 
     Arguments:
-        objective: If a string, the direction of the optimization (min or max) will
-            be inferred.
+        objective: If a string, the direction of the optimization (min or max)
+            will be inferred.
         direction: Optional. e.g. 'min' or 'max'.
 
     Returns:
@@ -302,23 +313,24 @@ def format_objective(objective, direction=None):
             return objective
         if isinstance(objective[0], str):
             return [
-                oracle_module.Objective(m, metrics_tracking.infer_metric_direction(m))
+                oracle_module.Objective(
+                    m, metrics_tracking.infer_metric_direction(m))
                 for m in objective
             ]
     raise TypeError(
-        "Objective should be either string or oracle_module.Objective, found {}".format(
-            objective
-        )
+        "Objective should be either string or oracle_module.Objective, "
+        "found {}".format(objective)
     )
 
 
-def format_goal(metric_direction):
-    """oracle_module.Objective 'direction' and CAIP Optimizer study_config 'goal' conversion.
+def format_goal(metric_direction: Text) -> Text:
+    """Converts oracle_module.Objective 'direction' to study_config 'goal'.
 
-    Arguments:
+    Args:
         metric_direction: If oracle_module.Objective 'direction' is supplied,
-            returns 'goal' in CAIP Optimizer study_config. If 'goal' in CAIP Optimizer
-            study_config is supplied, returns 'direction' in oracle_module.Objective.
+            returns 'goal' in CAIP Optimizer study_config. If 'goal' in CAIP
+            Optimizer 'study_config' is supplied, returns 'direction' in
+            oracle_module.Objective.
 
     Returns:
         'goal' or 'direction'.
@@ -345,21 +357,25 @@ def _get_scale_type(sampling):
     return {"scale_type": _SCALE_TYPE_UNSPECIFIED}
 
 
-def get_trial_id(optimizer_trial):
-    """Gets trial_id from a CAIP Optimizer Trial.
+def get_trial_id(optimizer_trial: Dict[Text, Any]) -> Text:
+    r"""Gets trial_id from a CAIP Optimizer Trial.
 
     Arguments:
         optimizer_trial: A CAIP Optimizer Trial instance.
 
     Returns:
-        trial_id: Note that a trial name follows the followining format
-            projects/{project_id}/locations/{region}/studies/{study_id}/trials/{trial_id}
+        trial_id. Note that a trial name follows the followining format
+        `projects/{project_id}/locations/{region}/studies/{study_id}/trials/\
+            {trial_id}`
     """
     return optimizer_trial["name"].split("/")[-1]
 
 
-def convert_optimizer_trial_to_hps(hps, optimizer_trial):
-    """Converts CAIP Optimizer Trial parameters into KerasTuner HyperParameters."""
+def convert_optimizer_trial_to_hps(
+    hps: hp_module.HyperParameters,
+    optimizer_trial: Dict[Text, Any]
+) -> hp_module.HyperParameters:
+    """Converts Optimizer Trial parameters into KerasTuner HyperParameters."""
     hps = hp_module.HyperParameters.from_config(hps.get_config())
     hps.values = {}
     for param in optimizer_trial["parameters"]:
@@ -372,7 +388,7 @@ def convert_optimizer_trial_to_hps(hps, optimizer_trial):
     return hps
 
 
-def _format_sampling(scale_type):
+def _format_sampling(scale_type: Text) -> Optional[Text]:
     """Format CAIP Optimizer scale_type for HyperParameter.sampling."""
     if scale_type == _LINEAR_SCALE:
         return _SAMPLING_LINEAR

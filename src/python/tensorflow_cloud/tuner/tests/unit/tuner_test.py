@@ -40,6 +40,7 @@ def build_model(hp):
 
 
 class CloudTunerTest(tf.test.TestCase):
+
     def setUp(self):
         super(CloudTunerTest, self).setUp()
         self.addCleanup(mock.patch.stopall)
@@ -48,7 +49,8 @@ class CloudTunerTest(tf.test.TestCase):
         self._region = "us-central1"
         self._project_id = "project-a"
         self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
-            self._project_id, self._region, "CloudTuner_study_{}".format(self._study_id)
+            self._project_id, self._region,
+            "CloudTuner_study_{}".format(self._study_id)
         )
 
         hps = hp_module.HyperParameters()
@@ -80,7 +82,8 @@ class CloudTunerTest(tf.test.TestCase):
             tuner, "optimizer_client", autospec=True
         ).start()
 
-        self.mock_client = mock.create_autospec(optimizer_client._OptimizerClient)
+        self.mock_client = mock.create_autospec(
+            optimizer_client._OptimizerClient)
         self.mock_optimizer_client_module.create_or_load_study.return_value = (
             self.mock_client
         )
@@ -107,21 +110,19 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_hparams(self):
         self._tuner_with_hparams()
-        self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
-            self._project_id,
-            self._region,
-            "CloudTuner_study_{}".format(self._study_id),
-            self._study_config,
-        )
+        (self.mock_optimizer_client_module.create_or_load_study
+         .assert_called_with(self._project_id,
+                             self._region,
+                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_config))
 
     def test_tuner_initialization_with_study_config(self):
         self.tuner = self._tuner(None, None, self._study_config)
-        self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
-            self._project_id,
-            self._region,
-            "CloudTuner_study_{}".format(self._study_id),
-            self._study_config,
-        )
+        (self.mock_optimizer_client_module.create_or_load_study
+         .assert_called_with(self._project_id,
+                             self._region,
+                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_config))
 
     def test_tuner_initialization_neither_hparam_nor_study_config(self):
         with self.assertRaises(ValueError):
@@ -141,12 +142,11 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_study_config_and_max_trials(self):
         self.tuner = self._tuner(None, None, self._study_config, max_trials=100)
-        self.mock_optimizer_client_module.create_or_load_study.assert_called_with(
-            self._project_id,
-            self._region,
-            "CloudTuner_study_{}".format(self._study_id),
-            self._study_config,
-        )
+        (self.mock_optimizer_client_module.create_or_load_study
+         .assert_called_with(self._project_id,
+                             self._region,
+                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_config))
 
     def test_create_trial_initially(self):
         self._tuner_with_hparams()
@@ -156,7 +156,8 @@ class CloudTunerTest(tf.test.TestCase):
                 {
                     "name": "1",
                     "state": "ACTIVE",
-                    "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.001}],
                 }
             ]
         }
@@ -175,7 +176,8 @@ class CloudTunerTest(tf.test.TestCase):
                 {
                     "name": "1",
                     "state": "ACTIVE",
-                    "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.001}],
                 }
             ]
         }
@@ -193,17 +195,18 @@ class CloudTunerTest(tf.test.TestCase):
         trial = self.tuner.oracle.create_trial("tuner_0")
 
         self.mock_client.list_trials.assert_called_once()
-        self.assertEqual(trial.hyperparameters.values, None)
+        self.assertIsNone(trial.hyperparameters.values)
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
     def test_create_trial_after_early_stopping(self):
         self._tuner_with_hparams()
-        self.mock_client.list_trials.return_value = [{"name": "a", "state": "STOPPING"}]
+        self.mock_client.list_trials.return_value = [
+            {"name": "a", "state": "STOPPING"}]
 
         trial = self.tuner.oracle.create_trial("tuner_0")
 
         self.mock_client.list_trials.assert_called_once()
-        self.assertEqual(trial.hyperparameters.values, None)
+        self.assertIsNone(trial.hyperparameters.values)
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
     def test_update_trial(self):
@@ -220,11 +223,13 @@ class CloudTunerTest(tf.test.TestCase):
             trial_id="1", metrics={"val_acc": 0.8}, step=3
         )
 
-        self.mock_client.report_intermediate_objective_value.assert_called_once_with(
-            3,  # step
-            990,  # elapsed_secs
-            [{"metric": "val_acc", "value": 0.8}],  # metrics_list
-            "1",  # trial_id,
+        (self.mock_client.report_intermediate_objective_value
+         .assert_called_once_with(
+             3,  # step
+             990,  # elapsed_secs
+             [{"metric": "val_acc", "value": 0.8}],  # metrics_list
+             "1",  # trial_id,
+             )
         )
         self.mock_client.should_trial_stop.assert_called_once_with("1")
         self.assertEqual(status, trial_module.TrialStatus.STOPPED)
@@ -245,7 +250,8 @@ class CloudTunerTest(tf.test.TestCase):
 
         self.tuner.oracle.ongoing_trials = {"tuner_0": self._test_trial}
         self.tuner.oracle.end_trial(trial_id="1")
-        self.mock_client.complete_trial.assert_called_once_with("1", False, None)
+        self.mock_client.complete_trial.assert_called_once_with(
+            "1", False, None)
 
     def test_end_trial_infeasible_trial(self):
         self._tuner_with_hparams()
@@ -254,7 +260,8 @@ class CloudTunerTest(tf.test.TestCase):
 
         self.tuner.oracle.ongoing_trials = {"tuner_0": self._test_trial}
         self.tuner.oracle.end_trial(trial_id="1", status="INVALID")
-        self.mock_client.complete_trial.assert_called_once_with("1", True, "INVALID")
+        self.mock_client.complete_trial.assert_called_once_with(
+            "1", True, "INVALID")
 
     def test_end_trial_invalid_trial(self):
         self._tuner_with_hparams()
@@ -275,7 +282,8 @@ class CloudTunerTest(tf.test.TestCase):
             {
                 "name": "1",
                 "state": "COMPLETED",
-                "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.01}],
                 "finalMeasurement": {
                     "stepCount": 3,
                     "metrics": [{"metric": "val_acc", "value": 0.7}],
@@ -286,7 +294,8 @@ class CloudTunerTest(tf.test.TestCase):
             {
                 "name": "2",
                 "state": "COMPLETED",
-                "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
                 "finalMeasurement": {
                     "stepCount": 3,
                     "metrics": [{"metric": "val_acc", "value": 0.9}],
@@ -340,7 +349,8 @@ class CloudTunerTest(tf.test.TestCase):
             {
                 "name": "1",
                 "state": "COMPLETED",
-                "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.01}],
                 "finalMeasurement": {
                     "stepCount": 3,
                     "metrics": [{"metric": "val_acc", "value": 0.7}],
@@ -351,7 +361,8 @@ class CloudTunerTest(tf.test.TestCase):
             {
                 "name": "2",
                 "state": "COMPLETED",
-                "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
                 "finalMeasurement": {
                     "stepCount": 3,
                     "metrics": [{"metric": "val_acc", "value": 0.9}],

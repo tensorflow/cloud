@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import docker
 import logging
 import os
 import sys
@@ -24,19 +23,20 @@ import tarfile
 import tempfile
 import time
 import uuid
-import requests
 import warnings
 
 from . import machine_config
+import docker
+from googleapiclient import discovery
+from googleapiclient import errors
+import requests
 from ..utils import google_api_client
 
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from googleapiclient import discovery
-from googleapiclient import errors
 
 try:
-    from tensorflow import __version__ as VERSION
+    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
 except ImportError:
     # Use the latest TF docker image if a local installation is not available.
     VERSION = "latest"
@@ -47,36 +47,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 class ContainerBuilder(object):
-    """Container builder for building and pushing a docker image.
-
-    Args:
-        entry_point: Optional string. File path to the python file or iPython
-            notebook that contains the TensorFlow code.
-            Note: This path must be in the current working directory tree.
-            Example: 'train.py', 'training/mnist.py', 'mnist.ipynb'
-            If `entry_point` is not provided, then
-            - If you are in an iPython notebook environment, then the
-                current notebook is taken as the `entry_point`.
-            - Otherwise, the current python script is taken as the
-                `entry_point`.
-        preprocessed_entry_point: Optional `preprocessed_entry_point`
-            file path.
-        chief_config: `MachineConfig` that represents the configuration for
-            the chief worker in a distribution cluster.
-        worker_config: `MachineConfig` that represents the configuration
-            for the workers in a distribution cluster.
-        docker_registry: The docker registry name.
-        project_id: Project id string.
-        requirements_txt: Optional string. File path to requirements.txt file
-            containing aditionally pip dependencies, if any.
-        destination_dir: Optional working directory in the docker container
-            filesystem.
-        docker_base_image: Optional base docker image to use. Defaults to None.
-        docker_image_bucket_name: Optional string that specifies the docker
-            image cloud storage bucket name.
-        called_from_notebook: Optional boolean which indicates whether run has
-            been called in a notebook environment.
-    """
+    """Container builder for building and pushing a docker image."""
 
     def __init__(
         self,
@@ -92,6 +63,37 @@ class ContainerBuilder(object):
         docker_image_bucket_name=None,
         called_from_notebook=False,
     ):
+        """Constructor.
+
+        Args:
+            entry_point: Optional string. File path to the python file or
+                iPython notebook that contains the TensorFlow code.
+                Note) This path must be in the current working directory tree.
+                Example) 'train.py', 'training/mnist.py', 'mnist.ipynb'
+                If `entry_point` is not provided, then
+                - If you are in an iPython notebook environment, then the
+                    current notebook is taken as the `entry_point`.
+                - Otherwise, the current python script is taken as the
+                    `entry_point`.
+            preprocessed_entry_point: Optional `preprocessed_entry_point`
+                file path.
+            chief_config: `MachineConfig` that represents the configuration for
+                the chief worker in a distribution cluster.
+            worker_config: `MachineConfig` that represents the configuration
+                for the workers in a distribution cluster.
+            docker_registry: The docker registry name.
+            project_id: Project id string.
+            requirements_txt: Optional string. File path to requirements.txt
+                file containing additionally pip dependencies, if any.
+            destination_dir: Optional working directory in the docker container
+                filesystem.
+            docker_base_image: Optional base docker image to use.
+                Defaults to None.
+            docker_image_bucket_name: Optional string that specifies the docker
+                image cloud storage bucket name.
+            called_from_notebook: Optional boolean which indicates whether run
+                has been called in a notebook environment.
+        """
         self.entry_point = entry_point
         self.preprocessed_entry_point = preprocessed_entry_point
         self.chief_config = chief_config
@@ -137,11 +139,13 @@ class ContainerBuilder(object):
     def _create_docker_file(self):
         """Creates a Dockerfile."""
         if self.docker_base_image is None:
-            # Updating the name for RC's to match with the TF generated RC docker image names.
+            # Updating the name for RC's to match with the TF generated
+            # RC docker image names.
             tf_version = VERSION.replace("-rc", "rc")
             # Get the TF docker base image to use based on the current
             # TF version.
-            self.docker_base_image = "tensorflow/tensorflow:{}".format(tf_version)
+            self.docker_base_image = "tensorflow/tensorflow:{}".format(
+                tf_version)
             if (
                 self.chief_config.accelerator_type
                 != machine_config.AcceleratorType.NO_ACCELERATOR
@@ -157,8 +161,8 @@ class ContainerBuilder(object):
 
         if not self._base_image_exist():
             warnings.warn(
-                "Docker base image {} does not exist.".format(self.docker_base_image)
-            )
+                "Docker base image {} does not exist.".format(
+                    self.docker_base_image))
             if "dev" in self.docker_base_image:
                 # Except for the latest TF nightly, other nightlies
                 # do not have corresponding docker images.
@@ -173,7 +177,8 @@ class ContainerBuilder(object):
                 warnings.warn(
                     "Using the latest stable TF docker image available: "
                     "`tensorflow/tensorflow:latest`"
-                    "Please see https://hub.docker.com/r/tensorflow/tensorflow/ "
+                    "Please see "
+                    "https://hub.docker.com/r/tensorflow/tensorflow/ "
                     "for details on available docker images."
                 )
                 newtag = "tensorflow/tensorflow:latest"
@@ -193,13 +198,14 @@ class ContainerBuilder(object):
                 self.destination_dir, requirements_txt_name
             )
             lines.append(
-                "COPY {} {}".format(requirements_txt_path, requirements_txt_path)
+                "COPY {requirements_txt} {requirements_txt}".format(
+                    requirements_txt=requirements_txt_path)
             )
             # install pip requirements from requirements_txt if it exists.
             lines.append(
-                "RUN if [ -e {} ]; "
-                "then pip install --no-cache -r {}; "
-                "fi".format(dst_requirements_txt, dst_requirements_txt)
+                "RUN if [ -e {requirements_txt} ]; "
+                "then pip install --no-cache -r {requirements_txt}; "
+                "fi".format(requirements_txt=dst_requirements_txt)
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
@@ -211,7 +217,8 @@ class ContainerBuilder(object):
 
         # Copies the files from the `destination_dir` in docker daemon location
         # to the `destination_dir` in docker container filesystem.
-        lines.append("COPY {} {}".format(self.destination_dir, self.destination_dir))
+        lines.append("COPY {} {}".format(self.destination_dir,
+                                         self.destination_dir))
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
@@ -247,7 +254,7 @@ class ContainerBuilder(object):
         # Map entry_point directory to the dst directory.
         if not self.called_from_notebook:
             entry_point_dir, _ = os.path.split(self.entry_point)
-            if entry_point_dir == "":  # Current directory
+            if not entry_point_dir:  # Current directory
                 entry_point_dir = "."
             location_map[entry_point_dir] = self.destination_dir
 
@@ -275,12 +282,17 @@ class ContainerBuilder(object):
         """Returns unique name+tag for the docker image."""
         # Keeping this name format uniform with the job id.
         unique_tag = str(uuid.uuid4()).replace("-", "_")
-        return "{}/{}:{}".format(self.docker_registry, "tf_cloud_train", unique_tag)
+        return "{}/{}:{}".format(self.docker_registry,
+                                 "tf_cloud_train",
+                                 unique_tag)
 
     def _base_image_exist(self):
         """Check whether the docker base image exists on dockerhub.
 
         Use docker api v2 to check if base image is available.
+
+        Returns:
+            True if the image is found on dockerhub.
         """
         repo_name, tag_name = self.docker_base_image.split(":")
         r = requests.get(
@@ -304,6 +316,8 @@ class LocalContainerBuilder(ContainerBuilder):
                 build status. Not applicable to this builder.
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
+        Returns:
+            URI in a registory where the docker image has been built and pushed.
         """
         self.docker_client = docker.APIClient(version="auto")
         self._get_tar_file_path()
@@ -317,7 +331,7 @@ class LocalContainerBuilder(ContainerBuilder):
     def _build_docker_image(self):
         """Builds docker image."""
         image_uri = self._generate_name()
-        logger.info("Building docker image: {}".format(image_uri))
+        logger.info("Building docker image: %s", image_uri)
 
         # `fileobj` is generally set to the Dockerfile file path. If a tar file
         # is used for docker build context (ones that includes a Dockerfile)
@@ -340,8 +354,9 @@ class LocalContainerBuilder(ContainerBuilder):
         Args:
             image_uri: String, the registry name and tag.
         """
-        logger.info("Publishing docker image: {}".format(image_uri))
-        pb_logs_generator = self.docker_client.push(image_uri, stream=True, decode=True)
+        logger.info("Publishing docker image: %s", image_uri)
+        pb_logs_generator = self.docker_client.push(
+            image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish", image_uri)
 
     def _get_logs(self, logs_generator, name, image_uri):
@@ -383,15 +398,16 @@ class CloudContainerBuilder(ContainerBuilder):
                 build status. Applicable only to cloud container builder.
             delay_between_status_checks: Time is seconds to wait between status
                 checks.
+        Returns:
+            URI in a registory where the docker image has been built and pushed.
         """
         self._get_tar_file_path()
         storage_object_name = self._upload_tar_to_gcs()
         image_uri = self._generate_name()
 
         logger.info(
-            "Building and publishing docker image using Google "
-            "Cloud Build: {}".format(image_uri)
-        )
+            "Building and publishing docker image using Google Cloud Build: %s",
+            image_uri)
         build_service = discovery.build(
             "cloudbuild",
             "v1",
@@ -412,7 +428,7 @@ class CloudContainerBuilder(ContainerBuilder):
             )
 
             # `create` returns a long-running `Operation`.
-            # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/operations#Operation
+            # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/operations#Operation  # pylint: disable=line-too-long
             # This contains the build id, which we can use to get the status.
 
             attempts = 1
@@ -429,7 +445,7 @@ class CloudContainerBuilder(ContainerBuilder):
                 )
 
                 # `get` response is a `Build` object which contains `Status`.
-                # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#Build.Status
+                # https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#Build.Status    # pylint: disable=line-too-long
                 status = get_response["status"]
                 if status != "WORKING" and status != "QUEUED":
                     break
@@ -444,10 +460,8 @@ class CloudContainerBuilder(ContainerBuilder):
                 )
 
         except errors.HttpError as err:
-            raise RuntimeError(
-                "There was an error submitting the cloud build job. "
-                + err._get_reason()
-            )
+            RuntimeError(
+                "There was an error submitting the cloud build job. ", err)
         return image_uri
 
     def _upload_tar_to_gcs(self):

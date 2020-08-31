@@ -25,6 +25,7 @@ from tensorflow_cloud.utils import google_api_client
 
 
 class OptimizerClientTest(tf.test.TestCase):
+
     def setUp(self):
         super(OptimizerClientTest, self).setUp()
         self.addCleanup(mock.patch.stopall)
@@ -61,9 +62,8 @@ class OptimizerClientTest(tf.test.TestCase):
     @mock.patch.object(optimizer_client, "discovery")
     def test_create_or_load_study_newstudy(self, mock_discovery):
         mock_create_study = mock.MagicMock()
-        mock_discovery.build_from_document.return_value.projects().locations().studies().create = (
-            mock_create_study
-        )
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().create = mock_create_study
 
         client = optimizer_client.create_or_load_study(
             project_id=self._project_id,
@@ -85,12 +85,14 @@ class OptimizerClientTest(tf.test.TestCase):
 
         mock_create_study.assert_called_with(
             body={"study_config": self._study_config},
-            parent="projects/{}/locations/{}".format(self._project_id, self._region),
+            parent="projects/{}/locations/{}".format(
+                self._project_id, self._region),
             studyId=self._study_id,
         )
 
     @mock.patch.object(optimizer_client, "discovery")
-    def test_create_or_load_study_with_409_raises_RuntimeError(self, mock_discovery):
+    def test_create_or_load_study_with_409_raises_RuntimeError(self,
+                                                               mock_discovery):
         """Verify that get_study gracefully handles 409 errors."""
         mock_request = mock.MagicMock()
         mock_request.execute.side_effect = errors.HttpError(
@@ -98,17 +100,15 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         mock_create_study = mock.MagicMock()
         mock_create_study.return_value = mock_request
-        mock_discovery.build_from_document.return_value.projects().locations().studies().create = (
-            mock_create_study
-        )
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().create = mock_create_study
 
         mock_get_study = mock.MagicMock()
         mock_get_study.side_effect = [
             errors.HttpError(httplib2.Response(info={"status": 400}), b"")
         ] * 3
-        mock_discovery.build_from_document.return_value.projects().locations().studies().get = (
-            mock_get_study
-        )
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().get = mock_get_study
 
         with self.assertRaisesRegex(
             RuntimeError,
@@ -130,9 +130,8 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         mock_create_study = mock.MagicMock()
         mock_create_study.return_value = mock_create_request
-        mock_discovery.build_from_document.return_value.projects().locations().studies().create = (
-            mock_create_study
-        )
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().create = mock_create_study
 
         mock_get_request = mock.MagicMock()
         mock_get_request.execute.side_effect = [
@@ -142,9 +141,8 @@ class OptimizerClientTest(tf.test.TestCase):
         ]
         mock_get_study = mock.MagicMock()
         mock_get_study.side_effect = mock_get_request
-        mock_discovery.build_from_document.return_value.projects().locations().studies().get = (
-            mock_get_study
-        )
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().get = mock_get_study
 
         client = optimizer_client.create_or_load_study(
             project_id=self._project_id,
@@ -156,16 +154,16 @@ class OptimizerClientTest(tf.test.TestCase):
 
     def test_get_suggestions(self):
         mock_suggest = mock.MagicMock()
-        self._mock_discovery.projects().locations().studies().trials().suggest = (
-            mock_suggest
-        )
+        self._mock_discovery.projects().locations().studies().trials(
+            ).suggest = mock_suggest
 
         expected_response = {
             "trials": [
                 {
                     "name": "1",
                     "state": "ACTIVE",
-                    "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.001}],
                 }
             ]
         }
@@ -175,7 +173,8 @@ class OptimizerClientTest(tf.test.TestCase):
             "done": True,
             "response": expected_response,
         }
-        self._mock_discovery.projects().locations().operations().get = mock_suggest_lro
+        self._mock_discovery.projects().locations().operations(
+            ).get = mock_suggest_lro
 
         suggestions = self._client.get_suggestions("tuner_0")
         mock_suggest.assert_called_once_with(
@@ -192,18 +191,16 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         mock_suggest = mock.MagicMock()
         mock_suggest.return_value = mock_request
-        self._mock_discovery.projects().locations().studies().trials().suggest = (
-            mock_suggest
-        )
+        self._mock_discovery.projects().locations().studies().trials(
+            ).suggest = mock_suggest
 
         suggestions = self._client.get_suggestions("tuner_0")
         self.assertEqual(suggestions, {})
 
     def test_report_intermediate_objective_value(self):
         mock_add_measurement = mock.MagicMock()
-        self._mock_discovery.projects().locations().studies().trials().addMeasurement = (
-            mock_add_measurement
-        )
+        self._mock_discovery.projects().locations().studies().trials(
+            ).addMeasurement = mock_add_measurement
 
         self._client.report_intermediate_objective_value(
             step=1, elapsed_secs=2, metric_list=[{"val_acc": 0.8}], trial_id="1"
@@ -221,9 +218,8 @@ class OptimizerClientTest(tf.test.TestCase):
     def test_should_trial_stop(self):
         mock_early_stop = mock.MagicMock()
         mock_early_stop.return_value.execute.return_value = {"name": "op_name"}
-        self._mock_discovery.projects().locations().studies().trials().checkEarlyStoppingState = (
-            mock_early_stop
-        )
+        self._mock_discovery.projects().locations().studies().trials(
+            ).checkEarlyStoppingState = mock_early_stop
 
         mock_early_stop_lro = mock.MagicMock()
         mock_early_stop_lro.return_value.execute.return_value = {
@@ -261,11 +257,11 @@ class OptimizerClientTest(tf.test.TestCase):
         }
         mock_complete_trial.return_value.execute.return_value = expected_trial
 
-        self._mock_discovery.projects().locations().studies().trials().complete = (
-            mock_complete_trial
-        )
+        self._mock_discovery.projects().locations().studies().trials(
+            ).complete = mock_complete_trial
 
-        trial = self._client.complete_trial(trial_id="1", trial_infeasible=False)
+        trial = self._client.complete_trial(trial_id="1",
+                                            trial_infeasible=False)
 
         mock_complete_trial.assert_called_once_with(
             name=self._trial_name,
@@ -280,7 +276,8 @@ class OptimizerClientTest(tf.test.TestCase):
                 {
                     "name": "1",
                     "state": "COMPLETED",
-                    "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.01}],
                     "finalMeasurement": {
                         "stepCount": 3,
                         "metrics": [{"metric": "val_acc", "value": 0.7}],
@@ -291,7 +288,8 @@ class OptimizerClientTest(tf.test.TestCase):
                 {
                     "name": "2",
                     "state": "COMPLETED",
-                    "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.001}],
                     "finalMeasurement": {
                         "stepCount": 3,
                         "metrics": [{"metric": "val_acc", "value": 0.9}],
@@ -319,7 +317,8 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
         self.assertEqual(
-            {"user-agent": "tf-cloud/" + version.__version__}, http_request.headers
+            {"user-agent": "tf-cloud/" + version.__version__},
+            http_request.headers
         )
 
 

@@ -22,12 +22,13 @@ Python module, but only available as an in-memory object of the calling process.
 
 import datetime
 import os
-from typing import Text, Dict, Sequence, Any, Generator
+from typing import Text, Dict, Optional, Sequence, Any, Generator
 from absl import logging
 import cloudpickle
 from googleapiclient import discovery
 import tensorflow as tf
 import google.auth
+
 from tensorflow_cloud.experimental.cloud_fit import utils
 from tensorflow_cloud.utils import google_api_client
 
@@ -42,43 +43,43 @@ DEFAULT_DISTRIBUTION_STRATEGY = MULTI_WORKER_MIRRORED_STRATEGY_NAME
 
 
 def cloud_fit(
-    model,
-    remote_dir,
-    region=None,
-    project_id=None,
-    image_uri=None,
-    distribution_strategy=DEFAULT_DISTRIBUTION_STRATEGY,
-    job_spec=None,
-    job_id=None,
+    model: tf.keras.Model,
+    remote_dir: Text,
+    region: Text = None,
+    project_id: Text = None,
+    image_uri: Text = None,
+    distribution_strategy: Text = DEFAULT_DISTRIBUTION_STRATEGY,
+    job_spec: Dict[str, Any] = None,
+    job_id: Text = None,
     **fit_kwargs
-):
-    """Facilitates remote execution of in memory Model and Dataset on AI Platform.
+) -> Text:
+    """Executes in-memory Model and Dataset remotely on AI Platform.
 
     Args:
         model: A compiled Keras Model.
-        remote_dir: Google Cloud Storage path for temporary assets and AI Platform
-            training output. Will overwrite value in job_spec.
+        remote_dir: Google Cloud Storage path for temporary assets and
+            AI Platform training output. Will overwrite value in job_spec.
         region: Target region for running the AI Platform Training job.
         project_id: Project id where the training should be deployed to.
         image_uri: based image used to use for AI Platform Training
         distribution_strategy: Specifies the distribution strategy for remote
-            execution when a jobspec is provided. Accepted values are strategy names
-            as specified by 'tf.distribute.<strategy>.__name__'.
-        job_spec: AI Platform Training job_spec, will take precedence over all other
-            provided values except for remote_dir. If none is provided a default
-            cluster spec and distribution strategy will be used.
-        job_id: A name to use for the AI Platform Training job (mixed-case letters,
-            numbers, and underscores only, starting with a letter).
-        **fit_kwargs: Args to pass to model.fit() including training and eval data.
-            Only keyword arguments are supported. Callback functions will be
-            serialized as is, they must be available in run time environment.
+            execution when a jobspec is provided. Accepted values are strategy
+            names as specified by 'tf.distribute.<strategy>.__name__'.
+        job_spec: AI Platform Training job_spec, will take precedence over all
+            other provided values except for remote_dir. If none is provided a
+            default cluster spec and distribution strategy will be used.
+        job_id: A name to use for the AI Platform Training job (mixed-case
+            letters, numbers, and underscores only, starting with a letter).
+        **fit_kwargs: Args to pass to model.fit() including training and eval
+            data. Only keyword arguments are supported. Callback functions will
+            be serialized as is, they must be available in run time environment.
 
     Returns:
         AI Platform job ID
 
     Raises:
-        RuntimeError: If executing in graph mode, eager execution is required for
-            cloud_fit.
+        RuntimeError: If executing in graph mode, eager execution is required
+            for cloud_fit.
         NotImplementedError: Tensorflow v1.x is not supported.
     """
     logging.set_verbosity(logging.INFO)
@@ -86,7 +87,8 @@ def cloud_fit(
     if distribution_strategy not in SUPPORTED_DISTRIBUTION_STRATEGIES:
         raise ValueError(
             "{} is not supported. Supported Strategies are {}".format(
-                distribution_strategy, list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
+                distribution_strategy,
+                list(SUPPORTED_DISTRIBUTION_STRATEGIES.keys()),
             )
         )
 
@@ -120,8 +122,9 @@ def cloud_fit(
 
     _serialize_assets(remote_dir, model, **fit_kwargs)
 
-    # Setting AI Platform Training to use chief in TF_CONFIG environment variable
-    # https://cloud.google.com/ai-platform/training/docs/distributed-training-details#chief-versus-master
+    # Setting AI Platform Training to use chief in TF_CONFIG environment
+    # variable.
+    # https://cloud.google.com/ai-platform/training/docs/distributed-training-details#chief-versus-master  # pylint: disable=line-too-long
     job_spec["trainingInput"]["useChiefInTfConfig"] = "True"
 
     # If job_id is provided overwrite the job_id value.
@@ -132,7 +135,9 @@ def cloud_fit(
     return job_spec["job_id"]
 
 
-def _serialize_assets(remote_dir, model, **fit_kwargs):
+def _serialize_assets(remote_dir: Text,
+                      model: tf.keras.Model,
+                      **fit_kwargs) -> None:
     """Serialize Model and Dataset and store them in the local tmp folder.
 
     Args:
@@ -188,8 +193,10 @@ def _serialize_assets(remote_dir, model, **fit_kwargs):
 
 
 def _default_job_spec(
-    region, image_uri, entry_point_args=None,
-):
+    region: Text,
+    image_uri: Text,
+    entry_point_args: Sequence[Text] = None,
+) -> Dict[str, Any]:
     """Creates a basic job_spec for cloud AI Training.
 
     Args:
@@ -217,7 +224,10 @@ def _default_job_spec(
     return job_spec
 
 
-def _submit_job(job_spec, project_id=None):
+def _submit_job(
+    job_spec: Dict[Text, Text],
+    project_id: Optional[Text] = None,
+) -> None:
     """Submits a training job to cloud AI Training .
 
     Args:
@@ -226,23 +236,23 @@ def _submit_job(job_spec, project_id=None):
 
     Raises:
         RuntimeError: If fails to submit the job.
-        ValueError: if project id is not provided and can not be retrieved from the
-        environment.
+        ValueError: if project id is not provided and can not be retrieved from
+        the environment.
     """
     if project_id is None:
         _, project_id = google.auth.default()
 
     if project_id is None:
         raise ValueError(
-            "Could not retrieve the Project ID, it must be provided or pre-configured"
-            " in the environment."
+            "Could not retrieve the Project ID, it must be provided or "
+            "pre-configured in the environment."
         )
     project_id = "projects/{}".format(project_id)
 
     # Submit job to AIP Training
     logging.info(
-        "Submitting job=%s, project=%s to AI Platform.", job_spec["job_id"], project_id
-    )
+        "Submitting job=%s, project=%s to AI Platform.",
+        job_spec["job_id"], project_id)
 
     # Configure AI Platform Training job
     # Disabling cache discovery to suppress noisy warning. More details at:
@@ -255,18 +265,22 @@ def _submit_job(job_spec, project_id=None):
     )
 
     try:
-        request = api_client.projects().jobs().create(body=job_spec, parent=project_id)
+        request = api_client.projects().jobs().create(body=job_spec,
+                                                      parent=project_id)
         request.execute()
     except Exception as e:
         raise RuntimeError(
-            "Submitting job to AI Platform Training failed with error: {}".format(e)
+            "Submitting job to AI Platform Training failed with error: "
+            "{}".format(e)
         )
 
     logging.info("Job submitted successfully to AI Platform Training.")
     logging.info("Use gcloud to get the job status or stream logs as follows:")
     logging.info(
-        "gcloud ai-platform jobs describe %s/jobs/%s", project_id, job_spec["job_id"]
+        "gcloud ai-platform jobs describe %s/jobs/%s",
+        project_id, job_spec["job_id"]
     )
     logging.info(
-        "gcloud ai-platform jobs stream-logs %s/jobs/%s", project_id, job_spec["job_id"]
+        "gcloud ai-platform jobs stream-logs %s/jobs/%s",
+        project_id, job_spec["job_id"]
     )

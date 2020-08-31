@@ -117,6 +117,7 @@ def _dist_search_fn_wrapper(args):
 
 
 class _CloudTunerIntegrationTestBase(tf.test.TestCase):
+
     def _assert_output(self, fn, regex_str):
         stdout = io.StringIO()
         with contextlib.redirect_stdout(stdout):
@@ -125,7 +126,8 @@ class _CloudTunerIntegrationTestBase(tf.test.TestCase):
         self.assertRegex(output, re.compile(regex_str, re.DOTALL))
 
     def _assert_results_summary(self, fn):
-        self._assert_output(fn, ".*Results summary.*Trial summary.*Hyperparameters.*")
+        self._assert_output(
+            fn, ".*Results summary.*Trial summary.*Hyperparameters.*")
 
     def tearDown(self):
         super(_CloudTunerIntegrationTestBase, self).tearDown()
@@ -133,6 +135,7 @@ class _CloudTunerIntegrationTestBase(tf.test.TestCase):
 
 
 class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
+
     @classmethod
     def setUpClass(cls):
         super(CloudTunerIntegrationTest, cls).setUpClass()
@@ -218,7 +221,7 @@ class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
     def testCloudTunerStudyConfig(self):
         """Test case to configure Tuner with StudyConfig object."""
         # Configure the search space. Specification:
-        # https://cloud.google.com/ai-platform/optimizer/docs/reference/rest/v1/projects.locations.studies#StudyConfig
+        # https://cloud.google.com/ai-platform/optimizer/docs/reference/rest/v1/projects.locations.studies#StudyConfig  # pylint: disable=line-too-long
         study_config = {
             "metrics": [{"goal": "MAXIMIZE", "metric": "acc"}],
             "parameters": [
@@ -274,6 +277,7 @@ class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
 
 
 class CloudTunerInDistributedIntegrationTest(_CloudTunerIntegrationTestBase):
+
     def testCloudTunerInProcessDistributedTuning(self):
         """Test case to simulate multiple parallel tuning workers."""
         study_id = "{}_dist".format(_STUDY_ID_BASE)
@@ -290,7 +294,7 @@ class CloudTunerInDistributedIntegrationTest(_CloudTunerIntegrationTestBase):
         self._assert_results_summary(results[0].results_summary)
 
     def testCloudTunerAIPlatformTrainingDistributedTuning(self):
-        """Test case of parallel tuning using Cloud AI Platform as flock manager."""
+        """Test case of parallel tuning using CAIP Training as flock manager."""
         study_id = "{}_caip_dist".format(_STUDY_ID_BASE)
         del study_id
 
