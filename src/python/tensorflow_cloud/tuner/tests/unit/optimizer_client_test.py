@@ -37,6 +37,8 @@ class OptimizerClientTest(tf.test.TestCase):
             self._project_id, self._region, self._study_id
         )
         self._trial_name = "{}/trials/{}".format(self._trial_parent, "1")
+        self._parent = "projects/{}/locations/{}".format(self._project_id,
+                                                         self._region)
 
         self._mock_discovery = mock.MagicMock()
 
@@ -307,7 +309,74 @@ class OptimizerClientTest(tf.test.TestCase):
         trials = self._client.list_trials()
 
         mock_list_trials.assert_called_once_with(parent=self._trial_parent)
-        self.assertEqual(len(trials), 2)
+        self.assertLen(trials, 2)
+
+    def test_list_studies(self):
+        mock_list_studies = mock.MagicMock()
+        expected_studies = {
+            "studies": [{
+                "name": "1",
+                "study_config": self._study_config,
+                "state": "COMPLETED",
+                "create_time": {
+                    "seconds": 1234,
+                    "nanos": 0
+                },
+                "inactive_reason": None
+            }, {
+                "name": "2",
+                "study_config": self._study_config,
+                "state": "COMPLETED",
+                "create_time": {
+                    "seconds": 1235,
+                    "nanos": 0
+                },
+                "inactive_reason": None
+            }]
+        }
+        mock_list_studies.return_value.execute.return_value = expected_studies
+        self._mock_discovery.projects().locations().studies(
+        ).list = mock_list_studies
+
+        studies = self._client.list_studies()
+
+        mock_list_studies.assert_called_once_with(parent=self._parent)
+        self.assertLen(studies, 2)
+
+    def test_delete_study_none(self):
+      mock_delete_study = mock.MagicMock()
+      self._mock_discovery.projects().locations().studies(
+      ).delete = mock_delete_study
+
+      self._client.delete_study()
+
+      mock_delete_study.assert_called_once_with(name=self._trial_parent)
+
+    def test_delete_study_specified(self):
+        mock_delete_study = mock.MagicMock()
+        self._mock_discovery.projects().locations().studies(
+        ).delete = mock_delete_study
+
+        study_name = "{}1".format(self._trial_parent)
+        self._client.delete_study(study_name)
+
+        mock_delete_study.assert_called_once_with(name=study_name)
+
+    def test_delete_study_with_404_raises_ValueError(self):
+        """Verify that delete_study gracefully handles 404 errors."""
+        mock_request = mock.MagicMock()
+        mock_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 404}), b"")
+        mock_delete_study = mock.MagicMock()
+        mock_delete_study.return_value = mock_request
+        self._mock_discovery.projects().locations().studies(
+        ).delete = mock_delete_study
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "DeleteStudy failed. Study not found: {}."
+            .format(self._trial_parent)):
+            self._client.delete_study()
 
     def test_cloud_tuner_request_header(self):
         http_request = google_api_client.TFCloudHttpRequest(
