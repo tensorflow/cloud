@@ -146,7 +146,10 @@ class TestValidate(absltest.TestCase):
             )
 
     def test_invalid_distribution_strategy(self):
-        with self.assertRaisesRegex(ValueError, r"Invalid `distribution_strategy`"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Invalid `distribution_strategy`",
+        ):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="MirroredStrategy",
@@ -332,11 +335,12 @@ class TestValidate(absltest.TestCase):
                 called_from_notebook=False,
             )
 
-    @mock.patch("tensorflow_cloud.utils.tf_utils.get_version")
+    @mock.patch("tensorflow_cloud.utils.tf_utils.get_version")  # pylint: disable=line-too-long
     def test_invalid_tpu_accelerator_tf_version(self, mock_get_version):
         mock_get_version.return_value = "2.2.0"
         with self.assertRaisesRegex(
-            NotImplementedError, r"TPUs are only supported for TF version <= 2.1.0"
+            NotImplementedError,
+            r"TPUs are only supported for TF version <= 2.1.0",
         ):
             validate.validate(
                 entry_point=None,
