@@ -27,6 +27,7 @@ from tensorflow_cloud.utils import google_api_client
 
 
 class TestDeploy(absltest.TestCase):
+    
     def setUp(self):
         super(TestDeploy, self).setUp()
 
@@ -158,7 +159,8 @@ class TestDeploy(absltest.TestCase):
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
-        self.expected_request_dict["trainingInput"]["workerCount"] = str(worker_count)
+        self.expected_request_dict["trainingInput"]["workerCount"] = str(
+            worker_count)
         del self.expected_request_dict["trainingInput"]["workerType"]
         del self.expected_request_dict["trainingInput"]["workerConfig"]
 
@@ -218,7 +220,8 @@ class TestDeploy(absltest.TestCase):
 
         self.expected_request_dict["trainingInput"]["workerCount"] = "1"
         self.expected_request_dict["trainingInput"]["workerType"] = "cloud_tpu"
-        self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
+        self.expected_request_dict["trainingInput"]["masterType"] = (
+            "n1-standard-4")
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["type"] = "TPU_V3"
