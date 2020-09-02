@@ -121,9 +121,9 @@ def _create_request_dict(
     chief_machine_config["acceleratorConfig"]["count"] = str(
         chief_config.accelerator_count
     )
-    chief_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
-        chief_config.accelerator_type.value
-    )
+    chief_machine_config["acceleratorConfig"][
+        "type"] = gcp.get_accelerator_type(
+            chief_config.accelerator_type.value)
 
     training_input["masterConfig"] = chief_machine_config
     training_input["workerCount"] = str(worker_count)
@@ -141,9 +141,8 @@ def _create_request_dict(
         worker_machine_config["acceleratorConfig"]["count"] = str(
             worker_config.accelerator_count
         )
-        worker_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
-            worker_config.accelerator_type.value
-        )
+        worker_machine_config["acceleratorConfig"][
+            "type"] = gcp.get_accelerator_type(worker_config.accelerator_type.value)
 
         # AI Platform runtime version spec is required for training
         # on cloud TPUs.
