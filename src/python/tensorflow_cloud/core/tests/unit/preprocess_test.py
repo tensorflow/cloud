@@ -14,14 +14,15 @@
 """Tests for the cloud preprocessing module."""
 
 import os
-import unittest
+
+from absl.testing import absltest
 import mock
 
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import preprocess
 
 
-class TestPreprocess(unittest.TestCase):
+class TestPreprocess(absltest.TestCase):
 
     def setup_py(self):
         self.entry_point_name = "sample_compile_fit.py"
@@ -187,4 +188,4 @@ class TestPreprocess(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

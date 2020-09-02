@@ -13,13 +13,13 @@
 # limitations under the License.
 """Tests for gcp module."""
 
-import unittest
+from absl.testing import absltest
 
 from tensorflow_cloud.core import gcp
 from tensorflow_cloud.core import machine_config
 
 
-class TestGcp(unittest.TestCase):
+class TestGcp(absltest.TestCase):
 
     def test_get_region(self):
         assert gcp.get_region() == "us-central1"
@@ -184,4 +184,4 @@ class TestGcp(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

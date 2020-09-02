@@ -14,8 +14,8 @@
 """Tests for the cloud deploy module."""
 
 import io
-import unittest
 
+from absl.testing import absltest
 from googleapiclient import discovery
 from googleapiclient import errors
 import mock
@@ -26,7 +26,7 @@ from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.utils import google_api_client
 
 
-class TestDeploy(unittest.TestCase):
+class TestDeploy(absltest.TestCase):
 
     def setUp(self):
         super(TestDeploy, self).setUp()
@@ -286,4 +286,4 @@ class TestDeploy(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

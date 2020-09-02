@@ -14,7 +14,8 @@
 """Tests for the validation module."""
 
 import os
-import unittest
+
+from absl.testing import absltest
 import mock
 
 from tensorflow_cloud.core import machine_config
@@ -22,7 +23,7 @@ from tensorflow_cloud.core import validate
 from tensorflow_cloud.core.tests.unit import constants
 
 
-class TestValidate(unittest.TestCase):
+class TestValidate(absltest.TestCase):
 
     def setUp(self):
         super(TestValidate, self).setUp()
@@ -348,4 +349,4 @@ class TestValidate(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()
