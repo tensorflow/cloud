@@ -110,8 +110,9 @@ def _create_request_dict(
     training_input["region"] = region
     training_input["scaleTier"] = "custom"
     training_input["masterType"] = gcp.get_machine_type(
-        chief_config.cpu_cores, chief_config.memory, chief_config.accelerator_type
-    )
+        chief_config.cpu_cores,
+        chief_config.memory,
+        chief_config.accelerator_type)
 
     # Set master config
     chief_machine_config = {}

@@ -87,7 +87,8 @@ def validate(
 def _validate_files(entry_point, requirements_txt):
     """Validates all the file path params."""
     cwd = os.getcwd()
-    if entry_point is not None and (not os.path.isfile(os.path.join(cwd, entry_point))):
+    if entry_point is not None and (
+            not os.path.isfile(os.path.join(cwd, entry_point))):
         raise ValueError(
             "Invalid `entry_point`. "
             "Expected a relative path in the current directory tree. "

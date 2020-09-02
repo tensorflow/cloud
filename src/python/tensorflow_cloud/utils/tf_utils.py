@@ -16,5 +16,5 @@
 import tensorflow  as tf
 
 
-def get_version():  
+def get_version():
   return tf.__version__

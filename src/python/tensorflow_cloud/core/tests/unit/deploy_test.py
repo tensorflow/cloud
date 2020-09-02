@@ -56,11 +56,13 @@ class TestDeploy(unittest.TestCase):
                 "workerType": "n1-standard-8",
                 "workerCount": str(self.worker_count),
                 "workerConfig": {
-                    "acceleratorConfig": {"count": "1", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {
+                        "count": "1", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
                 "masterConfig": {
-                    "acceleratorConfig": {"count": "4", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {
+                        "count": "4", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
             },
@@ -74,7 +76,10 @@ class TestDeploy(unittest.TestCase):
         ).start()
 
         mock.patch.object(
-            gcp, "get_project_name", autospec=True, return_value=self.mock_project_name
+            gcp,
+            "get_project_name",
+            autospec=True,
+            return_value=self.mock_project_name,
         ).start()
 
     def tearDown(self):
