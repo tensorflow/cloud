@@ -27,12 +27,12 @@ from tensorflow_cloud.utils import google_api_client
 
 
 class TestDeploy(unittest.TestCase):
-
     def setUp(self):
         super(TestDeploy, self).setUp()
 
         self._mock_discovery_build = mock.patch.object(
-            discovery, "build", autospec=True).start()
+            discovery, "build", autospec=True
+        ).start()
 
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
@@ -56,26 +56,25 @@ class TestDeploy(unittest.TestCase):
                 "workerType": "n1-standard-8",
                 "workerCount": str(self.worker_count),
                 "workerConfig": {
-                    "acceleratorConfig": {
-                        "count": "1", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
                 "masterConfig": {
-                    "acceleratorConfig": {
-                        "count": "4", "type": "NVIDIA_TESLA_K80"},
+                    "acceleratorConfig": {"count": "4", "type": "NVIDIA_TESLA_K80"},
                     "imageUri": self.docker_img,
                 },
             },
         }
 
         mock.patch.object(
-            deploy, "_generate_job_id",
-            autospec=True, return_value=self.mock_job_id,
+            deploy,
+            "_generate_job_id",
+            autospec=True,
+            return_value=self.mock_job_id,
         ).start()
 
         mock.patch.object(
-            gcp, "get_project_name",
-            autospec=True, return_value=self.mock_project_name
+            gcp, "get_project_name", autospec=True, return_value=self.mock_project_name
         ).start()
 
     def tearDown(self):
@@ -154,8 +153,7 @@ class TestDeploy(unittest.TestCase):
         proj_ret_val = build_ret_val.projects.return_value
         jobs_ret_val = proj_ret_val.jobs.return_value
 
-        self.expected_request_dict["trainingInput"]["workerCount"] = str(
-            worker_count)
+        self.expected_request_dict["trainingInput"]["workerCount"] = str(worker_count)
         del self.expected_request_dict["trainingInput"]["workerType"]
         del self.expected_request_dict["trainingInput"]["workerConfig"]
 
@@ -215,17 +213,16 @@ class TestDeploy(unittest.TestCase):
 
         self.expected_request_dict["trainingInput"]["workerCount"] = "1"
         self.expected_request_dict["trainingInput"]["workerType"] = "cloud_tpu"
-        self.expected_request_dict["trainingInput"]["masterType"] = (
-            "n1-standard-4")
+        self.expected_request_dict["trainingInput"]["masterType"] = "n1-standard-4"
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["type"] = "TPU_V3"
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["count"] = "8"
-        v = deploy.VERSION.split(".")
         self.expected_request_dict["trainingInput"]["workerConfig"][
-            "tpuTfVersion"] = v[0] + "." + v[1]
+            "tpuTfVersion"
+        ] = "2.1"
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
         ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"

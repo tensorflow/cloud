@@ -23,15 +23,17 @@ from tensorflow_cloud.core.tests.unit import constants
 
 
 class TestValidate(unittest.TestCase):
-
     def setUp(self):
         super(TestValidate, self).setUp()
         self.script_entry_point = os.path.join(
-            constants.TESTDATA_DIR, "mnist_example_using_fit.py")
+            constants.TESTDATA_DIR, "mnist_example_using_fit.py"
+        )
         self.notebook_entry_point = os.path.join(
-            constants.TESTDATA_DIR, "mnist_example_using_fit.ipynb")
+            constants.TESTDATA_DIR, "mnist_example_using_fit.ipynb"
+        )
         self.requirements_file = os.path.join(
-            constants.TESTDATA_DIR, "requirements.txt")
+            constants.TESTDATA_DIR, "requirements.txt"
+        )
 
     def test_valid_args_chief_worker(self):
         validate.validate(
@@ -142,8 +144,7 @@ class TestValidate(unittest.TestCase):
             )
 
     def test_invalid_distribution_strategy(self):
-        with self.assertRaisesRegex(ValueError,
-                                    r"Invalid `distribution_strategy`"):
+        with self.assertRaisesRegex(ValueError, r"Invalid `distribution_strategy`"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="MirroredStrategy",
@@ -255,8 +256,7 @@ class TestValidate(unittest.TestCase):
             )
 
     def test_invalid_cloud_bucket_name(self):
-        with self.assertRaisesRegex(ValueError,
-                                    r"Invalid `docker_image_bucket_name`"):
+        with self.assertRaisesRegex(ValueError, r"Invalid `docker_image_bucket_name`"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -304,8 +304,7 @@ class TestValidate(unittest.TestCase):
             )
 
     def test_invalid_tpu_accelerator_count(self):
-        with self.assertRaisesRegex(ValueError,
-                                    r"Invalid machine configuration"):
+        with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -322,12 +321,11 @@ class TestValidate(unittest.TestCase):
                 called_from_notebook=False,
             )
 
-    @mock.patch("tensorflow_cloud.core.validate.VERSION",  # pylint: disable=line-too-long
-                "2.2.0")
-    def test_invalid_tpu_accelerator_tf_version(self):
+    @mock.patch("tensorflow_cloud.utils.tf_utils.get_version")
+    def test_invalid_tpu_accelerator_tf_version(self, mock_get_version):
+        mock_get_version.return_value = "2.2.0"
         with self.assertRaisesRegex(
-            NotImplementedError,
-            r"TPUs are only supported for TF version <= 2.1.0"
+            NotImplementedError, r"TPUs are only supported for TF version <= 2.1.0"
         ):
             validate.validate(
                 entry_point=None,
@@ -344,6 +342,7 @@ class TestValidate(unittest.TestCase):
                 stream_logs=True,
                 docker_image_bucket_name=None,
                 called_from_notebook=False,
+                docker_base_image=None,
             )
 
 

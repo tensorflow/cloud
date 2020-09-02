@@ -24,13 +24,6 @@ from googleapiclient import errors
 
 from ..utils import google_api_client
 
-try:
-    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
-except ImportError:
-    # Use TF runtime version 2.1 (latest supported) as the default.
-    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
-    VERSION = "2.1"
-
 
 def deploy_job(
     region,
@@ -117,8 +110,8 @@ def _create_request_dict(
     training_input["region"] = region
     training_input["scaleTier"] = "custom"
     training_input["masterType"] = gcp.get_machine_type(
-        chief_config.cpu_cores, chief_config.memory,
-        chief_config.accelerator_type)
+        chief_config.cpu_cores, chief_config.memory, chief_config.accelerator_type
+    )
 
     # Set master config
     chief_machine_config = {}
@@ -127,8 +120,9 @@ def _create_request_dict(
     chief_machine_config["acceleratorConfig"]["count"] = str(
         chief_config.accelerator_count
     )
-    chief_machine_config["acceleratorConfig"][
-        "type"] = gcp.get_accelerator_type(chief_config.accelerator_type.value)
+    chief_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
+        chief_config.accelerator_type.value
+    )
 
     training_input["masterConfig"] = chief_machine_config
     training_input["workerCount"] = str(worker_count)
@@ -146,15 +140,16 @@ def _create_request_dict(
         worker_machine_config["acceleratorConfig"]["count"] = str(
             worker_config.accelerator_count
         )
-        worker_machine_config["acceleratorConfig"][
-            "type"] = gcp.get_accelerator_type(
-                worker_config.accelerator_type.value)
+        worker_machine_config["acceleratorConfig"]["type"] = gcp.get_accelerator_type(
+            worker_config.accelerator_type.value
+        )
 
+        # AI Platform runtime version spec is required for training
+        # on cloud TPUs.
+        # Use TF runtime version 2.1 (latest supported) as the default.
+        # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
         if machine_config.is_tpu_config(worker_config):
-            # AI Platform runtime version spec is required for training
-            # on cloud TPUs.
-            v = VERSION.split(".")
-            worker_machine_config["tpuTfVersion"] = v[0] + "." + v[1]
+            worker_machine_config["tpuTfVersion"] = "2.1"
         training_input["workerConfig"] = worker_machine_config
 
     if entry_point_args is not None:

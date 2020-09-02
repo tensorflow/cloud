@@ -178,6 +178,7 @@ def run(
         docker_image_bucket_name,
         called_from_notebook,
         job_labels=job_labels,
+        docker_base_image=docker_base_image,
     )
 
     # Make the `entry_point` cloud and distribution ready.
