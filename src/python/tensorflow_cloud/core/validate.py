@@ -167,7 +167,7 @@ def _validate_cluster_config(
             # that the TF version is compatible with Cloud TPU support.
             # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support
             version = tf_utils.get_version()
-            if version and version >= "2.2.0":
+            if version and version not in gcp.get_cloud_tpu_supported_tf_versions():
                 raise NotImplementedError(
                     "TPUs are only supported for TF version <= 2.1.0"
                 )

@@ -116,6 +116,10 @@ def get_machine_type(cpu_cores, memory, accelerator_type):
     return machine_type_map[(cpu_cores, memory)]
 
 
+def get_cloud_tpu_supported_tf_versions():
+    return ["2.1"]
+
+
 def _get_valid_machine_configurations():
     """Returns the list of valid GCP machine configurations."""
 

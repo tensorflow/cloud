@@ -132,6 +132,9 @@ class TestGcp(unittest.TestCase):
             == "cloud_tpu"
         )
 
+    def test_get_cloud_tpu_supported_tf_versions(self):
+        self.assertListEqual(gcp.get_cloud_tpu_supported_tf_versions(), ["2.1"])
+
     def test_validate_machine_configuration(self):
         # valid GPU config
         gcp.validate_machine_configuration(
