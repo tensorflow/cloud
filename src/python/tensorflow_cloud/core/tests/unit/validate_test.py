@@ -24,6 +24,7 @@ from tensorflow_cloud.core.tests.unit import constants
 
 
 class TestValidate(absltest.TestCase):
+
     def setUp(self):
         super(TestValidate, self).setUp()
         self.script_entry_point = os.path.join(
