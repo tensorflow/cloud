@@ -13,11 +13,8 @@
 # limitations under the License.
 """TensorFlow utilities."""
 
-try:
-    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
-except ImportError:
-	VERSION = None
+import tensorflow  as tf
 
 
-def get_version():
-	return VERSION
+def get_version():  
+  return tf.__version__
