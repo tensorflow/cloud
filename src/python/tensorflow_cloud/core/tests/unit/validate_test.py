@@ -257,7 +257,10 @@ class TestValidate(absltest.TestCase):
             )
 
     def test_invalid_cloud_bucket_name(self):
-        with self.assertRaisesRegex(ValueError, r"Invalid `docker_image_bucket_name`"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Invalid `docker_image_bucket_name`",
+        ):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -273,7 +276,10 @@ class TestValidate(absltest.TestCase):
             )
 
     def test_invalid_tpu_chief_config(self):
-        with self.assertRaisesRegex(ValueError, r"Invalid `chief_config`"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Invalid `chief_config`",
+        ):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
@@ -305,7 +311,10 @@ class TestValidate(absltest.TestCase):
             )
 
     def test_invalid_tpu_accelerator_count(self):
-        with self.assertRaisesRegex(ValueError, r"Invalid machine configuration"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Invalid machine configuration",
+        ):
             validate.validate(
                 entry_point=None,
                 distribution_strategy="auto",
