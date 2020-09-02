@@ -30,4 +30,9 @@ def make_required_install_packages():
 
 
 def make_required_test_packages():
-    return ["mock", "numpy", "pytest", "flake8", "mock"]
+    return [
+        "absl-py",
+        "flake8",
+        "mock",
+        "numpy",
+    ]

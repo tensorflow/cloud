@@ -15,7 +15,8 @@
 
 import os
 import tempfile
-import unittest
+
+from absl.testing import absltest
 import docker
 import mock
 
@@ -30,7 +31,7 @@ except ImportError:
     VERSION = "latest"
 
 
-class TestContainerize(unittest.TestCase):
+class TestContainerize(absltest.TestCase):
 
     def setup(self, requests_get_return_value=True):
         self.entry_point = "sample.py"
@@ -471,7 +472,7 @@ class TestContainerize(unittest.TestCase):
         get_bucket_ret_val = client_ret_val.get_bucket.return_value
         self.assertEqual(get_bucket_ret_val.blob.call_count, 1)
         args, _ = get_bucket_ret_val.blob.call_args
-        self.assertEqual(len(args), 1)
+        self.assertLen(args, 1)
         storage_object_name = args[0]
         self.assertTrue(storage_object_name, "tf_cloud_train_tar_")
 
@@ -531,4 +532,4 @@ class TestContainerize(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()
