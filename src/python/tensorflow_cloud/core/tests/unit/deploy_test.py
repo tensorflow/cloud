@@ -27,7 +27,7 @@ from tensorflow_cloud.utils import google_api_client
 
 
 class TestDeploy(absltest.TestCase):
-    
+
     def setUp(self):
         super(TestDeploy, self).setUp()
 
