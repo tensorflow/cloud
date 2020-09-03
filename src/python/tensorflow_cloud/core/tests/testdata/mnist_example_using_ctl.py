@@ -22,6 +22,8 @@ from __future__ import print_function
 
 import numpy as np
 
+from six.moves import range
+from six.moves import zip
 import tensorflow as tf
 
 print(tf.__version__)
@@ -70,124 +72,124 @@ test_dist_dataset = strategy.experimental_distribute_dataset(test_dataset)
 
 
 def create_model():
-    """Constructs a model."""
-    model_ = tf.keras.Sequential(
-        [
-            tf.keras.layers.Conv2D(32, 3, activation="relu"),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(64, 3, activation="relu"),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(64, activation="relu"),
-            tf.keras.layers.Dense(10, activation="softmax"),
-        ]
-    )
+  """Constructs a model."""
+  model_ = tf.keras.Sequential(
+      [
+          tf.keras.layers.Conv2D(32, 3, activation="relu"),
+          tf.keras.layers.MaxPooling2D(),
+          tf.keras.layers.Conv2D(64, 3, activation="relu"),
+          tf.keras.layers.MaxPooling2D(),
+          tf.keras.layers.Flatten(),
+          tf.keras.layers.Dense(64, activation="relu"),
+          tf.keras.layers.Dense(10, activation="softmax"),
+      ]
+  )
 
-    return model_
+  return model_
 
 
 # Define loss function
 with strategy.scope():
-    # Set reduction to `none` so we can do the reduction afterwards an
-    # divide by global batch size.
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        reduction=tf.keras.losses.Reduction.NONE
-    )
+  # Set reduction to `none` so we can do the reduction afterwards an
+  # divide by global batch size.
+  loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+      reduction=tf.keras.losses.Reduction.NONE
+  )
 
-    def compute_loss(labels, predictions):
-        per_example_loss = loss_object(labels, predictions)
-        return tf.nn.compute_average_loss(
-            per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE
-        )
+  def compute_loss(labels, predictions):
+    per_example_loss = loss_object(labels, predictions)
+    return tf.nn.compute_average_loss(
+        per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE
+    )
 
 
 # Define the metrics to track loss and accuracy
 with strategy.scope():
-    test_loss = tf.keras.metrics.Mean(name="test_loss")
+  test_loss = tf.keras.metrics.Mean(name="test_loss")
 
-    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-        name="train_accuracy")
-    test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-        name="test_accuracy")
+  train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+      name="train_accuracy")
+  test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+      name="test_accuracy")
 
 # Training loop# model and optimizer must be created under `strategy.scope`.
 with strategy.scope():
-    model = create_model()
-    optimizer = tf.keras.optimizers.Adam()
+  model = create_model()
+  optimizer = tf.keras.optimizers.Adam()
 
 with strategy.scope():
 
-    def train_step(inputs):
-        """Defines a custom training step."""
-        images, labels = inputs
+  def train_step(inputs):
+    """Defines a custom training step."""
+    images, labels = inputs
 
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = compute_loss(labels, predictions)
+    with tf.GradientTape() as tape:
+      predictions = model(images, training=True)
+      loss = compute_loss(labels, predictions)
 
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    gradients = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(list(zip(gradients, model.trainable_variables)))
 
-        train_accuracy.update_state(labels, predictions)
-        return loss
+    train_accuracy.update_state(labels, predictions)
+    return loss
 
-    def test_step(inputs):
-        """Defines a custom test step."""
-        images, labels = inputs
+  def test_step(inputs):
+    """Defines a custom test step."""
+    images, labels = inputs
 
-        predictions = model(images, training=False)
-        t_loss = loss_object(labels, predictions)
+    predictions = model(images, training=False)
+    t_loss = loss_object(labels, predictions)
 
-        test_loss.update_state(t_loss)
-        test_accuracy.update_state(labels, predictions)
+    test_loss.update_state(t_loss)
+    test_accuracy.update_state(labels, predictions)
 
 
 with strategy.scope():
 
-    # `experimental_run_v2` replicates the provided computation and runs it
-    # with the distributed input.
-    @tf.function
-    def distributed_train_step(dataset_inputs):
-        """Defines a custom distributed training step."""
-        per_replica_losses = strategy.experimental_run_v2(
-            train_step, args=(dataset_inputs,)
+  # `experimental_run_v2` replicates the provided computation and runs it
+  # with the distributed input.
+  @tf.function
+  def distributed_train_step(dataset_inputs):
+    """Defines a custom distributed training step."""
+    per_replica_losses = strategy.experimental_run_v2(
+        train_step, args=(dataset_inputs,)
+    )
+    return strategy.reduce(
+        tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
+    )
+
+  @tf.function
+  def distributed_test_step(dataset_inputs):
+    """Defines a custom distributed test step."""
+    return strategy.experimental_run_v2(test_step, args=(dataset_inputs,))
+
+  for epoch in range(EPOCHS):
+    # TRAIN LOOP
+    total_loss = 0.0
+    num_batches = 0
+    for x in train_dist_dataset:
+      total_loss += distributed_train_step(x)
+      num_batches += 1
+    train_loss = total_loss / num_batches
+
+    # TEST LOOP
+    for x in test_dist_dataset:
+      distributed_test_step(x)
+
+    template = (
+        "Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, "
+        "Test Accuracy: {}"
+    )
+    print(
+        template.format(
+            epoch + 1,
+            train_loss,
+            train_accuracy.result() * 100,
+            test_loss.result(),
+            test_accuracy.result() * 100,
         )
-        return strategy.reduce(
-            tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
-        )
+    )
 
-    @tf.function
-    def distributed_test_step(dataset_inputs):
-        """Defines a custom distributed test step."""
-        return strategy.experimental_run_v2(test_step, args=(dataset_inputs,))
-
-    for epoch in range(EPOCHS):
-        # TRAIN LOOP
-        total_loss = 0.0
-        num_batches = 0
-        for x in train_dist_dataset:
-            total_loss += distributed_train_step(x)
-            num_batches += 1
-        train_loss = total_loss / num_batches
-
-        # TEST LOOP
-        for x in test_dist_dataset:
-            distributed_test_step(x)
-
-        template = (
-            "Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, "
-            "Test Accuracy: {}"
-        )
-        print(
-            template.format(
-                epoch + 1,
-                train_loss,
-                train_accuracy.result() * 100,
-                test_loss.result(),
-                test_accuracy.result() * 100,
-            )
-        )
-
-        test_loss.reset_states()
-        train_accuracy.reset_states()
-        test_accuracy.reset_states()
+    test_loss.reset_states()
+    train_accuracy.reset_states()
+    test_accuracy.reset_states()
