@@ -62,19 +62,6 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_tpu_strategy(self):
-        tfc.run(
-            entry_point=os.path.join(self.test_data_path,
-                                     "mnist_example_using_fit.py"),
-            requirements_txt=os.path.join(self.test_data_path,
-                                          "requirements.txt"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
-            worker_count=1,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
-            docker_base_image="tensorflow/tensorflow:2.1.0",
-        )
-        self._mock_sys_exit.assert_called_once_with(0)
-
     def test_auto_one_device_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,

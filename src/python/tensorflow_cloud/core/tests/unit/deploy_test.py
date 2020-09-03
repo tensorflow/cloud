@@ -32,8 +32,7 @@ class TestDeploy(absltest.TestCase):
         super(TestDeploy, self).setUp()
 
         self._mock_discovery_build = mock.patch.object(
-            discovery, "build", autospec=True
-        ).start()
+            discovery, "build", autospec=True).start()
 
         self.mock_job_id = "tf-train-abcde"
         self.mock_project_name = "my-gcp-project"
@@ -70,17 +69,13 @@ class TestDeploy(absltest.TestCase):
         }
 
         mock.patch.object(
-            deploy,
-            "_generate_job_id",
-            autospec=True,
-            return_value=self.mock_job_id,
+            deploy, "_generate_job_id",
+            autospec=True, return_value=self.mock_job_id,
         ).start()
 
         mock.patch.object(
-            gcp,
-            "get_project_name",
-            autospec=True,
-            return_value=self.mock_project_name,
+            gcp, "get_project_name",
+            autospec=True, return_value=self.mock_project_name
         ).start()
 
     def tearDown(self):
@@ -228,9 +223,9 @@ class TestDeploy(absltest.TestCase):
         self.expected_request_dict["trainingInput"]["workerConfig"][
             "acceleratorConfig"
         ]["count"] = "8"
+        v = deploy.VERSION.split(".")
         self.expected_request_dict["trainingInput"]["workerConfig"][
-            "tpuTfVersion"
-        ] = "2.1"
+            "tpuTfVersion"] = v[0] + "." + v[1]
         self.expected_request_dict["trainingInput"]["masterConfig"][
             "acceleratorConfig"
         ]["type"] = "ACCELERATOR_TYPE_UNSPECIFIED"
