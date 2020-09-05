@@ -512,6 +512,16 @@ aren't available for TF nightlies except for the latest. So, if your local TF is
 an older nightly version, we upgrade to the latest nightly automatically and
 raise this warning.
 
+#### Mixing distribution strategy objects.
+
+**Error like**: RuntimeError: Mixing different tf.distribute.Strategy objects.
+
+**Solution**: Please provide `distribution_strategy=None` when you already
+have a distribution strategy defined in your model code. Specifying
+`distribution_strategy'='auto'`, will wrap your code in a TensorFlow
+distribution strategy. This will cause the above error, if there is a strategy
+object already used in your code.
+
 ### Coming up
 
 -   Distributed Keras tuner support.
