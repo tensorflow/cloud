@@ -157,6 +157,7 @@ class ContainerBuilder(object):
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
 
+        # TF nightly image names have the substring "dev"
         if "dev" in self.docker_base_image:
             warnings.warn(
                 "Docker base image {} does not exist.".format(
