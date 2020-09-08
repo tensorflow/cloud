@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import logging
 import os
+import re
 import sys
 import tarfile
 import tempfile
@@ -157,8 +158,10 @@ class ContainerBuilder(object):
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
 
-        # TF nightly image names have the substring "dev"
-        if "dev" in self.docker_base_image:
+        # TF nightly image names have the substring "dev".
+        # eg: 2.4.0.dev2020090
+        matchObj = re.match( r'.*dev[0-9]+', self.docker_base_image)
+        if matchObj:
             warnings.warn(
                 "Docker base image {} does not exist.".format(
                 self.docker_base_image))
