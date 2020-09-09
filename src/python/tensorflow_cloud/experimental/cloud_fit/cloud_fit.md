@@ -1,11 +1,10 @@
-
 # Cloud_fit
 
 ## What is this module?
 
 `cloud_fit` is an experimental module which is part of the broader
-`tensorflow_cloud`. This module provides an API that enable training
-on [Google Cloud AI Platform](https://cloud.google.com/ai-platform). `cloud_fit`
+`tensorflow_cloud`. This module provides an API that enable training on
+[Google Cloud AI Platform](https://cloud.google.com/ai-platform). `cloud_fit`
 serializes the model, datasets, and callback functions and submits them for
 remote execution on AI Platform. `cloud_fit` is intended to function in the same
 manner as `model.fit()`. This module is designed to be used within a pipeline or
