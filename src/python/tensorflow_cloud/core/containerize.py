@@ -158,23 +158,6 @@ class ContainerBuilder(object):
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
 
-        # TF nightly image names have the substring "dev".
-        # eg: 2.4.0.dev2020090
-        matchObj = re.match( r'.*dev[0-9]+', self.docker_base_image)
-        if matchObj:
-            warnings.warn(
-                "Docker base image {} does not exist.".format(
-                self.docker_base_image))
-            # Except for the latest TF nightly, other nightlies
-            # do not have corresponding docker images.
-            newtag = "nightly"
-            if self.docker_base_image.endswith("-gpu"):
-                newtag += "-gpu"
-            self.docker_base_image = (
-                self.docker_base_image.split(":")[0] + ":" + newtag
-            )
-            warnings.warn("Using the latest TF nightly build.")
-
         lines = [
             "FROM {}".format(self.docker_base_image),
             "WORKDIR {}".format(self.destination_dir),
