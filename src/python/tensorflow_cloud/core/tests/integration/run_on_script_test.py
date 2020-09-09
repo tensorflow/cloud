@@ -122,7 +122,9 @@ class RunOnScriptTest(tf.test.TestCase):
             distribution_strategy="auto",
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            docker_base_image="gcr.io/deeplearning-platform-release/tf2-gpu.2-2:latest",
+            docker_base_image=(
+                "gcr.io/deeplearning-platform-release"
+                "/tf2-gpu.2-2:latest"),
         )
         self._mock_sys_exit.assert_called_once_with(0)
 

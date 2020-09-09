@@ -23,13 +23,11 @@ import tarfile
 import tempfile
 import time
 import uuid
-import warnings
 
 from . import machine_config
 import docker
 from googleapiclient import discovery
 from googleapiclient import errors
-import requests
 from ..utils import google_api_client
 from ..utils import tf_utils
 
