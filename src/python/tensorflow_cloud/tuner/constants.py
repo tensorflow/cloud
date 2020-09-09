@@ -27,5 +27,4 @@ OPTIMIZER_API_DOCUMENT_FILE = os.path.join(
 SUGGESTION_COUNT_PER_REQUEST = 1
 
 # Number of tries to retry getting study if it was already created
-NUM_TRIES_FOR_STUDIES = 3
-
+MAX_NUM_TRIES_FOR_STUDIES = 3

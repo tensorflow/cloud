@@ -164,7 +164,7 @@ class _OptimizerClient(object):
             raise e
 
     def should_trial_stop(self, trial_id: Text) -> bool:
-        """"Returns whether trial should stop early.
+        """Returns whether trial should stop early.
 
         Args:
             trial_id: trial_id.
@@ -387,10 +387,19 @@ def create_or_load_study(
             unique ID is given. The full study name will be
             projects/{project_id}/locations/{region}/studies/{study_id}.
             And the full trial name will be {study name}/trials/{trial_id}.
-        study_config: Study configuration for CAIP Optimizer service.
+        study_config: Study configuration for CAIP Optimizer service. If not
+            supplied, it will be assumed that the study with the given study_id
+            already exists, and will try to retrieve that study.
 
     Returns:
         An _OptimizerClient object with the specified study created or loaded.
+
+    Raises:
+        RuntimeError: Indicates that study_config is supplied but CreateStudy
+            failed and GetStudy did not succeed after
+            constants.MAX_NUM_TRIES_FOR_STUDIES tries.
+        ValueError: Indicates that study_config is not supplied and the study
+            with the given study_id does not exist.
     """
     # Build the API client
     # Note that Optimizer service is exposed as a regional endpoint. As such,
@@ -404,40 +413,84 @@ def create_or_load_study(
     # Creates or loads a study.
     study_parent = "projects/{}/locations/{}".format(project_id, region)
 
-    request = (
-        service_client.projects()
-        .locations()
-        .studies()
-        .create(
-            body={"study_config": study_config},
-            parent=study_parent, studyId=study_id
+    if study_config is None:
+        # If study config is unspecified, assume that the study already exists.
+        _get_study(
+            service_client=service_client,
+            study_parent=study_parent,
+            study_id=study_id,
+            study_should_exist=True,
         )
-    )
-    try:
-        tf.get_logger().info(request.execute())
-    except errors.HttpError as e:
-        if e.resp.status != 409:  # 409 implies study exists. Handled below.
-            raise e
 
-        tf.get_logger().info("Study already existed. Load existing study...")
-        # Get study
-        study_name = "{}/studies/{}".format(study_parent, study_id)
-        x = 1
-        while True:
-            try:
-                service_client.projects().locations().studies().get(
-                    name=study_name
-                ).execute()
-            except errors.HttpError as err:
-                if x >= constants.NUM_TRIES_FOR_STUDIES:
-                    raise RuntimeError(
-                        "GetStudy wasn't successful after {0} tries: "
-                        "{1!s}".format(constants.NUM_TRIES_FOR_STUDIES, err)
-                    )
-                x += 1
-                # wait 1 second before trying to get the study again
-                time.sleep(1)
-            else:
-                break
+    else:
+        request = (
+            service_client.projects()
+            .locations()
+            .studies()
+            .create(
+                body={"study_config": study_config},
+                parent=study_parent,
+                studyId=study_id,
+            )
+        )
+        try:
+            tf.get_logger().info(request.execute())
+        except errors.HttpError as e:
+            if e.resp.status != 409:  # 409 implies study exists, handled below
+                raise
+
+            _get_study(
+                service_client=service_client,
+                study_parent=study_parent,
+                study_id=study_id,
+            )
 
     return _OptimizerClient(service_client, project_id, region, study_id)
+
+
+def _get_study(
+    service_client: discovery.Resource,
+    study_parent: Text,
+    study_id: Text,
+    study_should_exist: bool = False,
+):
+    """Method for loading a study.
+
+    Given the study_parent and the study_id, this method will load the specified
+    study, up to constants.MAX_NUM_TRIES_FOR_STUDIES tries.
+
+    Args:
+        service_client: An API client of CAIP Optimizer service.
+        study_parent: Prefix of the study name. The full study name will be
+            {study_parent}/studies/{study_id}.
+        study_id: An identifier of the study.
+        study_should_exist: Indicates whether it should be assumed that the
+            study with the given study_id exists.
+    """
+    tf.get_logger().info("Study already exists. Load existing study...")
+    study_name = "{}/studies/{}".format(study_parent, study_id)
+    num_tries = 0
+    while True:
+        try:
+            service_client.projects().locations().studies().get(
+                name=study_name
+            ).execute()
+        except errors.HttpError as err:
+            num_tries += 1
+            if num_tries >= constants.MAX_NUM_TRIES_FOR_STUDIES:
+                if (
+                    study_should_exist
+                    and err.resp.status == http.HTTPStatus.NOT_FOUND.value
+                ):
+                    raise ValueError(
+                        "GetStudy failed. Study not found: {}.".format(study_id)
+                    )
+                else:
+                    raise RuntimeError(
+                        "GetStudy failed. Max retries reached: {0!s}".format(
+                            err
+                        )
+                    )
+            time.sleep(1)  # wait 1 second before trying to get the study again
+        else:
+            break

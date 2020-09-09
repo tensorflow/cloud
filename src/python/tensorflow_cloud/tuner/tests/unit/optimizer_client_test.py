@@ -93,6 +93,63 @@ class OptimizerClientTest(tf.test.TestCase):
         )
 
     @mock.patch.object(optimizer_client, "discovery")
+    def test_create_or_load_study_no_study_config(self, mock_discovery):
+        mock_get_study = mock.MagicMock()
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().get = mock_get_study
+
+        client = optimizer_client.create_or_load_study(
+            project_id=self._project_id,
+            region=self._region,
+            study_id=self._study_id,
+        )
+
+        self.assertIsInstance(client, optimizer_client._OptimizerClient)
+
+        _, mock_kwargs = mock_discovery.build_from_document.call_args
+        self.assertIn("service", mock_kwargs)
+        self.assertIsInstance(mock_kwargs["service"], dict)
+        self.assertEqual(
+            mock_kwargs["service"]["rootUrl"],
+            # Regional endpoint must be specified for Optimizer client.
+            "https://us-central1-ml.googleapis.com/",
+        )
+
+        mock_get_study.assert_called_with(
+            name="projects/{}/locations/{}/studies/{}".format(
+                self._project_id, self._region, self._study_id
+            )
+        )
+
+    @mock.patch.object(optimizer_client, "discovery")
+    def test_create_or_load_study_no_study_config_with_404_raises_ValueError(
+        self, mock_discovery):
+        mock_request = mock.MagicMock()
+        mock_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 404}), b""
+        )
+        mock_get_study = mock.MagicMock()
+        mock_get_study.return_value = mock_request
+        mock_discovery.build_from_document.return_value.projects().locations(
+            ).studies().get = mock_get_study
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "GetStudy failed. Study not found: {}.".format(self._study_id),
+        ):
+            optimizer_client.create_or_load_study(
+                project_id=self._project_id,
+                region=self._region,
+                study_id=self._study_id,
+            )
+
+        mock_get_study.assert_called_with(
+            name="projects/{}/locations/{}/studies/{}".format(
+                self._project_id, self._region, self._study_id
+            )
+        )
+
+    @mock.patch.object(optimizer_client, "discovery")
     def test_create_or_load_study_with_409_raises_RuntimeError(self,
                                                                mock_discovery):
         """Verify that get_study gracefully handles 409 errors."""
@@ -114,7 +171,7 @@ class OptimizerClientTest(tf.test.TestCase):
 
         with self.assertRaisesRegex(
             RuntimeError,
-            'GetStudy wasn\'t successful after 3 tries: <HttpError 400 "Ok">',
+            'GetStudy failed. Max retries reached: <HttpError 400 "Ok">',
         ):
             optimizer_client.create_or_load_study(
                 project_id=self._project_id,
@@ -122,6 +179,11 @@ class OptimizerClientTest(tf.test.TestCase):
                 study_id=self._study_id,
                 study_config=self._study_config,
             )
+        mock_get_study.assert_called_with(
+            name="projects/{}/locations/{}/studies/{}".format(
+                self._project_id, self._region, self._study_id
+            )
+        )
 
     @mock.patch.object(optimizer_client, "discovery")
     def test_create_or_load_study_with_409_success(self, mock_discovery):
@@ -152,7 +214,13 @@ class OptimizerClientTest(tf.test.TestCase):
             study_id=self._study_id,
             study_config=self._study_config,
         )
+
         self.assertIsInstance(client, optimizer_client._OptimizerClient)
+        mock_get_study.assert_called_with(
+            name="projects/{}/locations/{}/studies/{}".format(
+                self._project_id, self._region, self._study_id
+            )
+        )
 
     def test_get_suggestions(self):
         mock_suggest = mock.MagicMock()
