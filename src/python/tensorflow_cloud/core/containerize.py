@@ -23,13 +23,11 @@ import tarfile
 import tempfile
 import time
 import uuid
-import warnings
 
 from . import machine_config
 import docker
 from googleapiclient import discovery
 from googleapiclient import errors
-import requests
 from ..utils import google_api_client
 from ..utils import tf_utils
 
@@ -157,33 +155,6 @@ class ContainerBuilder(object):
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
 
-        if not self._base_image_exist():
-            warnings.warn(
-                "Docker base image {} does not exist.".format(
-                    self.docker_base_image))
-            if "dev" in self.docker_base_image:
-                # Except for the latest TF nightly, other nightlies
-                # do not have corresponding docker images.
-                newtag = "nightly"
-                if self.docker_base_image.endswith("-gpu"):
-                    newtag += "-gpu"
-                self.docker_base_image = (
-                    self.docker_base_image.split(":")[0] + ":" + newtag
-                )
-                warnings.warn("Using the latest TF nightly build.")
-            else:
-                warnings.warn(
-                    "Using the latest stable TF docker image available: "
-                    "`tensorflow/tensorflow:latest`"
-                    "Please see "
-                    "https://hub.docker.com/r/tensorflow/tensorflow/ "
-                    "for details on available docker images."
-                )
-                newtag = "tensorflow/tensorflow:latest"
-                if self.docker_base_image.endswith("-gpu"):
-                    newtag += "-gpu"
-                self.docker_base_image = newtag
-
         lines = [
             "FROM {}".format(self.docker_base_image),
             "WORKDIR {}".format(self.destination_dir),
@@ -283,22 +254,6 @@ class ContainerBuilder(object):
         return "{}/{}:{}".format(self.docker_registry,
                                  "tf_cloud_train",
                                  unique_tag)
-
-    def _base_image_exist(self):
-        """Check whether the docker base image exists on dockerhub.
-
-        Use docker api v2 to check if base image is available.
-
-        Returns:
-            True if the image is found on dockerhub.
-        """
-        repo_name, tag_name = self.docker_base_image.split(":")
-        r = requests.get(
-            "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
-                repo_name, tag_name
-            )
-        )
-        return r.ok
 
 
 class LocalContainerBuilder(ContainerBuilder):

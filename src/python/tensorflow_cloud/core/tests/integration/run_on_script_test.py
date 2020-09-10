@@ -115,14 +115,16 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_none_dist_strat_mwms_custom_img(self):
+    def test_auto_dist_strat_mwms_custom_img(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
-                                     "mnist_example_using_ctl.py"),
-            worker_count=2,
+                                     "mnist_example_using_fit.py"),
+            distribution_strategy="auto",
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            docker_base_image="tensorflow/tensorflow:latest-gpu",
+            docker_base_image=(
+                "gcr.io/deeplearning-platform-release"
+                "/tf2-gpu.2-2:latest"),
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
