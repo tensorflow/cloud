@@ -31,15 +31,10 @@ from googleapiclient import discovery
 from googleapiclient import errors
 import requests
 from ..utils import google_api_client
+from ..utils import tf_utils
 
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-
-try:
-    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
-except ImportError:
-    # Use the latest TF docker image if a local installation is not available.
-    VERSION = "latest"
 
 
 logger = logging.getLogger(__name__)
@@ -139,9 +134,12 @@ class ContainerBuilder(object):
     def _create_docker_file(self):
         """Creates a Dockerfile."""
         if self.docker_base_image is None:
+            # Use the latest TF docker image if a local installation
+            # is not available.
+            tf_version = tf_utils.get_version() or "latest"
             # Updating the name for RC's to match with the TF generated
             # RC docker image names.
-            tf_version = VERSION.replace("-rc", "rc")
+            tf_version = tf_version.replace("-rc", "rc")
             # Get the TF docker base image to use based on the current
             # TF version.
             self.docker_base_image = "tensorflow/tensorflow:{}".format(
@@ -154,8 +152,8 @@ class ContainerBuilder(object):
 
             # Add python 3 tag for TF version <= 2.1.0
             # https://hub.docker.com/r/tensorflow/tensorflow
-            if VERSION != "latest":
-                v = VERSION.split(".")
+            if tf_version != "latest":
+                v = tf_version.split(".")
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
 

@@ -13,21 +13,11 @@
 # limitations under the License.
 """Module that performs validations on the inputs to the `run` API."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 
 from . import gcp
 from . import machine_config
-
-try:
-    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
-except ImportError:
-    # Use TF runtime version 2.1 (latest supported for TPU) as the default.
-    # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
-    VERSION = "2.1"
+from ..utils import tf_utils
 
 
 def validate(
@@ -43,6 +33,7 @@ def validate(
     docker_image_bucket_name,
     called_from_notebook,
     job_labels=None,
+    docker_base_image=None,
 ):
     """Validates the inputs.
 
@@ -73,16 +64,24 @@ def validate(
             notebook environment.
         job_labels: Dict of str: str. Labels to organize jobs. See
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
+        docker_base_image: Optional base docker image to use. Defaults to None.
 
     Raises:
         ValueError: if any of the inputs is invalid.
     """
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
-    _validate_cluster_config(chief_config, worker_count, worker_config)
+    _validate_cluster_config(
+        chief_config, worker_count, worker_config, docker_base_image
+    )
     _validate_job_labels(job_labels or {})
-    _validate_other_args(region, entry_point_args, stream_logs,
-                         docker_image_bucket_name, called_from_notebook)
+    _validate_other_args(
+        region,
+        entry_point_args,
+        stream_logs,
+        docker_image_bucket_name,
+        called_from_notebook,
+    )
 
 
 def _validate_files(entry_point, requirements_txt):
@@ -97,59 +96,84 @@ def _validate_files(entry_point, requirements_txt):
         )
 
     if requirements_txt is not None and (
-        not os.path.isfile(os.path.join(cwd, requirements_txt))):
+        not os.path.isfile(os.path.join(cwd, requirements_txt))
+    ):
         raise ValueError(
             "Invalid `requirements_txt`. "
             "Expected a relative path in the current directory tree. "
-            "Received: {}".format(requirements_txt))
+            "Received: {}".format(requirements_txt)
+        )
 
-    if entry_point is not None and (not (entry_point.endswith("py") or
-                                         entry_point.endswith("ipynb"))):
+    if entry_point is not None and (
+        not (entry_point.endswith("py") or entry_point.endswith("ipynb"))
+    ):
         raise ValueError(
             "Invalid `entry_point`. "
             "Expected a python file or an iPython notebook. "
-            "Received: {}".format(entry_point))
+            "Received: {}".format(entry_point)
+        )
 
 
 def _validate_distribution_strategy(distribution_strategy):
     """Validates distribution strategy param."""
     if distribution_strategy not in ["auto", None]:
-        raise ValueError("Invalid `distribution_strategy` input. "
-                         'Expected "auto" or None. '
-                         "Received {}.".format(distribution_strategy))
+        raise ValueError(
+            "Invalid `distribution_strategy` input. "
+            'Expected "auto" or None. '
+            "Received {}.".format(distribution_strategy)
+        )
 
 
-def _validate_cluster_config(chief_config, worker_count, worker_config):
+def _validate_cluster_config(
+    chief_config, worker_count, worker_config, docker_base_image
+):
     """Validates cluster config params."""
     if not isinstance(chief_config, machine_config.MachineConfig):
-        raise ValueError("Invalid `chief_config` input. "
-                         'Expected "auto" or `MachineConfig` instance. '
-                         "Received {}.".format(chief_config))
+        raise ValueError(
+            "Invalid `chief_config` input. "
+            'Expected "auto" or `MachineConfig` instance. '
+            "Received {}.".format(chief_config)
+        )
 
     if worker_count < 0:
-        raise ValueError("Invalid `worker_count` input. "
-                         "Expected a postive integer value. "
-                         "Received {}.".format(worker_count))
+        raise ValueError(
+            "Invalid `worker_count` input. "
+            "Expected a postive integer value. "
+            "Received {}.".format(worker_count)
+        )
 
-    if worker_count > 0 and not isinstance(worker_config,
-                                           machine_config.MachineConfig):
-        raise ValueError("Invalid `worker_config` input. "
-                         'Expected "auto" or `MachineConfig` instance. '
-                         "Received {}.".format(worker_config))
+    if (worker_count > 0 and
+        not isinstance(worker_config, machine_config.MachineConfig)):
+        raise ValueError(
+            "Invalid `worker_config` input. "
+            'Expected "auto" or `MachineConfig` instance. '
+            "Received {}.".format(worker_config)
+        )
 
     if machine_config.is_tpu_config(chief_config):
-        raise ValueError("Invalid `chief_config` input. "
-                         "`chief_config` cannot be a TPU config. "
-                         "Received {}.".format(chief_config))
+        raise ValueError(
+            "Invalid `chief_config` input. "
+            "`chief_config` cannot be a TPU config. "
+            "Received {}.".format(chief_config)
+        )
 
     if machine_config.is_tpu_config(worker_config):
         if worker_count != 1:
-            raise ValueError("Invalid `worker_count` input. "
-                             "Expected worker_count=1 for TPU `worker_config`. "
-                             "Received {}.".format(worker_count))
-        elif VERSION >= "2.2.0":
-            raise NotImplementedError(
-                "TPUs are only supported for TF version <= 2.1.0")
+            raise ValueError(
+                "Invalid `worker_count` input. "
+                "Expected worker_count=1 for TPU `worker_config`. "
+                "Received {}.".format(worker_count)
+            )
+        elif docker_base_image is None:
+            # If the user has not provided a custom docker image, then verify
+            # that the TF version is compatible with Cloud TPU support.
+            # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
+            version = tf_utils.get_version()
+            if (version is not None and
+                version not in gcp.get_cloud_tpu_supported_tf_versions()):
+                raise NotImplementedError(
+                    "TPUs are only supported for TF version <= 2.1.0"
+                )
 
 
 def _validate_job_labels(job_labels):
@@ -162,19 +186,25 @@ def _validate_other_args(
 ):
     """Validates all non-file/distribution strategy args."""
     if not isinstance(region, str):
-        raise ValueError("Invalid `region` input. "
-                         "Expected None or a string value. "
-                         "Received {}.".format(str(region)))
+        raise ValueError(
+            "Invalid `region` input. "
+            "Expected None or a string value. "
+            "Received {}.".format(str(region))
+        )
 
     if args is not None and not isinstance(args, list):
-        raise ValueError("Invalid `entry_point_args` input. "
-                         "Expected None or a list. "
-                         "Received {}.".format(str(args)))
+        raise ValueError(
+            "Invalid `entry_point_args` input. "
+            "Expected None or a list. "
+            "Received {}.".format(str(args))
+        )
 
     if not isinstance(stream_logs, bool):
-        raise ValueError("Invalid `stream_logs` input. "
-                         "Expected a boolean. "
-                         "Received {}.".format(str(stream_logs)))
+        raise ValueError(
+            "Invalid `stream_logs` input. "
+            "Expected a boolean. "
+            "Received {}.".format(str(stream_logs))
+        )
 
     if called_from_notebook and docker_image_bucket_name is None:
         raise ValueError(
@@ -183,4 +213,6 @@ def _validate_other_args(
             "`docker_image_bucket_name` is expected to be specifed. We will "
             "use the bucket name in Google Cloud Storage/Build services for "
             "docker containerization. Received {}.".format(
-                str(docker_image_bucket_name)))
+                str(docker_image_bucket_name)
+            )
+        )
