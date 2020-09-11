@@ -1,15 +1,14 @@
-
-# Cloud_fit
+# Cloud Fit
 
 ## What is this module?
 
 `cloud_fit` is an experimental module which is part of the broader
-`tensorflow_cloud`. This module provides an API that enable training
+`tensorflow_cloud`. This module provides an API that enables training
 on [Google Cloud AI Platform](https://cloud.google.com/ai-platform). `cloud_fit`
 serializes the model, datasets, and callback functions and submits them for
 remote execution on AI Platform. `cloud_fit` is intended to function in the same
 manner as `model.fit()`. This module is designed to be used within a pipeline or
-an automated process such as from CloudTuner however it can be used directly as
+an automated process such as from Tuner however it can be used directly as
 well.
 
 ## Installation
@@ -32,7 +31,7 @@ For detailed end to end setup instructions, please see
 simply be used in the same manner as `model.fit()` with a few additional
 parameters to enable remote execution on AI Platform.
 
-```Python
+```python
 import tensorflow as tf
 from tensorflow_cloud.experimental.cloud_fit import client
 
@@ -63,114 +62,119 @@ model = tf.keras.models.load_model(os.path.join(GCS_REMOTE_DIR, 'output'))
 
 ## Setup instructions
 
-End to end instructions to help set up your environment for cloud_fit. If you
+End to end instructions to help set up your environment for `cloud_fit`. If you
 are using
 [Google Cloud Hosted Notebooks](https://cloud.google.com/ai-platform-notebooks)
 you can skip the setup and authentication steps and start from step 8.
 
 1.  Create a new local directory
 
-```shell
-mkdir cloud_fit
-cd cloud_fit
-```
+    ```shell
+    mkdir cloud_fit
+    cd cloud_fit
+    ```
 
 1.  Make sure you have `python >= 3.5`
 
-```shell
-python -V
-```
+    ```shell
+    python -V
+    ```
 
 1.  Setup virtual environment
 
-```shell
-virtualenv venv --python=python3
-source venv/bin/activate
-```
+    ```shell
+    virtualenv venv --python=python3
+    source venv/bin/activate
+    ```
 
 1.  [Set up your Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 
-Verify that gcloud sdk is installed.
+    Verify that gcloud sdk is installed.
 
-```shell
-which gcloud
-```
+    ```shell
+    which gcloud
+    ```
 
-Set default gcloud project
+    Set default gcloud project
 
-```shell
-export PROJECT_ID=<your-project-id>
-gcloud config set project $PROJECT_ID
-```
+    ```shell
+    export PROJECT_ID=<your-project-id>
+    gcloud config set project $PROJECT_ID
+    ```
 
 1.  [Authenticate your GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
     Follow the prompts after executing the command. This is not required in
     hosted notebooks.
 
-```shell
-gcloud auth application-default
-```
+    ```shell
+    gcloud auth application-default
+    ```
 
 1.  Authenticate Docker to access Google Cloud Container Registry (gcr)
 
-To use local [Docker] with google
-[Cloud Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication)
-for docker build and publish
+    To use local [Docker] with google
+    [Cloud Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication)
+    for docker build and publish
 
-```shell
-gcloud auth configure-docker
-```
+    ```shell
+    gcloud auth configure-docker
+    ```
 
 1.  Create a Bucket for Data and Model transfer
     [Create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket)
     for cloud_fit temporary storage.
 
-```shell
-export BUCKET_NAME="your-bucket-name"
-export REGION="us-central1"
-gsutil mb -l $REGION gs://$BUCKET_NAME
-```
+    ```shell
+    export BUCKET_NAME="your-bucket-name"
+    export REGION="us-central1"
+    gsutil mb -l $REGION gs://$BUCKET_NAME
+    ```
 
 1.  Build and install latest release
 
-```shell
-git clone https://github.com/GoogleCloudPlatform/tensorflow-gcp-tools.git
-cd tensorflow-gcp-tools/python && python3 setup.py -q bdist_wheel
-pip3 install -U dist/tensorflow_cloud-*.whl --quiet
-```
+    ```shell
+    git clone https://github.com/tensorflow/cloud.git
+    cd cloud
+    pip install src/python/.
+    ```
 
 1.  Create a docker image as the base image for remote training
 
-Create a dockerfile as follows:
+    Create a dockerfile as follows:
 
-```shell
-# Using DLVM base image
-FROM gcr.io/deeplearning-platform-release/tf2-cpu
-WORKDIR /root
+    ```shell
+    # Using DLVM base image
+    FROM gcr.io/deeplearning-platform-release/tf2-cpu
+    WORKDIR /root
 
-# Path configuration
-ENV PATH $PATH:/root/tools/google-cloud-sdk/bin
+    # Path configuration
+    ENV PATH $PATH:/root/tools/google-cloud-sdk/bin
 
-# Make sure gsutil will use the default service account
-RUN echo '[Google Compute]\nservice_account = default' > /etc/boto.cfg
+    # Make sure gsutil will use the default service account
+    RUN echo '[Google Compute]\nservice_account = default' > /etc/boto.cfg
 
-# Copy and install tensorflow_cloud wheel file
-ADD tensorflow-gcp-tools/python/dist/tensorflow_cloud-*.whl /tmp/
-RUN pip3 install --upgrade /tmp/tensorflow_cloud-*.whl --quiet
+    # Copy and install tensorflow_cloud wheel file
+    ADD tensorflow-gcp-tools/python/dist/tensorflow_cloud-*.whl /tmp/
+    RUN pip3 install --upgrade /tmp/tensorflow_cloud-*.whl --quiet
 
-# Sets up the entry point to invoke cloud_fit.
-ENTRYPOINT ["python3","-m","tensorflow_cloud.experimental.cloud_fit.remote"]
-```
+    # Sets up the entry point to invoke cloud_fit.
+    ENTRYPOINT ["python3","-m","tensorflow_cloud.experimental.cloud_fit.remote"]
+    ```
 
-Build and push a docker image using the dockerfile above, where IMAGE_URI
-follows the format `gcr.io/{PROJECT_ID}/[name-for-docker-image]:latest`.
+    Build and push a docker image using the dockerfile above, where IMAGE_URI
+    follows the format `gcr.io/{PROJECT_ID}/[name-for-docker-image]:latest`.
 
-```shell
-export IMAGE_NAME=[name-for-docker-image]
-export IMAGE_URI=gcr.io/$PROJECT_ID$/$IMAGE_NAME:latest
-docker build -t $IMAGE_URI -f Dockerfile . -q && docker push $IMAGE_URI
-```
+    ```shell
+    export IMAGE_NAME=[name-for-docker-image]
+    export IMAGE_URI=gcr.io/$PROJECT_ID$/$IMAGE_NAME:latest
+    docker build -t $IMAGE_URI -f Dockerfile . -q && docker push $IMAGE_URI
+    ```
 
-you are all set! you can now follow our
-[examples](https://github.com/tensorflow/cloud/blob/master/examples/cloud_fit.ipynb)
-to try out `cloud_fit`.
+    You are all set! You can now follow our
+    [examples](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/experimental/cloud_fit/tests/examples/cloud_fit.ipynb)
+    to try out `cloud_fit`.
+
+## License
+
+[Apache License 2.0](https://github.com/tensorflow/cloud/blob/master/LICENSE)
+
