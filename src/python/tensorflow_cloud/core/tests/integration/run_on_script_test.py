@@ -47,7 +47,7 @@ class RunOnScriptTest(tf.test.TestCase):
         if tf.io.gfile.isdir(path):
             tf.io.gfile.rmtree(path)
 
-    def test_auto_mirrored_strategy(self):
+    def DISABLED_test_auto_mirrored_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -62,7 +62,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_tpu_strategy(self):
+    def DISABLED_test_auto_tpu_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -75,7 +75,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_one_device_strategy(self):
+    def DISABLED_test_auto_one_device_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -94,7 +94,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_multi_worker_strategy(self):
+    def DISABLED_test_auto_multi_worker_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -104,7 +104,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_none_dist_strat_multi_worker_strategy(self):
+    def DISABLED_test_none_dist_strat_multi_worker_strategy(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_ctl.py"),
@@ -115,7 +115,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_dist_strat_mwms_custom_img(self):
+    def DISABLED_test_auto_dist_strat_mwms_custom_img(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -128,7 +128,7 @@ class RunOnScriptTest(tf.test.TestCase):
         )
         self._mock_sys_exit.assert_called_once_with(0)
 
-    def test_auto_one_device_job_labels(self):
+    def DISABLED_test_auto_one_device_job_labels(self):
         tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
