@@ -14,13 +14,18 @@
 # limitations under the License.
 """Tests for Cloud Keras Tuner."""
 
+import os
 import time
+from googleapiclient import discovery
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
+from kerastuner.engine import tuner as super_tuner
 
 import mock
+
 import tensorflow as tf
+from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import tuner
 from tensorflow_cloud.tuner.tuner import optimizer_client
 
@@ -52,7 +57,8 @@ class CloudTunerTest(tf.test.TestCase):
             self._project_id, self._region,
             "CloudTuner_study_{}".format(self._study_id)
         )
-
+        self._container_uri = "test_container_uri",
+        self._staging_bucket = "test_staging_bucket"
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
         self._test_hyperparameters = hps
@@ -108,6 +114,29 @@ class CloudTunerTest(tf.test.TestCase):
             directory=self.get_temp_dir(),
         )
 
+    def _remote_tuner(
+                self,
+                objective,
+                hyperparameters,
+                study_config,
+                max_trials=None,
+                train_locally=True
+                ):
+        return tuner.CloudTuner(
+            hypermodel=build_model,
+            objective=objective,
+            study_config=study_config,
+            hyperparameters=hyperparameters,
+            max_trials=max_trials,
+            project_id=self._project_id,
+            region=self._region,
+            study_id=self._study_id,
+            directory=self.get_temp_dir(),
+            container_uri=self._container_uri,
+            staging_bucket=self._staging_bucket,
+            train_locally=train_locally,
+        )
+
     def test_tuner_initialization_with_hparams(self):
         self._tuner_with_hparams()
         (self.mock_optimizer_client_module.create_or_load_study
@@ -118,6 +147,14 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_study_config(self):
         self.tuner = self._tuner(None, None, self._study_config)
+        (self.mock_optimizer_client_module.create_or_load_study
+         .assert_called_with(self._project_id,
+                             self._region,
+                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_config))
+
+    def test_remote_tuner_initialization_with_study_config(self):
+        self._remote_tuner(None, None, self._study_config)
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
@@ -384,6 +421,101 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(best_trials_1[1].trial_id, best_trials_2[1].trial_id)
         self.assertEqual(best_trials_1[0].score, 0.9)
         self.assertEqual(best_trials_1[0].best_step, 3)
+
+    def test_add_tensorboard_callback(self):
+        remote_tuner = self._remote_tuner(None, None, self._study_config)
+        callbacks = []
+        trial_id = "test_trial_id"
+        remote_tuner._add_tensorboard_callback(callbacks, trial_id)
+        self.assertLen(callbacks, 1)
+        self.assertEqual(
+            callbacks[0].log_dir,
+            os.path.join(
+                remote_tuner.directory, remote_tuner._study_id, trial_id))
+
+    def test_add_model_checkpoint_callback(self):
+        remote_tuner = self._remote_tuner(None, None, self._study_config)
+        callbacks = []
+        trial_id = "test_trial_id"
+        remote_tuner._add_model_checkpoint_callback(
+            callbacks, trial_id)
+        self.assertLen(callbacks, 1)
+        self.assertEqual(
+            callbacks[0].filepath,
+            os.path.join(
+                remote_tuner.directory, remote_tuner._study_id, trial_id,
+                "checkpoint"))
+
+    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "run_trial", auto_spec=True)
+    def test_local_run_trial(self, mock_super_run_trial, mock_cloud_fit):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=True)
+
+        remote_tuner.run_trial(self._test_trial, "fit_arg", fit_kwarg=1)
+        mock_super_run_trial.assert_called_once()
+        mock_cloud_fit.assert_not_called()
+
+    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(discovery, "build", auto_spec=True)
+    def test_remote_run_trial(self, mock_discovery_build, mock_cloud_fit):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=False)
+        mock_apiclient = mock.Mock()
+        mock_discovery_build.return_value = mock_apiclient
+        mock_get = mock.Mock()
+        mock_apiclient.projects().jobs().get.return_value = mock_get
+        mock_get.execute.return_value = {"state": "SUCCEEDED"}
+
+        remote_tuner._get_remote_training_metrics = mock.Mock()
+        remote_tuner._get_remote_training_metrics.return_value = {"loss": 0.001}
+        remote_tuner.oracle.update_trial = mock.Mock()
+        remote_tuner.run_trial(
+            self._test_trial, "fit_arg",
+            callbacks=["test_call_back"], fit_kwarg=1)
+
+        mock_get.execute.assert_called_once()
+        remote_tuner.oracle.update_trial.assert_called_once()
+        mock_cloud_fit.assert_called_with(
+            "fit_arg",
+            fit_kwarg=1,
+            model=mock.ANY,
+            callbacks=["test_call_back", mock.ANY, mock.ANY],
+            remote_dir=remote_tuner.directory,
+            region=self._region,
+            project_id=self._project_id,
+            image_uri=self._container_uri,
+            job_id="{}_{}".format(
+                remote_tuner._study_id,
+                self._test_trial.trial_id))
+
+    @mock.patch.object(super_tuner.Tuner, "load_model", auto_spec=True)
+    def test_local_load_model(self, mock_super_load_model):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=True)
+        remote_tuner.load_model(self._test_trial)
+        mock_super_load_model.assert_called_once()
+
+    def test_remote_load_model(self):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=False)
+        with self.assertRaises(NotImplementedError):
+            remote_tuner.load_model(self._test_trial)
+
+    @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
+    def test_local_save_model(self, mock_super_save_model):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=True)
+
+        remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
+        mock_super_save_model.assert_called_once()
+
+    @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
+    def test_remote_save_model(self, mock_super_save_model):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=False)
+        remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
+        mock_super_save_model.assert_not_called()
 
 
 if __name__ == "__main__":

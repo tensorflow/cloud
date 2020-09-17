@@ -14,9 +14,12 @@
 # limitations under the License.
 """KerasTuner CloudOracle and CloudTuner classes."""
 
+import copy
 import datetime
+import os
 import time
 from typing import Any, Callable, Dict, List, Mapping, Optional, Text, Union
+from googleapiclient import discovery
 
 from kerastuner.engine import hypermodel as hypermodel_module
 from kerastuner.engine import hyperparameters as hp_module
@@ -25,8 +28,11 @@ from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
 import tensorflow as tf
 
+from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner import utils
+
+_POLLING_INTERVAL_IN_SECONDS = 30
 
 
 class CloudOracle(oracle_module.Oracle):
@@ -42,7 +48,7 @@ class CloudOracle(oracle_module.Oracle):
         max_trials: int = None,
         study_id: Optional[Text] = None,
     ):
-        """KerasTuner Oracle interface implmemented with Optimizer backend.
+        """KerasTuner Oracle interface implemented with Optimizer backend.
 
         Args:
             project_id: A GCP project id.
@@ -94,11 +100,11 @@ class CloudOracle(oracle_module.Oracle):
 
         if not project_id:
             raise ValueError('"project_id" is not found.')
-        self.project_id = project_id
+        self._project_id = project_id
 
         if not region:
             raise ValueError('"region" is not found.')
-        self.region = region
+        self._region = region
 
         self.objective = utils.format_objective(objective)
         self.hyperparameters = hyperparameters
@@ -112,7 +118,7 @@ class CloudOracle(oracle_module.Oracle):
             )
 
         self.service = optimizer_client.create_or_load_study(
-            self.project_id, self.region, self.study_id, self.study_config
+            self._project_id, self._region, self.study_id, self.study_config
         )
 
         self.trials = {}
@@ -337,6 +343,9 @@ class CloudTuner(tuner_module.Tuner):
         study_config: Optional[Dict[Text, Any]] = None,
         max_trials: int = None,
         study_id: Optional[Text] = None,
+        container_uri: Optional[Text] = None,
+        staging_bucket: Optional[Text] = None,
+        train_locally: Optional[bool] = True,
         **kwargs
     ):
 
@@ -358,9 +367,30 @@ class CloudTuner(tuner_module.Tuner):
                 been exhausted.
             study_id: An identifier of the study. The full study name will be
                 projects/{project_id}/locations/{region}/studies/{study_id}.
+            container_uri: based image to use for AI Platform Training. If not
+                specified will use the latest AI Platform Tensorflow deep
+                learning container.
+            staging_bucket: Google Cloud Storage path for temporary assets and
+                AI Platform training output, required for remote training.
+                Overwrites CloudTuner.directory and jobspec['jobDir'].
+            train_locally: A flag to specify execution environment. Set to True
+                to train locally, and False to use AI Platform training.
             **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
                 Please see the docstring for `Tuner`.
         """
+        self._project_id = project_id
+        self._region = region
+
+        # Setting AI Platform Training runtime configurations. User can create
+        # a new tuner using the same study id if they need to change any of the
+        # parameters below, however since this is not a common use case, we are
+        # adding them to the constructor instead of search parameters.
+        self.container_uri = container_uri
+
+        # Defining directory as public per Tuner (Super) implementation
+        self.directory = staging_bucket
+
+        self._train_locally = train_locally
 
         oracle = CloudOracle(
             project_id=project_id,
@@ -374,3 +404,129 @@ class CloudTuner(tuner_module.Tuner):
         super(CloudTuner, self,).__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs
         )
+        # If study id is not provided cloud_oracle creates ones. Setting the
+        # study_id based on cloud oracles logic to ensure they are the same.
+        self._study_id = oracle.study_id
+
+    def run_trial(self, trial, *fit_args, **fit_kwargs):
+        """Evaluates a set of hyperparameter values.
+
+        This method is called during `search` to evaluate a set of
+        hyperparameters using AI Platform training.
+        Arguments:
+            trial: A `Trial` instance that contains the information
+              needed to run this trial. `Hyperparameters` can be accessed
+              via `trial.hyperparameters`.
+            *fit_args: Positional arguments passed by `search`.
+            **fit_kwargs: Keyword arguments passed by `search`.
+        Raises:
+            RuntimeError: If AIP training job fails.
+        """
+        if self._train_locally:
+            tf.get_logger().info(
+                "Executing run_trial() locally.")
+            super(CloudTuner, self).run_trial(trial, *fit_args, **fit_kwargs)
+            return
+
+        # Running the training remotely.
+        copied_fit_kwargs = copy.copy(fit_kwargs)
+
+        # Handle any callbacks passed to `fit`.
+        callbacks = fit_kwargs.pop("callbacks", [])
+        callbacks = self._deepcopy_callbacks(callbacks)
+
+        # Note run_trial does not use `TunerCallback` calls, since
+        # training is performed on AI Platform training remotely.
+
+        # Creating a tensorboard callback with log-dir path specific for this
+        # trail_id. The tensorboard logs are used for passing metrics back from
+        # remote execution.
+        self._add_tensorboard_callback(callbacks, trial.trial_id)
+
+        # Creating a save_model checkpoint callback with a saved model file path
+        # specific to this trial, this is to prevent different trials from
+        # overwriting each other.
+        self._add_model_checkpoint_callback(
+            callbacks, trial.trial_id)
+
+        copied_fit_kwargs["callbacks"] = callbacks
+        model = self.hypermodel.build(trial.hyperparameters)
+        job_id = "{}_{}".format(self._study_id, trial.trial_id)
+
+        tf.get_logger().info("Calling cloud_fit with %s", {
+            "model": model,
+            "remote_dir": self.directory,
+            "region": self._region,
+            "project_id": self._project_id,
+            "image_uri": self.container_uri,
+            "job_id": job_id,
+            "*fit_args": fit_args,
+            "**copied_fit_kwargs": copied_fit_kwargs})
+
+        client.cloud_fit(
+            model=model,
+            remote_dir=self.directory,
+            region=self._region,
+            project_id=self._project_id,
+            image_uri=self.container_uri,
+            job_id=job_id,
+            *fit_args,
+            **copied_fit_kwargs)
+
+        # TODO(b/168542356) Factor out job status check.
+        # Wait for AIP Training job to finish
+        job_name = "projects/{}/jobs/{}".format(self._project_id, job_id)
+        api_client = discovery.build("ml", "v1")
+        request = api_client.projects().jobs().get(name=job_name)
+        response = request.execute()
+
+        while response["state"] not in ("SUCCEEDED", "FAILED"):
+            time.sleep(_POLLING_INTERVAL_IN_SECONDS)
+            response = request.execute()
+            # TODO(b/167569957) Add support for early termination.
+            # TODO(b/168242698) handle FAILED case for CloudTuner AIP Training.
+
+        # If job failed raise an error
+        if response["state"] != "SUCCEEDED":
+            raise RuntimeError(
+                "AIP Training job failed, see job log for details.")
+
+        # If the job was successful, retrieve the metrics
+        training_metric = self._get_remote_training_metrics(trial.trial_id)
+        self.oracle.update_trial(trial.trial_id, training_metric)
+
+    def _get_remote_training_metrics(self, trial_id: int):
+        # TODO(b/167569955) implement _get_remote_training_metrics
+        raise NotImplementedError(
+                        "_get_remote_training_metrics is not supported.")
+
+    def load_model(self, trial):
+        if self._train_locally:
+            return super(CloudTuner, self).load_model(trial)
+
+        # Overriding the Super method for remote execution. In remote execution
+        # models are saved in Google Cloud Storage (GCS) and needs to be handled
+        # differently than in local mode.
+        # TODO(b/167569959) - Retrieve best model from remote execution.
+        raise NotImplementedError("load_model for remote run is not supported.")
+
+    def save_model(self, trial_id: int, model, step: int = 0):
+        if self._train_locally:
+            return super(CloudTuner, self).save_model(trial_id, model, step=0)
+
+        # In remote execution models are saved automatically in Google Cloud
+        # Storage (GCS) bucket hence no additional actions are needed to save
+        # the model.
+        pass
+
+    def _add_model_checkpoint_callback(self, callbacks, trial_id):
+        callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(
+                self.directory, self._study_id, str(trial_id), "checkpoint"),
+            save_freq="epoch"))
+
+    def _add_tensorboard_callback(self, callbacks, trial_id):
+        callbacks.append(tf.keras.callbacks.TensorBoard(
+            log_dir=os.path.join(
+                self.directory, self._study_id, str(trial_id))))
+
