@@ -48,7 +48,15 @@ def scale(image, label):
 
 train_dataset = mnist_train.map(scale).cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-eval_dataset = mnist_test.map(scale).batch(BATCH_SIZE)
+
+# If the input dataset is file-based but the number of files is less than the
+# number of workers, an error will be raised. Turning off auto shard policy here
+# so that Dataset will sharded by data instead of by file.
+# https://www.tensorflow.org/tutorials/distribute/input#caveats
+options = tf.data.Options()
+options.experimental_distribute.auto_shard_policy = (
+    tf.data.experimental.AutoShardPolicy.OFF)
+train_dataset = train_dataset.with_options(options)
 
 # Create the model
 model = tf.keras.Sequential(
