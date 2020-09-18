@@ -14,7 +14,6 @@
 """Integration tests for calling tfc.run on a script with keras."""
 
 import os
-from typing import Text
 import mock
 
 import tensorflow as tf
@@ -29,26 +28,23 @@ class RunOnScriptTest(tf.test.TestCase):
     def setUp(self):
         super(RunOnScriptTest, self).setUp()
         # To keep track of content that needs to be deleted in teardown clean up
-        self.test_folders = []
         self.test_data_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "../testdata/"
         )
 
-        self._mock_sys_exit = mock.patch("sys.exit", autospec=True).start()
+        self._mock_sys = mock.patch(
+            "tensorflow_cloud.core.run.sys", autospec=True).start()
 
     def tearDown(self):
+        mock.patch.stopall()
         super(RunOnScriptTest, self).tearDown()
-        # Clean up any temporary file or folder created during testing.
-        for folder in self.test_folders:
-            self.delete_dir(folder)
 
-    def delete_dir(self, path: Text) -> None:
-        """Deletes a directory if exists."""
-        if tf.io.gfile.isdir(path):
-            tf.io.gfile.rmtree(path)
+    def _run_and_assert_success(self, *args, **kwargs):
+        tfc.run(*args, **kwargs)
+        self._mock_sys.exit.assert_called_once_with(0)
 
     def test_auto_mirrored_strategy(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
@@ -60,10 +56,9 @@ class RunOnScriptTest(tf.test.TestCase):
                 accelerator_count=2,
             ),
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_tpu_strategy(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
@@ -73,39 +68,35 @@ class RunOnScriptTest(tf.test.TestCase):
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
             docker_base_image="tensorflow/tensorflow:2.1.0",
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_one_device_strategy(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_one_device_strategy_bucket_build(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_image_bucket_name=_TEST_BUCKET,
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_multi_worker_strategy(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             worker_count=1,
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_none_dist_strat_multi_worker_strategy(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_ctl.py"),
             distribution_strategy=None,
@@ -113,10 +104,9 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_dist_strat_mwms_custom_img(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             distribution_strategy="auto",
@@ -126,17 +116,15 @@ class RunOnScriptTest(tf.test.TestCase):
                 "gcr.io/deeplearning-platform-release"
                 "/tf2-gpu.2-2:latest"),
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
     def test_auto_one_device_job_labels(self):
-        tfc.run(
+        self._run_and_assert_success(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             job_labels={"job": "on_script_tests", "team": "keras"},
         )
-        self._mock_sys_exit.assert_called_once_with(0)
 
 
 if __name__ == "__main__":

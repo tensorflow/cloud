@@ -44,7 +44,7 @@ def run(
     entry_point_args=None,
     stream_logs=False,
     docker_image_bucket_name=None,
-    job_labels={},
+    job_labels=None,
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -52,8 +52,8 @@ def run(
     Args:
         entry_point: Optional string. File path to the python file or iPython
             notebook that contains the TensorFlow code.
-            Note: This path must be in the current working directory tree.
-            Example: 'train.py', 'training/mnist.py', 'mnist.ipynb'
+            Note this path must be in the current working directory tree.
+            Example - 'train.py', 'training/mnist.py', 'mnist.ipynb'
             If `entry_point` is not provided, then
             - If you are in an iPython notebook environment, then the
                 current notebook is taken as the `entry_point`.
@@ -62,8 +62,8 @@ def run(
         requirements_txt: Optional string. File path to requirements.txt file
             containing additional pip dependencies if any. ie. a file with a
             list of pip dependency package names.
-            Note: This path must be in the current working directory tree.
-            Example: 'requirements.txt', 'deps/reqs.txt'
+            Note this path must be in the current working directory tree.
+            Example - 'requirements.txt', 'deps/reqs.txt'
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
             'auto' means we will take care of creating a Tensorflow
             distribution strategy instance based on the machine configurations
@@ -82,14 +82,14 @@ def run(
             you will need to create a strategy in the script for distributing
             the dataset.
         docker_base_image: Optional base docker image to use. Defaults to None.
-            Example: 'gcr.io/my_gcp_project/deep_learning:v2'
+            Example - 'gcr.io/my_gcp_project/deep_learning:v2'
             If a base docker image is not provided here, we will use a
             TensorFlow docker image (https://www.tensorflow.org/install/docker)
             as the base image. The version of TensorFlow and Python in that
             case will match your local environment.
             If both docker_base_image and a local TF installation are not
             available, the latest TF docker image will be used.
-            For example: 'tensorflow/tensorflow:latest-gpu'
+            Example - 'tensorflow/tensorflow:latest-gpu'
         chief_config: Optional `MachineConfig` that represents the
             configuration for the chief worker in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
@@ -121,7 +121,7 @@ def run(
             Cloud build request is queued and we make a maximum of 10 requests
             with a delay of 30 secs in between these requests to inspect the
             status of the build.
-            Note: When you are using this API from within an iPython notebook,
+            Note when you are using this API from within an iPython notebook,
             we will default to using Google Cloud Build,
             so `docker_image_bucket_name` must be specified for this use case.
         job_labels: Dict of str: str. Labels to organize jobs. You can specify
@@ -177,7 +177,7 @@ def run(
         stream_logs,
         docker_image_bucket_name,
         called_from_notebook,
-        job_labels=job_labels,
+        job_labels=job_labels or {},
         docker_base_image=docker_base_image,
     )
 
@@ -217,9 +217,11 @@ def run(
         "called_from_notebook": called_from_notebook,
     }
     if docker_image_bucket_name is None:
-        container_builder = containerize.LocalContainerBuilder(*cb_args, **cb_kwargs)
+        container_builder = containerize.LocalContainerBuilder(
+            *cb_args, **cb_kwargs)
     else:
-        container_builder = containerize.CloudContainerBuilder(*cb_args, **cb_kwargs)
+        container_builder = containerize.CloudContainerBuilder(
+            *cb_args, **cb_kwargs)
     docker_img_uri = container_builder.get_docker_image()
 
     # Delete all the temporary files we created.
@@ -229,7 +231,7 @@ def run(
         os.remove(f)
 
     # Deploy docker image on the cloud.
-    job_name = deploy.deploy_job(
+    _ = deploy.deploy_job(
         region,
         docker_img_uri,
         chief_config,
@@ -249,7 +251,7 @@ def run(
 def _called_from_notebook():
     """Detects if we are currently executing in a notebook environment."""
     try:
-        import IPython
+        import IPython  # pylint: disable=g-import-not-at-top
     except ImportError:
         return False
 
