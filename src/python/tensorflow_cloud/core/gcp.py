@@ -75,7 +75,7 @@ def get_region():
     return "us-central1"
 
 
-def get_accelerator_type(accl_type):
+def get_accelerator_type(accl_type_map):
     """Returns the accelerator type to be used on a GCP machine."""
     accl_type_map = {
         "CPU": "ACCELERATOR_TYPE_UNSPECIFIED",
@@ -87,7 +87,8 @@ def get_accelerator_type(accl_type):
         "TPU_V2": "TPU_V2",
         "TPU_V3": "TPU_V3",
     }
-    return accl_type_map[accl_type]
+    del accl_type_map
+    return None
 
 
 def get_machine_type(cpu_cores, memory, accelerator_type):
