@@ -136,10 +136,15 @@ class TestDeploy(absltest.TestCase):
         # Verify print statement
         self.assertEqual(
             mock_stdout.getvalue(),
-            "Job submitted successfully.\nYour job ID is:  {}\nPlease access "
-            "your job logs at the following URL:\nhttps://"
-            "console.cloud.google.com/mlengine/jobs/{}?project={}\n".format(
-                self.mock_job_id, self.mock_job_id, self.mock_project_name
+            "\nJob submitted successfully."
+            "\nYour job ID is:  {}\n"
+            "\nPlease access your training job information here:\nhttps://"
+            "console.cloud.google.com/mlengine/jobs/{}?project={}\n"
+            "\nPlease access your training job logs here: "
+            "https://console.cloud.google.com/logs/viewer?resource=ml_job%2F"
+            "job_id%2F{}&interval=NO_LIMIT&project={}\n\n".format(
+                self.mock_job_id, self.mock_job_id, self.mock_project_name,
+                self.mock_job_id, self.mock_project_name
             ),
         )
 

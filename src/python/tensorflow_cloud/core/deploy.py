@@ -174,14 +174,16 @@ def _print_logs_info(job_id, project_id):
         job_id: The job id to print.
         project_id: The project id that is used to generate job access url.
     """
-    print("Job submitted successfully.")
+    print("\nJob submitted successfully.")
     print("Your job ID is: ", job_id)
-    print("Please access your job logs at the following URL:")
+    print("\nPlease access your training job information here:")
     print(
         "https://console.cloud.google.com/mlengine/jobs/{}?project={}".format(
-            job_id, project_id
-        )
-    )
+            job_id, project_id))
+    print("\nPlease access your training job logs here: "
+          "https://console.cloud.google.com/logs/viewer?resource=ml_job%2F"
+          "job_id%2F{}&interval=NO_LIMIT&project={}\n".format(
+              job_id, project_id))
 
 
 def _stream_logs(job_id):
