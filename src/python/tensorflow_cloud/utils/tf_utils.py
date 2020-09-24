@@ -13,8 +13,39 @@
 # limitations under the License.
 """TensorFlow utilities."""
 
+from typing import Text
 import tensorflow  as tf
+from tensorboard.backend.event_processing import directory_watcher
+from tensorboard.backend.event_processing import event_file_loader
+from tensorboard.backend.event_processing import io_wrapper
 
 
 def get_version():
   return tf.__version__
+
+
+def get_tensorboard_log_watcher_from_path(
+        path: Text):
+    """Create an event generator for file or directory at given path string.
+
+    This method creates an event generator using tensorboard directory_watcher.
+    The generator.load() method will return event logs as they become available.
+    The generator does not repeat events.
+
+    Args:
+        path: Text representing a directory, file, or Google Cloud Storage
+        (GCS) for tensorboard logs.
+    Returns:
+        A tensorboard directory_watcher event generator.
+    Raises:
+        ValueError: if path is not defined.
+    """
+    if not path:
+        raise ValueError("path must be a valid string")
+    if io_wrapper.IsSummaryEventsFile(path):
+        return event_file_loader.EventFileLoader(path)
+    return directory_watcher.DirectoryWatcher(
+        path,
+        event_file_loader.EventFileLoader,
+        io_wrapper.IsSummaryEventsFile,
+    )

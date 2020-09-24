@@ -42,7 +42,7 @@ class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
         super(TFCloudHttpRequest, self).__init__(*args, **kwargs)
 
 
-def get_aip_training_job_success_status(job_id: Text, project_id: Text)->bool:
+def wait_for_api_training_job_success(job_id: Text, project_id: Text)->bool:
     """Blocks until the AIP Training job is completed and returns the status.
 
     Args:

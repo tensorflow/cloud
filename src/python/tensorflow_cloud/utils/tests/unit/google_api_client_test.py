@@ -42,12 +42,12 @@ class GoogleApiClientTest(tf.test.TestCase):
                 ).get.return_value = self.mock_request
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_get_aip_training_job_success_status_non_blocking_success(
+    def test_wait_for_api_training_job_success_non_blocking_success(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
             "state": "SUCCEEDED",
         }
-        status = google_api_client.get_aip_training_job_success_status(
+        status = google_api_client.wait_for_api_training_job_success(
             self._job_id, self._project_id)
         self.assertTrue(status)
         self.mock_request.execute.assert_called_once()
@@ -57,11 +57,11 @@ class GoogleApiClientTest(tf.test.TestCase):
         mock_log_error.assert_not_called()
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_get_aip_training_job_success_status_non_blocking_failed(
+    def test_wait_for_api_training_job_success_non_blocking_failed(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
             "state": "FAILED", "errorMessage": "test_error_message"}
-        status = google_api_client.get_aip_training_job_success_status(
+        status = google_api_client.wait_for_api_training_job_success(
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.mock_request.execute.assert_called_once()
@@ -69,25 +69,25 @@ class GoogleApiClientTest(tf.test.TestCase):
             "AIP Training job %s failed with error %s.",
             self._job_id, "test_error_message")
 
-    def test_get_aip_training_job_success_status_multiple_checks_success(self):
+    def test_wait_for_api_training_job_success_multiple_checks_success(self):
         self.mock_request.execute.side_effect = [
             {"state": "PREPARING"},
             {"state": "RUNNING"},
             {"state": "SUCCEEDED"}
         ]
-        status = google_api_client.get_aip_training_job_success_status(
+        status = google_api_client.wait_for_api_training_job_success(
             self._job_id, self._project_id)
         self.assertTrue(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_get_aip_training_job_success_status_multiple_checks_failed(
+    def test_wait_for_api_training_job_success_multiple_checks_failed(
         self, mock_log_error):
         self.mock_request.execute.side_effect = [
             {"state": "PREPARING"},
             {"state": "RUNNING"},
             {"state": "FAILED", "errorMessage": "test_error_message"}]
-        status = google_api_client.get_aip_training_job_success_status(
+        status = google_api_client.wait_for_api_training_job_success(
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.assertEqual(3, self.mock_request.execute.call_count)

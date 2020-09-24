@@ -16,7 +16,6 @@
 
 import os
 import time
-from googleapiclient import discovery
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
@@ -28,6 +27,7 @@ import tensorflow as tf
 from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import tuner
 from tensorflow_cloud.tuner.tuner import optimizer_client
+from tensorflow_cloud.utils import google_api_client
 
 
 def build_model(hp):
@@ -58,7 +58,6 @@ class CloudTunerTest(tf.test.TestCase):
             "CloudTuner_study_{}".format(self._study_id)
         )
         self._container_uri = "test_container_uri",
-        self._staging_bucket = "test_staging_bucket"
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
         self._test_hyperparameters = hps
@@ -133,7 +132,6 @@ class CloudTunerTest(tf.test.TestCase):
             study_id=self._study_id,
             directory=self.get_temp_dir(),
             container_uri=self._container_uri,
-            staging_bucket=self._staging_bucket,
             train_locally=train_locally,
         )
 
@@ -424,14 +422,17 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_add_tensorboard_callback(self):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
-        callbacks = []
+
+        callbacks = [
+            tf.keras.callbacks.TensorBoard(log_dir="user_defined_path_1"),
+            tf.keras.callbacks.TensorBoard(log_dir="user_defined_path_2")]
+
         trial_id = "test_trial_id"
         remote_tuner._add_tensorboard_callback(callbacks, trial_id)
         self.assertLen(callbacks, 1)
         self.assertEqual(
             callbacks[0].log_dir,
-            os.path.join(
-                remote_tuner.directory, remote_tuner._study_id, trial_id))
+            os.path.join(remote_tuner.directory, trial_id, "logs"))
 
     def test_add_model_checkpoint_callback(self):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
@@ -442,9 +443,7 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertLen(callbacks, 1)
         self.assertEqual(
             callbacks[0].filepath,
-            os.path.join(
-                remote_tuner.directory, remote_tuner._study_id, trial_id,
-                "checkpoint"))
+            os.path.join(remote_tuner.directory, trial_id, "checkpoint"))
 
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "run_trial", auto_spec=True)
@@ -457,24 +456,24 @@ class CloudTunerTest(tf.test.TestCase):
         mock_cloud_fit.assert_not_called()
 
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
-    @mock.patch.object(discovery, "build", auto_spec=True)
-    def test_remote_run_trial(self, mock_discovery_build, mock_cloud_fit):
+    @mock.patch.object(
+        google_api_client,
+        "wait_for_api_training_job_success",
+        auto_spec=True)
+    def test_remote_run_trial_with_successful_job(
+        self, mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10, train_locally=False)
-        mock_apiclient = mock.Mock()
-        mock_discovery_build.return_value = mock_apiclient
-        mock_get = mock.Mock()
-        mock_apiclient.projects().jobs().get.return_value = mock_get
-        mock_get.execute.return_value = {"state": "SUCCEEDED"}
 
+        mock_job_status.return_value = True
         remote_tuner._get_remote_training_metrics = mock.Mock()
-        remote_tuner._get_remote_training_metrics.return_value = {"loss": 0.001}
+        remote_tuner._get_remote_training_metrics.return_value = [{
+            "loss": 0.001}]
         remote_tuner.oracle.update_trial = mock.Mock()
         remote_tuner.run_trial(
             self._test_trial, "fit_arg",
             callbacks=["test_call_back"], fit_kwarg=1)
 
-        mock_get.execute.assert_called_once()
         remote_tuner.oracle.update_trial.assert_called_once()
         mock_cloud_fit.assert_called_with(
             "fit_arg",
@@ -488,6 +487,46 @@ class CloudTunerTest(tf.test.TestCase):
             job_id="{}_{}".format(
                 remote_tuner._study_id,
                 self._test_trial.trial_id))
+        remote_tuner._get_remote_training_metrics.assert_called_with(
+            self._test_trial.trial_id)
+
+    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(
+        google_api_client,
+        "wait_for_api_training_job_success",
+        auto_spec=True)
+    def test_remote_run_trial_with_failed_job(
+        self, mock_job_status, mock_cloud_fit):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=False)
+
+        mock_job_status.return_value = False
+        with self.assertRaises(RuntimeError):
+            remote_tuner.run_trial(
+                self._test_trial, "fit_arg",
+                callbacks=["test_call_back"], fit_kwarg=1)
+
+    def test_get_remote_training_metrics(self):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10, train_locally=False)
+
+        log_dir = os.path.join(
+            remote_tuner.directory, str(self._test_trial.trial_id), "logs")
+
+        with tf.summary.create_file_writer(log_dir).as_default():
+            tf.summary.scalar(name="epoch_loss", data=0.1, step=0)
+            tf.summary.scalar(name="epoch_accuracy", data=0.2, step=0)
+            tf.summary.scalar(name="epoch_loss", data=0.3, step=1)
+            tf.summary.scalar(name="epoch_accuracy", data=0.4, step=1)
+            tf.summary.scalar(name="epoch_loss", data=0.5, step=2)
+            tf.summary.scalar(name="epoch_accuracy", data=0.6, step=2)
+
+        results = remote_tuner._get_remote_training_metrics(
+            self._test_trial.trial_id)
+        self.assertLen(results, 3)
+        self.assertIn("accuracy", results[0])
+        self.assertIn("loss", results[0])
+        self.assertEqual(results[0].get("loss"), tf.constant(0.1))
 
     @mock.patch.object(super_tuner.Tuner, "load_model", auto_spec=True)
     def test_local_load_model(self, mock_super_load_model):

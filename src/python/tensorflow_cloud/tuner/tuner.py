@@ -19,7 +19,6 @@ import datetime
 import os
 import time
 from typing import Any, Callable, Dict, List, Mapping, Optional, Text, Union
-from googleapiclient import discovery
 
 from kerastuner.engine import hypermodel as hypermodel_module
 from kerastuner.engine import hyperparameters as hp_module
@@ -31,6 +30,9 @@ import tensorflow as tf
 from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner import utils
+from tensorflow_cloud.utils import google_api_client
+from tensorflow_cloud.utils import tf_utils
+
 
 _POLLING_INTERVAL_IN_SECONDS = 30
 
@@ -331,6 +333,8 @@ class CloudOracle(oracle_module.Oracle):
 class CloudTuner(tuner_module.Tuner):
     """KerasTuner interface implementation backed by CAIP Optimizer Service."""
 
+    # TODO(b/169204394) Consider subclassing to DistributedCloudTuner
+
     def __init__(
         self,
         hypermodel: Union[hypermodel_module.HyperModel,
@@ -344,11 +348,8 @@ class CloudTuner(tuner_module.Tuner):
         max_trials: int = None,
         study_id: Optional[Text] = None,
         container_uri: Optional[Text] = None,
-        staging_bucket: Optional[Text] = None,
         train_locally: Optional[bool] = True,
-        **kwargs
-    ):
-
+        **kwargs):
         """Constructor.
 
         Args:
@@ -367,12 +368,11 @@ class CloudTuner(tuner_module.Tuner):
                 been exhausted.
             study_id: An identifier of the study. The full study name will be
                 projects/{project_id}/locations/{region}/studies/{study_id}.
-            container_uri: based image to use for AI Platform Training. If not
-                specified will use the latest AI Platform Tensorflow deep
-                learning container.
-            staging_bucket: Google Cloud Storage path for temporary assets and
-                AI Platform training output, required for remote training.
-                Overwrites CloudTuner.directory and jobspec['jobDir'].
+            container_uri: Base image to use for AI Platform Training. This
+                image must follow cloud_fit image with a cloud_fit.remote() as
+                entry point. Refer to cloud_fit documentation for more details
+                at tensorflow_cloud/experimental/cloud_fit/README.md
+
             train_locally: A flag to specify execution environment. Set to True
                 to train locally, and False to use AI Platform training.
             **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
@@ -386,9 +386,6 @@ class CloudTuner(tuner_module.Tuner):
         # parameters below, however since this is not a common use case, we are
         # adding them to the constructor instead of search parameters.
         self.container_uri = container_uri
-
-        # Defining directory as public per Tuner (Super) implementation
-        self.directory = staging_bucket
 
         self._train_locally = train_locally
 
@@ -473,32 +470,56 @@ class CloudTuner(tuner_module.Tuner):
             *fit_args,
             **copied_fit_kwargs)
 
-        # TODO(b/168542356) Factor out job status check.
-        # Wait for AIP Training job to finish
-        job_name = "projects/{}/jobs/{}".format(self._project_id, job_id)
-        api_client = discovery.build("ml", "v1")
-        request = api_client.projects().jobs().get(name=job_name)
-        response = request.execute()
-
-        while response["state"] not in ("SUCCEEDED", "FAILED"):
-            time.sleep(_POLLING_INTERVAL_IN_SECONDS)
-            response = request.execute()
-            # TODO(b/167569957) Add support for early termination.
-            # TODO(b/168242698) handle FAILED case for CloudTuner AIP Training.
-
-        # If job failed raise an error
-        if response["state"] != "SUCCEEDED":
+        # TODO(b/167569957) Add support for early termination.
+        if not google_api_client.wait_for_api_training_job_success(
+            job_id, self._project_id):
             raise RuntimeError(
-                "AIP Training job failed, see job log for details.")
+                "AIP Training job failed, see logs for details at https://console.cloud.google.com/ai-platform/jobs/{}/charts/cpu?project={}"  # pylint: disable=line-too-long
+                .format(job_id, self._project_id))
 
         # If the job was successful, retrieve the metrics
-        training_metric = self._get_remote_training_metrics(trial.trial_id)
-        self.oracle.update_trial(trial.trial_id, training_metric)
+        training_metrics = self._get_remote_training_metrics(trial.trial_id)
 
-    def _get_remote_training_metrics(self, trial_id: int):
-        # TODO(b/167569955) implement _get_remote_training_metrics
-        raise NotImplementedError(
-                        "_get_remote_training_metrics is not supported.")
+        # Note since we are submitting all job results in one shot, this may
+        # result in going over AI Platform Vizier limit of 1000 RPS. For more
+        # details on API quotas refer to:
+        # https://cloud.google.com/ai-platform/optimizer/docs/overview
+        for epoch, epoch_metrics in enumerate(training_metrics):
+        # TODO(b/169197272) Validate metrics contain oracle objective
+            self.oracle.update_trial(
+                trial_id=trial.trial_id,
+                metrics=epoch_metrics,
+                step=epoch)
+
+    def _get_remote_training_metrics(
+        self, trial_id: int)-> List[Mapping[Text, Union[int, float]]]:
+
+        log_path = self._get_tensorboard_log_dir(trial_id)
+        tf.get_logger().info(
+            "Retrieving training logs for trial {} from {}".format(
+                trial_id, log_path))
+
+        log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_path)
+        results = []
+        epoch_metrics = {}
+        for event in log_reader.Load():
+            for value in event.summary.value:
+                # Note tf.keras.callbacks.TensorBoard() with update_freq="epoch"
+                # logs the epoch related metrics with a "epoch_" prefix. This is
+                # not a requirement by tensorboard.
+                if value.tag.startswith("epoch_"):
+                    metric = value.tag.replace("epoch_", "")
+                    # If we have already seen this metric, this is a new epoch
+                    if metric in epoch_metrics:
+                        results.append(epoch_metrics)
+                        epoch_metrics = {}
+                    # Note this method captures all metrics even if they are not
+                    # part of the oracle objectives. We rely on oracle to ignore
+                    # the unrelated Objectives.
+                    epoch_metrics[metric] = tf.make_ndarray(
+                        event.summary.value[0].tensor)
+        results.append(epoch_metrics)
+        return results
 
     def load_model(self, trial):
         if self._train_locally:
@@ -521,12 +542,31 @@ class CloudTuner(tuner_module.Tuner):
 
     def _add_model_checkpoint_callback(self, callbacks, trial_id):
         callbacks.append(tf.keras.callbacks.ModelCheckpoint(
-            filepath=os.path.join(
-                self.directory, self._study_id, str(trial_id), "checkpoint"),
+            filepath=self._get_model_checkpoint_dir(trial_id),
             save_freq="epoch"))
 
     def _add_tensorboard_callback(self, callbacks, trial_id):
-        callbacks.append(tf.keras.callbacks.TensorBoard(
-            log_dir=os.path.join(
-                self.directory, self._study_id, str(trial_id))))
+        # due to https://github.com/keras-team/keras/issues/14223 multiple
+        # tensorboard callbacks are not supported. Removing user defined
+        # tf.keras.callbacks.TensorBoard callback.
 
+        tf.get_logger().info(
+            "Only one tf.keras.callbacks.TensorBoard callback is allowed, removing user defined callbacks."  # pylint: disable=line-too-long
+            )
+        callbacks[:] = [
+            x for x in callbacks if x.__class__.__name__ != "TensorBoard"]
+
+        callbacks.append(tf.keras.callbacks.TensorBoard(
+            log_dir=self._get_tensorboard_log_dir(trial_id)))
+
+    def _get_tensorboard_log_dir(self, trial_id)-> Text:
+        # Defining <directory>/<trial_id>/logs as log structure.
+        # self._add_tensorboard_callback uses this directory structure to
+        # configure the tf.keras.callbacks.TensorBoard() for each trial.
+        return os.path.join(self.directory, str(trial_id), "logs")
+
+    def _get_model_checkpoint_dir(self, trial_id)->Text:
+        # Defining <directory>/<trial_id>/checkpoint as checkpoint structure.
+        # self._add_model_checkpoint_callback uses this directory structure to
+        # configure the tf.keras.callbacks.ModelCheckpoint() for each trial.
+        return os.path.join(self.directory, str(trial_id), "checkpoint")
