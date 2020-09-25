@@ -11,19 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Setup script."""
 
-import dependencies
 import importlib
+import os
 import types
+import dependencies
 
 from setuptools import find_packages
 from setuptools import setup
 
+relative_directory = os.path.relpath(os.path.dirname(os.path.abspath(__file__)))
 loader = importlib.machinery.SourceFileLoader(
-    fullname='version',
-    path='tensorflow_cloud/version.py',
+    fullname="version",
+    path=os.path.join(relative_directory, "tensorflow_cloud/version.py"),
 )
 version = types.ModuleType(loader.name)
 loader.exec_module(version)
@@ -59,6 +60,9 @@ setup(
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
+    package_dir={
+        "tensorflow_cloud": os.path.join(relative_directory, "tensorflow_cloud")
+    },
     package_data={"tensorflow_cloud": ["tuner/api/*.json"]},
-    packages=find_packages(),
+    packages=find_packages(where=relative_directory),
 )
