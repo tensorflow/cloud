@@ -23,12 +23,9 @@ import mock
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.utils import google_api_client
+from tensorflow_cloud.utils import tf_utils
 
-try:
-    from tensorflow import __version__ as VERSION  # pylint: disable=g-import-not-at-top
-except ImportError:
-    # Use the latest TF docker image if a local installation is not available.
-    VERSION = "latest"
+_TF_VERSION = tf_utils.get_version()
 
 
 class TestContainerize(absltest.TestCase):
@@ -67,7 +64,7 @@ class TestContainerize(absltest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(_TF_VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
@@ -94,7 +91,7 @@ class TestContainerize(absltest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(_TF_VERSION),
             "WORKDIR /app/\n",
             "COPY /app/requirements.txt /app/requirements.txt\n",
             "RUN if [ -e requirements.txt ]; "
@@ -122,7 +119,7 @@ class TestContainerize(absltest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}-gpu\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}-gpu\n".format(_TF_VERSION),
             "WORKDIR /my_app/temp/\n",
             "COPY /my_app/temp/ /my_app/temp/\n",
             'ENTRYPOINT ["python", "sample.py"]',
@@ -167,7 +164,7 @@ class TestContainerize(absltest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}\n".format(_TF_VERSION),
             "WORKDIR /app/\n",
             "COPY /app/ /app/\n",
             'ENTRYPOINT ["python", "sample.py"]',
@@ -189,7 +186,7 @@ class TestContainerize(absltest.TestCase):
         lcb._create_docker_file()
 
         expected_docker_file_lines = [
-            "FROM tensorflow/tensorflow:{}\n".format(VERSION),
+            "FROM tensorflow/tensorflow:{}\n".format(_TF_VERSION),
             "WORKDIR /app/\n",
             "RUN pip install cloud-tpu-client\n",
             "COPY /app/ /app/\n",
