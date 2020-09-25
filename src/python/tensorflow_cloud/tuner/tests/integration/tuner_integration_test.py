@@ -48,9 +48,14 @@ _HPS.Int("num_layers", 2, 10)
 _NUM_PARALLEL_TRIALS = 4
 
 
-def _load_data():
+def _load_data(dir_path=None):
     """Loads and prepares data."""
-    (x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
+
+    mnist_file_path = None
+    if dir_path:
+        mnist_file_path = os.path.join(dir_path, "mnist.npz")
+
+    (x, y), (val_x, val_y) = keras.datasets.mnist.load_data(mnist_file_path)
     x = x.astype("float32") / 255.0
     val_x = val_x.astype("float32") / 255.0
 
@@ -87,7 +92,7 @@ def _dist_search_fn(temp_dir, study_id, tuner_id):
     time.sleep(int(tuner_id[5:]))  # tuner_id is formatted as 'tuner%d'
 
     # Dataset must be loaded independently in sub-process.
-    (x, y), (val_x, val_y) = _load_data()
+    (x, y), (val_x, val_y) = _load_data(temp_dir)
 
     tuner = CloudTuner(
         _build_model,
@@ -136,10 +141,10 @@ class _CloudTunerIntegrationTestBase(tf.test.TestCase):
 
 class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(CloudTunerIntegrationTest, cls).setUpClass()
-        (cls._x, cls._y), (cls._val_x, cls._val_y) = _load_data()
+    def setUp(self):
+        super(CloudTunerIntegrationTest, self).setUp()
+        (self._x, self._y), (self._val_x, self._val_y) = _load_data(
+            self.get_temp_dir())
 
     def testCloudTunerHyperparameters(self):
         """Test case to configure Tuner with HyperParameters object."""
