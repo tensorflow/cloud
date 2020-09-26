@@ -23,11 +23,13 @@ import tarfile
 import tempfile
 import time
 import uuid
+import warnings
 
 from . import machine_config
 import docker
 from googleapiclient import discovery
 from googleapiclient import errors
+import requests
 from ..utils import google_api_client
 from ..utils import tf_utils
 
@@ -134,7 +136,7 @@ class ContainerBuilder(object):
         if self.docker_base_image is None:
             # Use the latest TF docker image if a local installation
             # is not available.
-            tf_version = tf_utils.get_version() or "latest"
+            tf_version = tf_utils.get_version()
             # Updating the name for RC's to match with the TF generated
             # RC docker image names.
             tf_version = tf_version.replace("-rc", "rc")
@@ -154,6 +156,23 @@ class ContainerBuilder(object):
                 v = tf_version.split(".")
                 if float(v[0] + "." + v[1]) <= 2.1:
                     self.docker_base_image += "-py3"
+
+            if not self._base_image_exists():
+                warnings.warn(
+                    "Docker image does not exist for the TF version you are "
+                    "using: {}".format(
+                        self.docker_base_image))
+                warnings.warn(
+                    "Using the latest stable TF docker image available: "
+                    "`tensorflow/tensorflow:latest`"
+                    "Please see "
+                    "https://hub.docker.com/r/tensorflow/tensorflow/ "
+                    "for details on available docker images."
+                )
+                newtag = "tensorflow/tensorflow:latest"
+                if self.docker_base_image.endswith("-gpu"):
+                    newtag += "-gpu"
+                self.docker_base_image = newtag
 
         lines = [
             "FROM {}".format(self.docker_base_image),
@@ -202,6 +221,20 @@ class ContainerBuilder(object):
         _, self.docker_file_path = tempfile.mkstemp()
         with open(self.docker_file_path, "w") as f:
             f.write(content)
+
+    def _base_image_exists(self):
+        """Checks whether the image exists on dockerhub using docker v2 api.
+
+        Returns:
+            True if the image is found on dockerhub.
+        """
+        repo_name, tag_name = self.docker_base_image.split(":")
+        r = requests.get(
+            "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
+                repo_name, tag_name
+            )
+        )
+        return r.ok
 
     def _get_file_path_map(self):
         """Maps local file paths to the docker daemon process location.

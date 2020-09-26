@@ -21,9 +21,6 @@ from tensorboard.backend.event_processing import io_wrapper
 
 
 def get_version():
-    # TODO(b/169360939) Remove work around once the rootcause is fixed.
-    if tf.__version__ > "2.3.0":
-        return "latest"
     return tf.__version__
 
 
