@@ -38,6 +38,7 @@ FLAGS.distribution_strategy = MULTI_WORKER_MIRRORED_STRATEGY_NAME
 
 
 class _MockCallable(object):
+
     @classmethod
     def reset(cls):
         cls.mock_callable = mock.Mock()
@@ -48,11 +49,13 @@ class _MockCallable(object):
 
 
 class CustomCallbackExample(tf.keras.callbacks.Callback):
+
     def on_train_begin(self, unused_logs):
         _MockCallable.mock_call()
 
 
 class CloudFitRemoteTest(tf.test.TestCase):
+
     def setUp(self):
         super(CloudFitRemoteTest, self).setUp()
         self._image_uri = "gcr.io/some_test_image:latest"
@@ -69,9 +72,11 @@ class CloudFitRemoteTest(tf.test.TestCase):
             "verbose": 2,
             "batch_size": 2,
             "epochs": 10,
-            "callbacks": [tf.keras.callbacks.TensorBoard(log_dir=self._logs_dir)],
+            "callbacks": [tf.keras.callbacks.TensorBoard(
+                log_dir=self._logs_dir)],
         }
-        client._serialize_assets(self._remote_dir, self._model, **self._fit_kwargs)
+        client._serialize_assets(
+            self._remote_dir, self._model, **self._fit_kwargs)
         os.environ["TF_CONFIG"] = json.dumps(
             {
                 "cluster": {"worker": ["localhost:9999", "localhost:9999"]},
@@ -99,8 +104,8 @@ class CloudFitRemoteTest(tf.test.TestCase):
 
         # Test saved model load and works properly
         self.assertGreater(
-            model.evaluate(self._x, self._y)[0], np.array([0.0], dtype=np.float32)
-        )
+            model.evaluate(
+                self._x, self._y)[0], np.array([0.0], dtype=np.float32))
 
     def test_custom_callback(self):
         # TF 1.x is not supported
@@ -111,7 +116,8 @@ class CloudFitRemoteTest(tf.test.TestCase):
         _MockCallable.reset()
 
         self._fit_kwargs["callbacks"] = [CustomCallbackExample()]
-        client._serialize_assets(self._remote_dir, self._model, **self._fit_kwargs)
+        client._serialize_assets(
+            self._remote_dir, self._model, **self._fit_kwargs)
 
         # Verify callback function has not been called yet.
         _MockCallable.mock_callable.assert_not_called()

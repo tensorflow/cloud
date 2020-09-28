@@ -18,7 +18,6 @@
 def make_required_install_packages():
     return [
         "absl-py",
-        "cloudpickle",
         "docker",
         "google-api-python-client",
         "google-auth",

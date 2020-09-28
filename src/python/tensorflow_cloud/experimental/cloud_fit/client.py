@@ -22,9 +22,9 @@ Python module, but only available as an in-memory object of the calling process.
 
 import datetime
 import os
+import pickle
 from typing import Text, Dict, Optional, Sequence, Any, Generator
 from absl import logging
-import cloudpickle
 from googleapiclient import discovery
 import tensorflow as tf
 import google.auth
@@ -171,7 +171,7 @@ def _serialize_assets(remote_dir: Text,
         logging.info("validation_data was serialized successfully.")
 
     if "callbacks" in fit_kwargs:
-        callbacks = cloudpickle.dumps(fit_kwargs.pop("callbacks"))
+        callbacks = pickle.dumps(fit_kwargs.pop("callbacks"))
 
         # Add all serializable callbacks to assets.
         to_export.callbacks = callbacks

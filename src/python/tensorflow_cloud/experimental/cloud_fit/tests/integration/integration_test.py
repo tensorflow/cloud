@@ -45,6 +45,7 @@ _DOCKER_IMAGE = os.environ["DOCKER_IMAGE"]
 _BUILD_ID = os.environ["BUILD_ID"]
 
 
+# TODO(b/169583124) add integration coverage for callback using pickle.
 class CloudFitIntegrationTest(tf.test.TestCase):
 
     def setUp(self):

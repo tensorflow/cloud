@@ -15,9 +15,9 @@
 """Tests for cloud_fit.client."""
 
 import os
+import pickle
 import tempfile
 from unittest import mock
-import cloudpickle
 from googleapiclient import discovery
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -34,6 +34,7 @@ MULTI_WORKER_MIRRORED_STRATEGY_NAME = utils.MULTI_WORKER_MIRRORED_STRATEGY_NAME
 
 
 class CloudFitClientTest(tf.test.TestCase):
+
     def setUp(self):
         super(CloudFitClientTest, self).setUp()
         self._image_uri = "gcr.io/some_test_image:latest"
@@ -85,7 +86,9 @@ class CloudFitClientTest(tf.test.TestCase):
         model = tf.keras.Model(inp, outp)
 
         model.compile(
-            tf.keras.optimizers.SGD(0.002), "mean_squared_error", run_eagerly=True
+            tf.keras.optimizers.SGD(0.002),
+            "mean_squared_error",
+            run_eagerly=True
         )
         return model
 
@@ -153,26 +156,24 @@ class CloudFitClientTest(tf.test.TestCase):
                     verbose=3,
                 )
             return
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self._remote_dir)
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
+            log_dir=self._remote_dir)
         args = self._scalar_fit_kwargs
         args["callbacks"] = [tensorboard_callback]
 
         client._serialize_assets(self._remote_dir, self._model, **args)
-        self.assertGreaterEqual(
-            len(tf.io.gfile.listdir(os.path.join(self._remote_dir, "training_assets"))),
-            1,
-        )
-        self.assertGreaterEqual(
-            len(tf.io.gfile.listdir(os.path.join(self._remote_dir, "model"))), 1
-        )
+        self.assertGreaterEqual(len(tf.io.gfile.listdir(
+            os.path.join(self._remote_dir, "training_assets"))), 1)
+        self.assertGreaterEqual(len(tf.io.gfile.listdir(
+            os.path.join(self._remote_dir, "model"))), 1)
 
-        training_assets_graph = tf.saved_model.load(
-            os.path.join(self._remote_dir, "training_assets")
-        )
+        training_assets_graph = tf.saved_model.load(os.path.join(
+            self._remote_dir, "training_assets"))
 
         pickled_callbacks = tfds.as_numpy(training_assets_graph.callbacks_fn())
-        unpickled_callbacks = cloudpickle.loads(pickled_callbacks)
-        self.assertIsInstance(unpickled_callbacks[0], tf.keras.callbacks.TensorBoard)
+        unpickled_callbacks = pickle.loads(pickled_callbacks)
+        self.assertIsInstance(
+            unpickled_callbacks[0], tf.keras.callbacks.TensorBoard)
 
     @mock.patch.object(client, "_submit_job", autospec=True)
     def test_fit_kwargs(self, mock_submit_job):
@@ -212,9 +213,8 @@ class CloudFitClientTest(tf.test.TestCase):
             os.path.join(remote_dir, "training_assets")
         )
         elements = training_assets_graph.fit_kwargs_fn()
-        self.assertDictContainsSubset(
-            tfds.as_numpy(elements), {"batch_size": 1, "epochs": 2, "verbose": 3}
-        )
+        self.assertDictContainsSubset(tfds.as_numpy(
+            elements), {"batch_size": 1, "epochs": 2, "verbose": 3})
 
     @mock.patch.object(client, "_submit_job", autospec=True)
     def test_custom_job_spec(self, mock_submit_job):
@@ -261,7 +261,8 @@ class CloudFitClientTest(tf.test.TestCase):
 
     @mock.patch.object(client, "_submit_job", autospec=True)
     @mock.patch.object(client, "_serialize_assets", autospec=True)
-    def test_distribution_strategy(self, mock_serialize_assets, mock_submit_job):
+    def test_distribution_strategy(
+        self, mock_serialize_assets, mock_submit_job):
         # TF 1.x is not supported
         if utils.is_tf_v1():
             with self.assertRaises(RuntimeError):
@@ -270,7 +271,8 @@ class CloudFitClientTest(tf.test.TestCase):
                 )
             return
 
-        client.cloud_fit(self._model, x=self._dataset, remote_dir=self._remote_dir)
+        client.cloud_fit(
+            self._model, x=self._dataset, remote_dir=self._remote_dir)
 
         kargs, _ = mock_submit_job.call_args
         body, _ = kargs

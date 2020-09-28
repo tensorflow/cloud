@@ -21,12 +21,12 @@ Platform training.
 
 import json
 import os
+import pickle
 from typing import Text
 import uuid
 from absl import app
 from absl import flags
 from absl import logging
-import cloudpickle
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -117,7 +117,7 @@ def run(
         if hasattr(training_assets_graph, "callbacks_fn"):
             pickled_callbacks = tfds.as_numpy(
                 training_assets_graph.callbacks_fn())
-            fit_kwargs["callbacks"] = cloudpickle.loads(pickled_callbacks)
+            fit_kwargs["callbacks"] = pickle.loads(pickled_callbacks)
             logging.info("callbacks were loaded successfully.")
 
         model = tf.keras.models.load_model(os.path.join(remote_dir, "model"))
