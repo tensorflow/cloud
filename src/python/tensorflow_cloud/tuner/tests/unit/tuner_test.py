@@ -118,10 +118,9 @@ class CloudTunerTest(tf.test.TestCase):
                 objective,
                 hyperparameters,
                 study_config,
-                max_trials=None,
-                train_locally=True
+                max_trials=None
                 ):
-        return tuner.CloudTuner(
+        return tuner.DistributingCloudTuner(
             hypermodel=build_model,
             objective=objective,
             study_config=study_config,
@@ -131,8 +130,7 @@ class CloudTunerTest(tf.test.TestCase):
             region=self._region,
             study_id=self._study_id,
             directory=self.get_temp_dir(),
-            container_uri=self._container_uri,
-            train_locally=train_locally,
+            container_uri=self._container_uri
         )
 
     def test_tuner_initialization_with_hparams(self):
@@ -438,22 +436,11 @@ class CloudTunerTest(tf.test.TestCase):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
         callbacks = []
         trial_id = "test_trial_id"
-        remote_tuner._add_model_checkpoint_callback(
-            callbacks, trial_id)
+        remote_tuner._add_model_checkpoint_callback(callbacks, trial_id)
         self.assertLen(callbacks, 1)
         self.assertEqual(
             callbacks[0].filepath,
             os.path.join(remote_tuner.directory, trial_id, "checkpoint"))
-
-    @mock.patch.object(client, "cloud_fit", auto_spec=True)
-    @mock.patch.object(super_tuner.Tuner, "run_trial", auto_spec=True)
-    def test_local_run_trial(self, mock_super_run_trial, mock_cloud_fit):
-        remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=True)
-
-        remote_tuner.run_trial(self._test_trial, "fit_arg", fit_kwarg=1)
-        mock_super_run_trial.assert_called_once()
-        mock_cloud_fit.assert_not_called()
 
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
     @mock.patch.object(
@@ -463,7 +450,7 @@ class CloudTunerTest(tf.test.TestCase):
     def test_remote_run_trial_with_successful_job(
         self, mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=False)
+            None, None, self._study_config, max_trials=10)
 
         mock_job_status.return_value = True
         remote_tuner._get_remote_training_metrics = mock.Mock()
@@ -498,7 +485,7 @@ class CloudTunerTest(tf.test.TestCase):
     def test_remote_run_trial_with_failed_job(
         self, mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=False)
+            None, None, self._study_config, max_trials=10)
 
         mock_job_status.return_value = False
         with self.assertRaises(RuntimeError):
@@ -508,7 +495,7 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_get_remote_training_metrics(self):
         remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=False)
+            None, None, self._study_config, max_trials=10)
 
         log_dir = os.path.join(
             remote_tuner.directory, str(self._test_trial.trial_id), "logs")
@@ -528,31 +515,16 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertIn("loss", results[0])
         self.assertEqual(results[0].get("loss"), tf.constant(0.1))
 
-    @mock.patch.object(super_tuner.Tuner, "load_model", auto_spec=True)
-    def test_local_load_model(self, mock_super_load_model):
-        remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=True)
-        remote_tuner.load_model(self._test_trial)
-        mock_super_load_model.assert_called_once()
-
     def test_remote_load_model(self):
         remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=False)
+            None, None, self._study_config, max_trials=10)
         with self.assertRaises(NotImplementedError):
             remote_tuner.load_model(self._test_trial)
 
     @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
-    def test_local_save_model(self, mock_super_save_model):
-        remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=True)
-
-        remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
-        mock_super_save_model.assert_called_once()
-
-    @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
     def test_remote_save_model(self, mock_super_save_model):
         remote_tuner = self._remote_tuner(
-            None, None, self._study_config, max_trials=10, train_locally=False)
+            None, None, self._study_config, max_trials=10)
         remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
         mock_super_save_model.assert_not_called()
 

@@ -333,7 +333,56 @@ class CloudOracle(oracle_module.Oracle):
 class CloudTuner(tuner_module.Tuner):
     """KerasTuner interface implementation backed by CAIP Optimizer Service."""
 
-    # TODO(b/169204394) Consider subclassing to DistributedCloudTuner
+    def __init__(
+        self,
+        hypermodel: Union[hypermodel_module.HyperModel,
+                          Callable[[hp_module.HyperParameters],
+                                   tf.keras.Model]],
+        project_id: Text,
+        region: Text,
+        objective: Union[Text, oracle_module.Objective] = None,
+        hyperparameters: hp_module.HyperParameters = None,
+        study_config: Optional[Dict[Text, Any]] = None,
+        max_trials: int = None,
+        study_id: Optional[Text] = None,
+        **kwargs):
+        """Constructor.
+
+        Args:
+            hypermodel: Instance of HyperModel class (or callable that takes
+                hyperparameters and returns a Model instance).
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            objective: Name of model metric to minimize or maximize, e.g.
+                "val_accuracy".
+            hyperparameters: Can be used to override (or register in advance)
+                hyperparamters in the search space.
+            study_config: Study configuration for CAIP Optimizer service.
+            max_trials: Total number of trials (model configurations) to test at
+                most. Note that the oracle may interrupt the search before
+                `max_trials` models have been tested if the search space has
+                been exhausted.
+            study_id: An identifier of the study. The full study name will be
+                projects/{project_id}/locations/{region}/studies/{study_id}.
+            **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+                Please see the docstring for `Tuner`.
+        """
+        oracle = CloudOracle(
+            project_id=project_id,
+            region=region,
+            objective=objective,
+            hyperparameters=hyperparameters,
+            study_config=study_config,
+            max_trials=max_trials,
+            study_id=study_id,
+        )
+        super(CloudTuner, self,).__init__(
+            oracle=oracle, hypermodel=hypermodel, **kwargs
+        )
+
+
+class DistributingCloudTuner(tuner_module.Tuner):
+    """An AI Platform Training based distributed CloudTuner."""
 
     def __init__(
         self,
@@ -348,7 +397,6 @@ class CloudTuner(tuner_module.Tuner):
         max_trials: int = None,
         study_id: Optional[Text] = None,
         container_uri: Optional[Text] = None,
-        train_locally: Optional[bool] = True,
         **kwargs):
         """Constructor.
 
@@ -372,9 +420,6 @@ class CloudTuner(tuner_module.Tuner):
                 image must follow cloud_fit image with a cloud_fit.remote() as
                 entry point. Refer to cloud_fit documentation for more details
                 at tensorflow_cloud/experimental/cloud_fit/README.md
-
-            train_locally: A flag to specify execution environment. Set to True
-                to train locally, and False to use AI Platform training.
             **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
                 Please see the docstring for `Tuner`.
         """
@@ -387,8 +432,6 @@ class CloudTuner(tuner_module.Tuner):
         # adding them to the constructor instead of search parameters.
         self.container_uri = container_uri
 
-        self._train_locally = train_locally
-
         oracle = CloudOracle(
             project_id=project_id,
             region=region,
@@ -398,7 +441,7 @@ class CloudTuner(tuner_module.Tuner):
             max_trials=max_trials,
             study_id=study_id,
         )
-        super(CloudTuner, self,).__init__(
+        super(DistributingCloudTuner, self,).__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs
         )
         # If study id is not provided cloud_oracle creates ones. Setting the
@@ -419,11 +462,6 @@ class CloudTuner(tuner_module.Tuner):
         Raises:
             RuntimeError: If AIP training job fails.
         """
-        if self._train_locally:
-            tf.get_logger().info(
-                "Executing run_trial() locally.")
-            super(CloudTuner, self).run_trial(trial, *fit_args, **fit_kwargs)
-            return
 
         # Running the training remotely.
         copied_fit_kwargs = copy.copy(fit_kwargs)
@@ -522,9 +560,6 @@ class CloudTuner(tuner_module.Tuner):
         return results
 
     def load_model(self, trial):
-        if self._train_locally:
-            return super(CloudTuner, self).load_model(trial)
-
         # Overriding the Super method for remote execution. In remote execution
         # models are saved in Google Cloud Storage (GCS) and needs to be handled
         # differently than in local mode.
@@ -532,8 +567,6 @@ class CloudTuner(tuner_module.Tuner):
         raise NotImplementedError("load_model for remote run is not supported.")
 
     def save_model(self, trial_id: int, model, step: int = 0):
-        if self._train_locally:
-            return super(CloudTuner, self).save_model(trial_id, model, step=0)
 
         # In remote execution models are saved automatically in Google Cloud
         # Storage (GCS) bucket hence no additional actions are needed to save
