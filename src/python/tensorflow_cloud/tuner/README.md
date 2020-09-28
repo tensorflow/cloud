@@ -3,7 +3,7 @@
 ## What is this module?
 
 `tuner` is a module which is part of the broader `tensorflow_cloud`. This module
-is an implementation of a library for hyperparameter tuning that is built into
+is an implementation of a library for hyperparameter tuning that is built upon
 the [KerasTuner](https://github.com/keras-team/keras-tuner) and creates a
 seamless integration with
 [Cloud AI Platform Vizier](https://cloud.google.com/ai-platform/optimizer/docs)
@@ -30,7 +30,7 @@ For detailed end to end setup instructions, please see
 as a backend to get suggestions of hyperparameters and run trials.
 
 ```python
-from tensorflow_cloud import tuner
+from tensorflow_cloud import CloudTuner
 import kerastuner
 import tensorflow as tf
 
@@ -55,8 +55,8 @@ HPS = kerastuner.engine.hyperparameters.HyperParameters()
 HPS.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='log')
 HPS.Int('num_layers', 2, 10)
 
-# Instantiate Tuner
-hptuner = tuner.CloudTuner(
+# Instantiate CloudTuner
+hptuner = CloudTuner(
     build_model,
     project_id=PROJECT_ID,
     region=REGION,

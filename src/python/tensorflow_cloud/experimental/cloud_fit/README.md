@@ -134,8 +134,8 @@ you can skip the setup and authentication steps and start from step 8.
 
     ```shell
     git clone https://github.com/tensorflow/cloud.git
-    cd cloud
-    pip install src/python/.
+    cd cloud/src/python && python3 setup.py -q bdist_wheel
+    pip install -U cloud/src/python/dist/tensorflow_cloud-*.whl --quiet
     ```
 
 1.  Create a docker image as the base image for remote training
@@ -154,7 +154,7 @@ you can skip the setup and authentication steps and start from step 8.
     RUN echo '[Google Compute]\nservice_account = default' > /etc/boto.cfg
 
     # Copy and install tensorflow_cloud wheel file
-    ADD tensorflow-gcp-tools/python/dist/tensorflow_cloud-*.whl /tmp/
+    ADD cloud/src/python/dist/tensorflow_cloud-*.whl /tmp/
     RUN pip3 install --upgrade /tmp/tensorflow_cloud-*.whl --quiet
 
     # Sets up the entry point to invoke cloud_fit.
