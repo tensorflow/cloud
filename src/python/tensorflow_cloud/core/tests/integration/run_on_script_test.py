@@ -62,7 +62,7 @@ class RunOnScriptTest(tf.test.TestCase):
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
-                                          "requirements.txt"),
+                                          "requirements_tpu_strategy.txt"),
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],

@@ -28,12 +28,9 @@ tfds.disable_progress_bar()
 print(tf.__version__)
 
 # Download the dataset
-datasets, info = tfds.load(name="mnist", with_info=True, as_supervised=True)
+datasets = tfds.load(
+    name="mnist", as_supervised=True, data_dir="gs://tfds-data/datasets")
 mnist_train, mnist_test = datasets["train"], datasets["test"]
-
-# Setup input pipeline
-num_train_examples = info.splits["train"].num_examples
-num_test_examples = info.splits["test"].num_examples
 
 BUFFER_SIZE = 10000
 BATCH_SIZE = 64
