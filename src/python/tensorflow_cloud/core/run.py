@@ -129,8 +129,13 @@ def run(
             the first character must be lowercase letter. For more details see
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
         **kwargs: Additional keyword arguments.
+
+    Returns:
+        Training job id.
     """
     # If code is triggered in a cloud environment, do nothing.
+    # This is required for the use case when `run` is invoked from within
+    # a python script.
     if remote():
         return
 
@@ -231,7 +236,7 @@ def run(
         os.remove(f)
 
     # Deploy docker image on the cloud.
-    _ = deploy.deploy_job(
+    job_id = deploy.deploy_job(
         region,
         docker_img_uri,
         chief_config,
@@ -244,8 +249,9 @@ def run(
 
     # Call `exit` to prevent training the Keras model in the local env.
     # To stop execution after encountering a `run` API call in local env.
-    if not called_from_notebook:
+    if not remote() and entry_point is None and not called_from_notebook:
         sys.exit(0)
+    return job_id
 
 
 def _called_from_notebook():

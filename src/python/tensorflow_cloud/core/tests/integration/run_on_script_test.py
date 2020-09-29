@@ -18,9 +18,11 @@ import mock
 
 import tensorflow as tf
 import tensorflow_cloud as tfc
+from tensorflow_cloud.utils import google_api_client
 
 # The staging bucket to use for cloudbuild as well as save the model and data.
 _TEST_BUCKET = os.environ["TEST_BUCKET"]
+_PROJECT_ID = os.environ["PROJECT_ID"]
 
 
 class RunOnScriptTest(tf.test.TestCase):
@@ -32,19 +34,12 @@ class RunOnScriptTest(tf.test.TestCase):
             os.path.dirname(os.path.abspath(__file__)), "../testdata/"
         )
 
-        self._mock_sys = mock.patch(
-            "tensorflow_cloud.core.run.sys", autospec=True).start()
-
     def tearDown(self):
         mock.patch.stopall()
         super(RunOnScriptTest, self).tearDown()
 
-    def _run_and_assert_success(self, *args, **kwargs):
-        tfc.run(*args, **kwargs)
-        self._mock_sys.exit.assert_called_once_with(0)
-
-    def test_auto_mirrored_strategy(self):
-        self._run_and_assert_success(
+    def auto_mirrored_strategy(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
@@ -57,8 +52,8 @@ class RunOnScriptTest(tf.test.TestCase):
             ),
         )
 
-    def test_auto_tpu_strategy(self):
-        self._run_and_assert_success(
+    def auto_tpu_strategy(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
@@ -69,16 +64,16 @@ class RunOnScriptTest(tf.test.TestCase):
             docker_base_image="tensorflow/tensorflow:2.1.0",
         )
 
-    def test_auto_one_device_strategy(self):
-        self._run_and_assert_success(
+    def auto_one_device_strategy(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
         )
 
-    def test_auto_one_device_strategy_bucket_build(self):
-        self._run_and_assert_success(
+    def auto_one_device_strategy_cloud_build(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
@@ -86,8 +81,8 @@ class RunOnScriptTest(tf.test.TestCase):
             docker_image_bucket_name=_TEST_BUCKET,
         )
 
-    def test_auto_multi_worker_strategy(self):
-        self._run_and_assert_success(
+    def auto_multi_worker_strategy(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             worker_count=1,
@@ -95,8 +90,8 @@ class RunOnScriptTest(tf.test.TestCase):
                                           "requirements.txt"),
         )
 
-    def test_none_dist_strat_multi_worker_strategy(self):
-        self._run_and_assert_success(
+    def none_dist_strat_multi_worker_strategy(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_ctl.py"),
             distribution_strategy=None,
@@ -105,8 +100,8 @@ class RunOnScriptTest(tf.test.TestCase):
                                           "requirements.txt"),
         )
 
-    def test_auto_dist_strat_mwms_custom_img(self):
-        self._run_and_assert_success(
+    def auto_dist_strat_mwms_custom_img(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             distribution_strategy="auto",
@@ -117,14 +112,36 @@ class RunOnScriptTest(tf.test.TestCase):
                 "/tf2-gpu.2-2:latest"),
         )
 
-    def test_auto_one_device_job_labels(self):
-        self._run_and_assert_success(
+    def auto_one_device_job_labels(self):
+        return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             job_labels={"job": "on_script_tests", "team": "keras"},
         )
+
+    def test_run_on_script(self):
+        track_status = {
+            "auto_mirrored_strategy": self.auto_mirrored_strategy(),
+            "auto_tpu_strategy": self.auto_tpu_strategy(),
+            "auto_one_device_strategy": self.auto_one_device_strategy(),
+            "auto_one_device_strategy_cloud_build":
+                self.auto_one_device_strategy_cloud_build(),
+            "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),
+            "none_dist_strat_multi_worker_strategy":
+                self.none_dist_strat_multi_worker_strategy(),
+            "auto_dist_strat_mwms_custom_img":
+                self.auto_dist_strat_mwms_custom_img(),
+            "auto_one_device_job_labels": self.auto_one_device_job_labels(),
+        }
+
+        for test_name, job_id in track_status.items():
+            self.assertTrue(
+                google_api_client.wait_for_api_training_job_success(
+                    job_id, _PROJECT_ID),
+                "Job {} generated from the test: {} has failed".format(
+                    job_id, test_name))
 
 
 if __name__ == "__main__":
