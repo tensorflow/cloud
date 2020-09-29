@@ -159,16 +159,19 @@ class ContainerBuilder(object):
 
             if not self._base_image_exists():
                 warnings.warn(
-                    "Docker image does not exist for the TF version you are "
-                    "using: {}".format(
-                        self.docker_base_image))
-                warnings.warn(
-                    "Using the latest stable TF docker image available: "
-                    "`tensorflow/tensorflow:latest`"
+                    "TF Cloud `run` API uses docker, with a TF base image "
+                    "matching your local TF version, for containerizing your "
+                    "code. A TF docker image does not exist for the TF version "
+                    "you are using: {}"
+                    "We are replacing this with the latest stable TF docker "
+                    "image available: `tensorflow/tensorflow:latest`"
                     "Please see "
                     "https://hub.docker.com/r/tensorflow/tensorflow/ "
-                    "for details on available docker images."
-                )
+                    "for details on the available docker images."
+                    "If you are seeing any code compatibility issues because of"
+                    " the TF version change, please try using a custom "
+                    "`docker_base_image` with the required TF version.".format(
+                        tf_version))
                 newtag = "tensorflow/tensorflow:latest"
                 if self.docker_base_image.endswith("-gpu"):
                     newtag += "-gpu"
