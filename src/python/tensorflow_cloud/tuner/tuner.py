@@ -113,7 +113,7 @@ class CloudOracle(oracle_module.Oracle):
         self.max_trials = max_trials
 
         if study_id:
-            self.study_id = "CloudTuner_study_{}".format(study_id)
+            self.study_id = study_id
         else:
             self.study_id = "CloudTuner_study_{}".format(
                 datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

@@ -54,8 +54,7 @@ class CloudTunerTest(tf.test.TestCase):
         self._region = "us-central1"
         self._project_id = "project-a"
         self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
-            self._project_id, self._region,
-            "CloudTuner_study_{}".format(self._study_id)
+            self._project_id, self._region, self._study_id
         )
         self._container_uri = "test_container_uri",
         hps = hp_module.HyperParameters()
@@ -138,7 +137,7 @@ class CloudTunerTest(tf.test.TestCase):
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
-                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_id,
                              self._study_config))
 
     def test_tuner_initialization_with_study_config(self):
@@ -146,7 +145,7 @@ class CloudTunerTest(tf.test.TestCase):
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
-                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_id,
                              self._study_config))
 
     def test_remote_tuner_initialization_with_study_config(self):
@@ -154,7 +153,7 @@ class CloudTunerTest(tf.test.TestCase):
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
-                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_id,
                              self._study_config))
 
     def test_tuner_initialization_neither_hparam_nor_study_config(self):
@@ -178,7 +177,7 @@ class CloudTunerTest(tf.test.TestCase):
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
-                             "CloudTuner_study_{}".format(self._study_id),
+                             self._study_id,
                              self._study_config))
 
     def test_create_trial_initially(self):

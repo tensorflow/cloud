@@ -290,6 +290,7 @@ class _OptimizerClient(object):
                     .format(study_name))
             tf.get_logger().info("DeleteStudy failed.")
             raise
+        tf.get_logger().info("Study deleted: {}.".format(study_name))
 
     def _obtain_long_running_operation(self, resp):
         """Obtain the long-running operation."""
@@ -467,8 +468,9 @@ def _get_study(
         study_should_exist: Indicates whether it should be assumed that the
             study with the given study_id exists.
     """
-    tf.get_logger().info("Study already exists. Load existing study...")
     study_name = "{}/studies/{}".format(study_parent, study_id)
+    tf.get_logger().info(
+        "Study already exists: {}.\nLoad existing study...".format(study_name))
     num_tries = 0
     while True:
         try:
