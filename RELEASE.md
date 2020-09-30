@@ -2,6 +2,12 @@
 
 *   Add notes for next release here.
 
+# Release 0.1.7
+
+* `cloud_fit` uses pickle instead of cloudpickle.
+* Better integration tests checking for job status.
+* Small bug fixes.
+
 # Release 0.1.6
 
 *   New module CloudTuner - Implementation of a library for hyperparameter
