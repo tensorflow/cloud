@@ -1,6 +1,8 @@
-# Current Version (Still in Development)
+# Release 0.1.7
 
-*   Add notes for next release here.
+* `cloud_fit` uses pickle instead of cloudpickle.
+* Better integration tests checking for job status.
+* Small bug fixes.
 
 # Release 0.1.6
 
