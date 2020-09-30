@@ -1,7 +1,3 @@
-# Current Version (Still in Development)
-
-*   Add notes for next release here.
-
 # Release 0.1.7
 
 * `cloud_fit` uses pickle instead of cloudpickle.
