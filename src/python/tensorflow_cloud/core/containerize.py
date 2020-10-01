@@ -177,14 +177,10 @@ class ContainerBuilder(object):
                     newtag += "-gpu"
                 self.docker_base_image = newtag
 
-        lines = [
-            "FROM {}".format(self.docker_base_image),
-            "WORKDIR {}".format(self.destination_dir),
-        ]
+        lines = ["FROM {}".format(self.docker_base_image)]
 
         if self.requirements_txt is not None:
             _, requirements_txt_name = os.path.split(self.requirements_txt)
-            dst_requirements_txt = os.path.join(requirements_txt_name)
             requirements_txt_path = os.path.join(
                 self.destination_dir, requirements_txt_name
             )
@@ -196,7 +192,7 @@ class ContainerBuilder(object):
             lines.append(
                 "RUN if [ -e {requirements_txt} ]; "
                 "then pip install --no-cache -r {requirements_txt}; "
-                "fi".format(requirements_txt=dst_requirements_txt)
+                "fi".format(requirements_txt=requirements_txt_name)
             )
         if self.entry_point is None:
             lines.append("RUN pip install tensorflow-cloud")
@@ -210,6 +206,7 @@ class ContainerBuilder(object):
         # to the `destination_dir` in docker container filesystem.
         lines.append("COPY {} {}".format(self.destination_dir,
                                          self.destination_dir))
+        lines.append("WORKDIR {}".format(self.destination_dir))
 
         docker_entry_point = self.preprocessed_entry_point or self.entry_point
         _, docker_entry_point_file_name = os.path.split(docker_entry_point)
