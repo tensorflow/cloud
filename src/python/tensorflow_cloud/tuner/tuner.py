@@ -509,7 +509,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
             **copied_fit_kwargs)
 
         # TODO(b/167569957) Add support for early termination.
-        if not google_api_client.wait_for_api_training_job_success(
+        if not google_api_client.wait_for_api_training_job_completion(
             job_id, self._project_id):
             raise RuntimeError(
                 "AIP Training job failed, see logs for details at https://console.cloud.google.com/ai-platform/jobs/{}/charts/cpu?project={}"  # pylint: disable=line-too-long

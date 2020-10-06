@@ -444,7 +444,7 @@ class CloudTunerTest(tf.test.TestCase):
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
     @mock.patch.object(
         google_api_client,
-        "wait_for_api_training_job_success",
+        "wait_for_api_training_job_completion",
         auto_spec=True)
     def test_remote_run_trial_with_successful_job(
         self, mock_job_status, mock_cloud_fit):
@@ -479,7 +479,7 @@ class CloudTunerTest(tf.test.TestCase):
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
     @mock.patch.object(
         google_api_client,
-        "wait_for_api_training_job_success",
+        "wait_for_api_training_job_completion",
         auto_spec=True)
     def test_remote_run_trial_with_failed_job(
         self, mock_job_status, mock_cloud_fit):

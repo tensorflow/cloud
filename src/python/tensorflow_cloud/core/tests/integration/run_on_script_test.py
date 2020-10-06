@@ -138,7 +138,7 @@ class RunOnScriptTest(tf.test.TestCase):
 
         for test_name, job_id in track_status.items():
             self.assertTrue(
-                google_api_client.wait_for_api_training_job_success(
+                google_api_client.wait_for_api_training_job_completion(
                     job_id, _PROJECT_ID),
                 "Job {} generated from the test: {} has failed".format(
                     job_id, test_name))
