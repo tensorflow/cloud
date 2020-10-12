@@ -27,6 +27,9 @@ from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
 import tensorflow as tf
 
+from tensorflow_cloud.core import deploy
+from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.core import validate
 from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner import utils
@@ -353,7 +356,7 @@ class CloudTuner(tuner_module.Tuner):
             objective: Name of model metric to minimize or maximize, e.g.
                 "val_accuracy".
             hyperparameters: Can be used to override (or register in advance)
-                hyperparamters in the search space.
+                hyperparameters in the search space.
             study_config: Study configuration for CAIP Optimizer service.
             max_trials: Total number of trials (model configurations) to test at
                 most. Note that the oracle may interrupt the search before
@@ -379,7 +382,13 @@ class CloudTuner(tuner_module.Tuner):
 
 
 class DistributingCloudTuner(tuner_module.Tuner):
-    """An AI Platform Training based distributed CloudTuner."""
+    """An AI Platform Training based distributed CloudTuner.
+
+    Attributes:
+        oracle: Instance of Oracle class.
+        hypermodel: Instance of HyperModel class
+        directory: The Google Cloud Storage path for logs and checkpoints.
+    """
 
     def __init__(
         self,
@@ -388,12 +397,15 @@ class DistributingCloudTuner(tuner_module.Tuner):
                                    tf.keras.Model]],
         project_id: Text,
         region: Text,
+        directory: Text,
         objective: Union[Text, oracle_module.Objective] = None,
         hyperparameters: hp_module.HyperParameters = None,
         study_config: Optional[Dict[Text, Any]] = None,
         max_trials: int = None,
         study_id: Optional[Text] = None,
         container_uri: Optional[Text] = None,
+        replica_config="auto",
+        replica_count: Optional[int] = 1,
         **kwargs):
         """Constructor.
 
@@ -402,10 +414,11 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 hyperparameters and returns a Model instance).
             project_id: A GCP project id.
             region: A GCP region. e.g. 'us-central1'.
+            directory: The Google Cloud Storage path for logs and checkpoints.
             objective: Name of model metric to minimize or maximize, e.g.
                 "val_accuracy".
             hyperparameters: Can be used to override (or register in advance)
-                hyperparamters in the search space.
+                hyperparameters in the search space.
             study_config: Study configuration for CAIP Optimizer service.
             max_trials: Total number of trials (model configurations) to test at
                 most. Note that the oracle may interrupt the search before
@@ -417,17 +430,38 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 image must follow cloud_fit image with a cloud_fit.remote() as
                 entry point. Refer to cloud_fit documentation for more details
                 at tensorflow_cloud/experimental/cloud_fit/README.md
+            replica_config: Optional `MachineConfig` that represents the
+                configuration for the general workers in a distribution cluster.
+                Defaults to 'auto'. 'auto' maps to a standard CPU config such as
+                `tensorflow_cloud.core.COMMON_MACHINE_CONFIGS.CPU`.
+            replica_count: Optional integer that represents the total number of
+                workers in a distribution cluster including a chief worker. Has
+                to be one or more.
             **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
                 Please see the docstring for `Tuner`.
+        Raises:
+            ValueError: If directory is not a valid Google Cloud Storage path.
         """
         self._project_id = project_id
         self._region = region
+        # Replica count and config are validated at the time of job_spec
+        # creation job_spec changes for each trial hence it can not be defined
+        # here.
+        self._replica_count = replica_count
+        self._replica_config = replica_config
+        if replica_config == "auto":
+            self._replica_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
 
         # Setting AI Platform Training runtime configurations. User can create
         # a new tuner using the same study id if they need to change any of the
         # parameters below, however since this is not a common use case, we are
         # adding them to the constructor instead of search parameters.
-        self.container_uri = container_uri
+        self._container_uri = container_uri
+
+        # Verify that directory is set to a valid GCS path.
+        if not directory.startswith("gs://"):
+            raise ValueError(
+                "Directory must be a valid Google Cloud Storage path.")
 
         oracle = CloudOracle(
             project_id=project_id,
@@ -444,6 +478,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         # If study id is not provided cloud_oracle creates ones. Setting the
         # study_id based on cloud oracles logic to ensure they are the same.
         self._study_id = oracle.study_id
+        self.directory = directory
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values.
@@ -483,25 +518,32 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         copied_fit_kwargs["callbacks"] = callbacks
         model = self.hypermodel.build(trial.hyperparameters)
+
+        remote_dir = os.path.join(self.directory, str(trial.trial_id))
         job_id = "{}_{}".format(self._study_id, trial.trial_id)
+
+        # Create job spec from worker count and config
+        job_spec = self._get_job_spec_from_config(job_id)
 
         tf.get_logger().info("Calling cloud_fit with %s", {
             "model": model,
-            "remote_dir": self.directory,
+            "remote_dir": remote_dir,
             "region": self._region,
             "project_id": self._project_id,
-            "image_uri": self.container_uri,
+            "image_uri": self._container_uri,
             "job_id": job_id,
             "*fit_args": fit_args,
+            "job_spec": job_spec,
             "**copied_fit_kwargs": copied_fit_kwargs})
 
         client.cloud_fit(
             model=model,
-            remote_dir=self.directory,
+            remote_dir=remote_dir,
             region=self._region,
             project_id=self._project_id,
-            image_uri=self.container_uri,
+            image_uri=self._container_uri,
             job_id=job_id,
+            job_spec=job_spec,
             *fit_args,
             **copied_fit_kwargs)
 
@@ -525,6 +567,38 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 trial_id=trial.trial_id,
                 metrics=epoch_metrics,
                 step=epoch)
+
+    def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
+        """Creates request dictionary for the CAIP training service.
+
+        Arguments:
+            job_id: Job name that will be used for AIP training
+        Returns:
+            An AI Platform Training job spec.
+        """
+        # Set worker count as one less replica as one is dedicated as master
+        worker_count = self._replica_count -1
+        worker_config = None
+        if worker_count > 0:
+            worker_config = self._replica_config
+
+        # TODO(b/170224999) Refactor _validate_cluster_config to a public method
+        validate._validate_cluster_config(  # pylint: disable= protected-access
+            chief_config=self._replica_config,
+            worker_count=worker_count,
+            worker_config=worker_config,
+            docker_base_image=self._container_uri)
+
+        # TODO(b/170218538) Refactor _create_request_dict to a public method
+        return deploy._create_request_dict(  # pylint: disable= protected-access
+            job_id=job_id,
+            region=self._region,
+            image_uri=self._container_uri,
+            chief_config=self._replica_config,
+            worker_count=worker_count,
+            worker_config=worker_config,
+            entry_point_args=None,
+            job_labels=None)
 
     def _get_remote_training_metrics(
         self, trial_id: int)-> List[Mapping[Text, Union[int, float]]]:

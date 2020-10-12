@@ -24,6 +24,9 @@ from kerastuner.engine import tuner as super_tuner
 import mock
 
 import tensorflow as tf
+from tensorflow_cloud.core import deploy
+from tensorflow_cloud.core import machine_config
+from tensorflow_cloud.core import validate
 from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import tuner
 from tensorflow_cloud.tuner.tuner import optimizer_client
@@ -52,6 +55,7 @@ class CloudTunerTest(tf.test.TestCase):
 
         self._study_id = "study-a"
         self._region = "us-central1"
+        self._remote_dir = "gs://remote_dir"
         self._project_id = "project-a"
         self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
             self._project_id, self._region, self._study_id
@@ -117,6 +121,7 @@ class CloudTunerTest(tf.test.TestCase):
                 objective,
                 hyperparameters,
                 study_config,
+                directory="gs://remote_dir",
                 max_trials=None
                 ):
         return tuner.DistributingCloudTuner(
@@ -127,8 +132,8 @@ class CloudTunerTest(tf.test.TestCase):
             max_trials=max_trials,
             project_id=self._project_id,
             region=self._region,
+            directory=directory,
             study_id=self._study_id,
-            directory=self.get_temp_dir(),
             container_uri=self._container_uri
         )
 
@@ -148,7 +153,8 @@ class CloudTunerTest(tf.test.TestCase):
                              self._study_id,
                              self._study_config))
 
-    def test_remote_tuner_initialization_with_study_config(self):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_remote_tuner_initialization_with_study_config(self, mock_super):
         self._remote_tuner(None, None, self._study_config)
         (self.mock_optimizer_client_module.create_or_load_study
          .assert_called_with(self._project_id,
@@ -417,7 +423,8 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(best_trials_1[0].score, 0.9)
         self.assertEqual(best_trials_1[0].best_step, 3)
 
-    def test_add_tensorboard_callback(self):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_add_tensorboard_callback(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
 
         callbacks = [
@@ -431,7 +438,8 @@ class CloudTunerTest(tf.test.TestCase):
             callbacks[0].log_dir,
             os.path.join(remote_tuner.directory, trial_id, "logs"))
 
-    def test_add_model_checkpoint_callback(self):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_add_model_checkpoint_callback(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
         callbacks = []
         trial_id = "test_trial_id"
@@ -446,16 +454,21 @@ class CloudTunerTest(tf.test.TestCase):
         google_api_client,
         "wait_for_api_training_job_completion",
         auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     def test_remote_run_trial_with_successful_job(
-        self, mock_job_status, mock_cloud_fit):
+        self, mock_super_tuner, mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
 
+        remote_dir = os.path.join(
+            remote_tuner.directory, str(self._test_trial.trial_id))
         mock_job_status.return_value = True
         remote_tuner._get_remote_training_metrics = mock.Mock()
         remote_tuner._get_remote_training_metrics.return_value = [{
             "loss": 0.001}]
+        remote_tuner.oracle = mock.Mock()
         remote_tuner.oracle.update_trial = mock.Mock()
+        remote_tuner.hypermodel = mock.Mock()
         remote_tuner.run_trial(
             self._test_trial, "fit_arg",
             callbacks=["test_call_back"], fit_kwarg=1)
@@ -466,7 +479,8 @@ class CloudTunerTest(tf.test.TestCase):
             fit_kwarg=1,
             model=mock.ANY,
             callbacks=["test_call_back", mock.ANY, mock.ANY],
-            remote_dir=remote_tuner.directory,
+            remote_dir=remote_dir,
+            job_spec=mock.ANY,
             region=self._region,
             project_id=self._project_id,
             image_uri=self._container_uri,
@@ -481,21 +495,24 @@ class CloudTunerTest(tf.test.TestCase):
         google_api_client,
         "wait_for_api_training_job_completion",
         auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     def test_remote_run_trial_with_failed_job(
-        self, mock_job_status, mock_cloud_fit):
+        self, mock_super_tuner, mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
-
+        remote_tuner.hypermodel = mock.Mock()
         mock_job_status.return_value = False
         with self.assertRaises(RuntimeError):
             remote_tuner.run_trial(
                 self._test_trial, "fit_arg",
                 callbacks=["test_call_back"], fit_kwarg=1)
 
-    def test_get_remote_training_metrics(self):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_get_remote_training_metrics(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
 
+        remote_tuner.directory = self.get_temp_dir()
         log_dir = os.path.join(
             remote_tuner.directory, str(self._test_trial.trial_id), "logs")
 
@@ -514,19 +531,99 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertIn("loss", results[0])
         self.assertEqual(results[0].get("loss"), tf.constant(0.1))
 
-    def test_remote_load_model(self):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_remote_load_model(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
         with self.assertRaises(NotImplementedError):
             remote_tuner.load_model(self._test_trial)
 
     @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
-    def test_remote_save_model(self, mock_super_save_model):
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_remote_save_model(self, mock_super_tuner, mock_super_save_model):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
         remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
         mock_super_save_model.assert_not_called()
 
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    def test_init_with_non_gcs_directory_path(self, mock_super_tuner):
+        with self.assertRaisesRegex(
+            ValueError, "Directory must be a valid Google Cloud Storage path."):
+            self._remote_tuner(
+                None, None, self._study_config, max_trials=10,
+                directory="local_path")
+
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(deploy, "_create_request_dict", auto_spec=True)
+    @mock.patch.object(validate, "_validate_cluster_config", auto_spec=True)
+    def test_get_job_spec_with_default_config(
+        self, mock_validate, mock_create_request, mock_super_tuner):
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config)
+        job_id = "{}_{}".format(
+            remote_tuner._study_id, self._test_trial.trial_id)
+
+        # Expected worker configuration based on replica setting
+        worker_count = 0
+        worker_config = None
+
+        remote_tuner._get_job_spec_from_config(job_id)
+
+        mock_validate.assert_called_with(
+            chief_config=remote_tuner._replica_config,
+            worker_count=worker_count,
+            worker_config=worker_config,
+            docker_base_image=remote_tuner._container_uri)
+
+        mock_create_request.assert_called_with(
+            job_id=job_id,
+            region=remote_tuner._region,
+            image_uri=remote_tuner._container_uri,
+            chief_config=remote_tuner._replica_config,
+            worker_count=worker_count,
+            worker_config=worker_config,
+            entry_point_args=None,
+            job_labels=None)
+
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(deploy, "_create_request_dict", auto_spec=True)
+    @mock.patch.object(validate, "_validate_cluster_config", auto_spec=True)
+    def test_get_job_spec_with_default_with_custom_config(
+        self, mock_validate, mock_create_request, mock_super_tuner):
+
+        remote_tuner = self._remote_tuner(None, None, self._study_config)
+
+        replica_config = machine_config.COMMON_MACHINE_CONFIGS["K80_1X"]
+        replica_count = 2
+
+        remote_tuner._replica_config = replica_config
+        remote_tuner._replica_count = replica_count
+
+        job_id = "{}_{}".format(
+            remote_tuner._study_id, self._test_trial.trial_id)
+
+        # Expected worker configuration based on replica setting
+        worker_count = 1
+        worker_config = replica_config
+
+        remote_tuner._get_job_spec_from_config(job_id)
+
+        mock_validate.assert_called_with(
+            chief_config=replica_config,
+            worker_count=worker_count,
+            worker_config=worker_config,
+            docker_base_image=remote_tuner._container_uri)
+
+        mock_create_request.assert_called_with(
+            job_id=job_id,
+            region=remote_tuner._region,
+            image_uri=remote_tuner._container_uri,
+            chief_config=replica_config,
+            worker_count=worker_count,
+            worker_config=replica_config,
+            entry_point_args=None,
+            job_labels=None)
 
 if __name__ == "__main__":
     tf.test.main()
