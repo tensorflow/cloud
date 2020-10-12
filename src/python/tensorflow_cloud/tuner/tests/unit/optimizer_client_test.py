@@ -253,6 +253,37 @@ class OptimizerClientTest(tf.test.TestCase):
         )
         self.assertEqual(suggestions, expected_response)
 
+    def test_get_suggestions_with_count(self):
+        mock_suggest = mock.MagicMock()
+        self._mock_discovery.projects().locations().studies().trials(
+            ).suggest = mock_suggest
+
+        expected_response = {
+            "trials": [
+                {
+                    "name": "1",
+                    "state": "ACTIVE",
+                    "parameters":
+                        [{"parameter": "learning_rate", "floatValue": 0.001}],
+                }
+            ]
+        }
+        mock_suggest_lro = mock.MagicMock()
+        mock_suggest_lro.return_value.execute.return_value = {
+            "name": "op_name",
+            "done": True,
+            "response": expected_response,
+        }
+        self._mock_discovery.projects().locations().operations(
+            ).get = mock_suggest_lro
+
+        suggestions = self._client.get_suggestions("tuner_0", 5)
+        mock_suggest.assert_called_once_with(
+            parent=self._trial_parent,
+            body={"client_id": "tuner_0", "suggestion_count": 5},
+        )
+        self.assertEqual(suggestions, expected_response)
+
     def test_get_suggestions_with_429(self):
         """Verify that get_suggestion gracefully handles 429 errors."""
         mock_request = mock.MagicMock()
@@ -337,6 +368,29 @@ class OptimizerClientTest(tf.test.TestCase):
             name=self._trial_name,
             body={"trial_infeasible": False, "infeasible_reason": None},
         )
+        self.assertEqual(trial, expected_trial)
+
+    def test_get_trial(self):
+        mock_get_trial = mock.MagicMock()
+        expected_trial = {
+            "name": "1",
+            "state": "COMPLETED",
+            "parameters": [{"parameter": "learning_rate", "floatValue": 0.001}],
+            "finalMeasurement": {
+                "stepCount": 3,
+                "metrics": [{"metric": "val_acc", "value": 0.9}],
+            },
+            "trial_infeasible": False,
+            "infeasible_reason": None,
+        }
+        mock_get_trial.return_value.execute.return_value = expected_trial
+
+        self._mock_discovery.projects().locations().studies().trials(
+            ).get = mock_get_trial
+
+        trial = self._client.get_trial(trial_id="1")
+
+        mock_get_trial.assert_called_once_with(name=self._trial_name)
         self.assertEqual(trial, expected_trial)
 
     def test_list_trials(self):

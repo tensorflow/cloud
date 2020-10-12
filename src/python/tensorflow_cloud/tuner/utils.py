@@ -364,27 +364,52 @@ def get_trial_id(optimizer_trial: Dict[Text, Any]) -> Text:
         optimizer_trial: A CAIP Optimizer Trial instance.
 
     Returns:
-        trial_id. Note that a trial name follows the followining format
+        trial_id. Note that a trial name follows the following format
         `projects/{project_id}/locations/{region}/studies/{study_id}/trials/\
             {trial_id}`
     """
     return optimizer_trial["name"].split("/")[-1]
 
 
+def convert_optimizer_trial_to_dict(
+    optimizer_trial: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    """Converts Optimizer Trial parameters into a Python dict.
+
+    Arguments:
+        optimizer_trial: A CAIP Optimizer Trial instance.
+
+    Returns:
+        A dict that maps the Optimizer Trial parameters' names to their
+        respective values.
+    """
+    result = {}
+    for param in optimizer_trial["parameters"]:
+        if "floatValue" in param:
+            result[param["parameter"]] = float(param["floatValue"])
+        if "intValue" in param:
+            result[param["parameter"]] = int(param["intValue"])
+        if "stringValue" in param:
+            result[param["parameter"]] = str(param["stringValue"])
+    return result
+
+
 def convert_optimizer_trial_to_hps(
     hps: hp_module.HyperParameters,
     optimizer_trial: Dict[Text, Any]
 ) -> hp_module.HyperParameters:
-    """Converts Optimizer Trial parameters into KerasTuner HyperParameters."""
+    """Converts Optimizer Trial parameters into KerasTuner HyperParameters.
+
+    Arguments:
+        hps: Sample KerasTuner HyperParameters object for config initialization
+        optimizer_trial: A CAIP Optimizer Trial instance.
+
+    Returns:
+        A KerasTuner HyperParameters object that holds the Optimizer Trial
+        parameters.
+    """
     hps = hp_module.HyperParameters.from_config(hps.get_config())
-    hps.values = {}
-    for param in optimizer_trial["parameters"]:
-        if "floatValue" in param:
-            hps.values[param["parameter"]] = float(param["floatValue"])
-        if "intValue" in param:
-            hps.values[param["parameter"]] = int(param["intValue"])
-        if "stringValue" in param:
-            hps.values[param["parameter"]] = str(param["stringValue"])
+    hps.values = convert_optimizer_trial_to_dict(optimizer_trial)
     return hps
 
 

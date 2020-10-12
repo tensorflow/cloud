@@ -112,12 +112,9 @@ class CloudOracle(oracle_module.Oracle):
         self.hyperparameters = hyperparameters
         self.max_trials = max_trials
 
-        if study_id:
-            self.study_id = study_id
-        else:
-            self.study_id = "CloudTuner_study_{}".format(
-                datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            )
+        self.study_id = study_id or "CloudTuner_study_{}".format(
+            datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        )
 
         self.service = optimizer_client.create_or_load_study(
             self._project_id, self._region, self.study_id, self.study_config
@@ -135,7 +132,7 @@ class CloudOracle(oracle_module.Oracle):
                 running a multi-worker model) should have the same ID. If
                 multiple suggestTrialsRequests have the same tuner_id, the
                 service will return the identical suggested trial if the trial
-                is PENDING, and provide a new trial if the last suggest trial
+                is PENDING, and provide a new trial if the last suggested trial
                 was completed.
 
         Returns:
@@ -290,7 +287,7 @@ class CloudOracle(oracle_module.Oracle):
         if len(self.objective) > 1:
             raise ValueError(
                 "Getting the best trials for multi-objective optimization "
-                "is not supported. "
+                "is not supported."
             )
 
         maximizing = (

@@ -124,7 +124,7 @@ STUDY_CONFIG_FIXED_CATEGORICAL = {
         }
     ],
 }
-EXPECTE_TRIAL_HPS = {
+EXPECTED_TRIAL_HPS = {
     "learning_rate": 0.0001,
     "num_layers": 2,
     "units_0": 96.0,
@@ -221,6 +221,22 @@ class CloudTunerUtilsTest(tf.test.TestCase):
         self.assertEqual(study_config_categorical,
                          STUDY_CONFIG_FIXED_CATEGORICAL)
 
+    def test_convert_optimizer_trial_to_dict(self):
+        hps = hp_module.HyperParameters()
+        hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
+        optimizer_trial = {
+            "name": "trial_name",
+            "state": "ACTIVE",
+            "parameters": [
+                {"parameter": "learning_rate", "floatValue": 0.0001},
+                {"parameter": "num_layers", "intValue": "2"},
+                {"parameter": "units_0", "floatValue": 96},
+                {"parameter": "units_1", "floatValue": 352},
+            ],
+        }
+        params = utils.convert_optimizer_trial_to_dict(optimizer_trial)
+        self.assertDictEqual(params, EXPECTED_TRIAL_HPS)
+
     def test_convert_optimizer_trial_to_hps(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
@@ -235,7 +251,7 @@ class CloudTunerUtilsTest(tf.test.TestCase):
             ],
         }
         trial_hps = utils.convert_optimizer_trial_to_hps(hps, optimizer_trial)
-        self.assertEqual(trial_hps.values, EXPECTE_TRIAL_HPS)
+        self.assertDictEqual(trial_hps.values, EXPECTED_TRIAL_HPS)
 
     def test_format_objective(self):
         objective = utils.format_objective(

@@ -65,7 +65,11 @@ class _OptimizerClient(object):
             )
         self.study_id = study_id
 
-    def get_suggestions(self, client_id: Text):
+    def get_suggestions(
+        self,
+        client_id: Text,
+        suggestion_count: int = constants.SUGGESTION_COUNT_PER_REQUEST
+    ) -> Dict[Text, Any]:
         """Gets a list of suggested Trials.
 
         Args:
@@ -76,6 +80,7 @@ class _OptimizerClient(object):
                 service will return the identical suggested trial if the trial
                 is PENDING, and provide a new trial if the last suggest trial
                 was completed.
+            suggestion_count: The number of suggestions to request.
 
         Returns:
             A list of Trials, This may be an empty list in case that a finite
@@ -100,8 +105,7 @@ class _OptimizerClient(object):
                     parent=self._make_study_name(),
                     body={
                         "client_id": client_id,
-                        "suggestion_count":
-                            constants.SUGGESTION_COUNT_PER_REQUEST,
+                        "suggestion_count": suggestion_count,
                     },
                 )
                 .execute()
@@ -235,6 +239,22 @@ class _OptimizerClient(object):
             tf.get_logger().info("CompleteTrial failed.")
             raise e
         return optimizer_trial
+
+    def get_trial(self, trial_id: Text) -> Dict[Text, Text]:
+        """Return the Optimizer trial for the given trial_id."""
+        try:
+            trial = (
+                self.service_client.projects()
+                .locations()
+                .studies()
+                .trials()
+                .get(name=self._make_trial_name(trial_id))
+                .execute()
+            )
+        except errors.HttpError:
+            tf.get_logger().info("GetTrial failed.")
+            raise
+        return trial
 
     def list_trials(self) -> List[Text]:
         """List trials."""
