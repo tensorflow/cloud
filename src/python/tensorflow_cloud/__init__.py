@@ -13,9 +13,9 @@
 # limitations under the License.
 """Core module in tensorflow_cloud."""
 
-from .version import __version__
 
 # APIs for scaling TensorFlow jobs on GCP
+from .core.docker_config import DockerConfig
 from .core.machine_config import AcceleratorType
 from .core.machine_config import COMMON_MACHINE_CONFIGS
 from .core.machine_config import MachineConfig
@@ -25,3 +25,5 @@ from .core.run import run
 # Oracle and Tuner APIs for hyperparameter tuning.
 from .tuner.tuner import CloudOracle
 from .tuner.tuner import CloudTuner
+
+from .version import __version__

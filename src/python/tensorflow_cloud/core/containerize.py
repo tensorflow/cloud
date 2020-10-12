@@ -55,7 +55,7 @@ class ContainerBuilder(object):
         requirements_txt=None,
         destination_dir="/app/",
         docker_base_image=None,
-        docker_image_bucket_name=None,
+        docker_image_build_bucket=None,
         called_from_notebook=False,
     ):
         """Constructor.
@@ -84,7 +84,7 @@ class ContainerBuilder(object):
                 filesystem.
             docker_base_image: Optional base docker image to use.
                 Defaults to None.
-            docker_image_bucket_name: Optional string that specifies the docker
+            docker_image_build_bucket: Optional string that specifies the docker
                 image cloud storage bucket name.
             called_from_notebook: Optional boolean which indicates whether run
                 has been called in a notebook environment.
@@ -97,7 +97,7 @@ class ContainerBuilder(object):
         self.requirements_txt = requirements_txt
         self.destination_dir = destination_dir
         self.docker_base_image = docker_base_image
-        self.docker_image_bucket_name = docker_image_bucket_name
+        self.docker_image_build_bucket = docker_image_build_bucket
         self.called_from_notebook = called_from_notebook
         self.project_id = project_id
 
@@ -458,9 +458,10 @@ class CloudContainerBuilder(ContainerBuilder):
         logger.info("Uploading files to GCS.")
         storage_client = storage.Client()
         try:
-            bucket = storage_client.get_bucket(self.docker_image_bucket_name)
+            bucket = storage_client.get_bucket(self.docker_image_build_bucket)
         except NotFound:
-            bucket = storage_client.create_bucket(self.docker_image_bucket_name)
+            bucket = storage_client.create_bucket(
+                self.docker_image_build_bucket)
 
         unique_tag = str(uuid.uuid4()).replace("-", "_")
         storage_object_name = "tf_cloud_train_tar_{}".format(unique_tag)
@@ -491,7 +492,7 @@ class CloudContainerBuilder(ContainerBuilder):
         }
         request_dict["source"] = {
             "storageSource": {
-                "bucket": self.docker_image_bucket_name,
+                "bucket": self.docker_image_build_bucket,
                 "object": storage_object_name,
             }
         }

@@ -32,5 +32,5 @@ tfc.run(
     ),
     worker_count=0,
     stream_logs=True,
-    docker_image_bucket_name=args.bucket_name,
+    docker_config=tfc.DockerConfig(image_build_bucket=args.bucket_name),
 )

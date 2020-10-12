@@ -19,6 +19,6 @@ gcp_bucket = "your-gcp-bucket"
 tfc.run(
     entry_point="train_model.py",
     requirements_txt="requirements.txt",
-    docker_image_bucket_name=gcp_bucket,
+    docker_config=tfc.DockerConfig(image_build_bucket=gcp_bucket),
     stream_logs=True,
 )

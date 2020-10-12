@@ -30,7 +30,7 @@ def validate(
     region,
     entry_point_args,
     stream_logs,
-    docker_image_bucket_name,
+    docker_image_build_bucket,
     called_from_notebook,
     job_labels=None,
     docker_base_image=None,
@@ -59,7 +59,7 @@ def validate(
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
             the cloud job.
-        docker_image_bucket_name: Optional string. Cloud storage bucket name.
+        docker_image_build_bucket: Optional string. Cloud storage bucket name.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
         job_labels: Dict of str: str. Labels to organize jobs. See
@@ -79,7 +79,7 @@ def validate(
         region,
         entry_point_args,
         stream_logs,
-        docker_image_bucket_name,
+        docker_image_build_bucket,
         called_from_notebook,
     )
 
@@ -182,7 +182,7 @@ def _validate_job_labels(job_labels):
 
 
 def _validate_other_args(
-    region, args, stream_logs, docker_image_bucket_name, called_from_notebook
+    region, args, stream_logs, docker_image_build_bucket, called_from_notebook
 ):
     """Validates all non-file/distribution strategy args."""
     if not isinstance(region, str):
@@ -206,13 +206,13 @@ def _validate_other_args(
             "Received {}.".format(str(stream_logs))
         )
 
-    if called_from_notebook and docker_image_bucket_name is None:
+    if called_from_notebook and docker_image_build_bucket is None:
         raise ValueError(
-            "Invalid `docker_image_bucket_name` input. "
+            "Invalid `docker_config.image_build_bucket` input. "
             "When `run` API is used within a python notebook, "
-            "`docker_image_bucket_name` is expected to be specifed. We will "
-            "use the bucket name in Google Cloud Storage/Build services for "
-            "docker containerization. Received {}.".format(
-                str(docker_image_bucket_name)
+            "`docker_config.image_build_bucket` is expected to be specifed. We "
+            "will use the bucket name in Google Cloud Storage/Build services "
+            "for docker containerization. Received {}.".format(
+                str(docker_image_build_bucket)
             )
         )

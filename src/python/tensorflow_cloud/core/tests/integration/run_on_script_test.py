@@ -61,7 +61,8 @@ class RunOnScriptTest(tf.test.TestCase):
             chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
-            docker_base_image="tensorflow/tensorflow:2.1.0",
+            docker_config=tfc.DockerConfig(
+                base_image="tensorflow/tensorflow:2.1.0"),
         )
 
     def auto_one_device_strategy(self):
@@ -78,7 +79,7 @@ class RunOnScriptTest(tf.test.TestCase):
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            docker_image_bucket_name=_TEST_BUCKET,
+            docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
         )
 
     def auto_multi_worker_strategy(self):
@@ -107,9 +108,9 @@ class RunOnScriptTest(tf.test.TestCase):
             distribution_strategy="auto",
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            docker_base_image=(
-                "gcr.io/deeplearning-platform-release"
-                "/tf2-gpu.2-2:latest"),
+            docker_config=tfc.DockerConfig(
+                base_image="gcr.io/deeplearning-platform-release"
+                           "/tf2-gpu.2-2:latest"),
         )
 
     def auto_one_device_job_labels(self):

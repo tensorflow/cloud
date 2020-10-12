@@ -376,7 +376,7 @@ class TestContainerize(absltest.TestCase):
             self.mock_registry,
             self.project_id,
             destination_dir="/my_app/temp/",
-            docker_image_bucket_name="test_gcs_bucket",
+            docker_image_build_bucket="test_gcs_bucket",
         )
 
         # Mock image name

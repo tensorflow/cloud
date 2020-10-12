@@ -29,7 +29,8 @@ args = parser.parse_args()
 
 tfc.run(
     chief_config=tfc.COMMON_MACHINE_CONFIGS["V100_1X"],
-    docker_base_image="haifengjin/autokeras:1.0.3",
+    docker_config=tfc.DockerConfig(
+        base_image="haifengjin/autokeras:1.0.3"),
 )
 
 # Prepare the dataset.

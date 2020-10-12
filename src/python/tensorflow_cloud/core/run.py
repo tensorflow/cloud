@@ -22,6 +22,7 @@ import sys
 
 from . import containerize
 from . import deploy
+from . import docker_config as docker_config_module
 from . import gcp
 from . import machine_config
 from . import preprocess
@@ -29,21 +30,20 @@ from . import validate
 
 
 def remote():
-    """True when code is run in a remote cloud environment by TF Cloud."""
-    return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
+  """True when code is run in a remote cloud environment by TF Cloud."""
+  return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
 
 
 def run(
     entry_point=None,
     requirements_txt=None,
+    docker_config="auto",
     distribution_strategy="auto",
-    docker_base_image=None,
     chief_config="auto",
     worker_config="auto",
     worker_count=0,
     entry_point_args=None,
     stream_logs=False,
-    docker_image_bucket_name=None,
     job_labels=None,
     **kwargs
 ):
@@ -64,6 +64,12 @@ def run(
             list of pip dependency package names.
             Note this path must be in the current working directory tree.
             Example - 'requirements.txt', 'deps/reqs.txt'
+        docker_config: Optional `DockerConfig`. Represents docker related
+            configuration for the `run` API.
+            - base_image: Optional base docker image to use.
+            - image_build_bucket: GCS bucket name used for Google Cloud Build.
+            Defaults to 'auto'. 'auto' maps to a default `tfc.DockerConfig`
+            instance.
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
             'auto' means we will take care of creating a Tensorflow
             distribution strategy instance based on the machine configurations
@@ -81,15 +87,6 @@ def run(
             For example, if you are using `tf.keras` custom training loops,
             you will need to create a strategy in the script for distributing
             the dataset.
-        docker_base_image: Optional base docker image to use. Defaults to None.
-            Example - 'gcr.io/my_gcp_project/deep_learning:v2'
-            If a base docker image is not provided here, we will use a
-            TensorFlow docker image (https://www.tensorflow.org/install/docker)
-            as the base image. The version of TensorFlow and Python in that
-            case will match your local environment.
-            If both docker_base_image and a local TF installation are not
-            available, the latest TF docker image will be used.
-            Example - 'tensorflow/tensorflow:latest-gpu'
         chief_config: Optional `MachineConfig` that represents the
             configuration for the chief worker in a distribution cluster.
             Defaults to 'auto'. 'auto' maps to a standard gpu config such as
@@ -112,18 +109,6 @@ def run(
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
             the cloud job.
-        docker_image_bucket_name: Optional string that specifies the docker
-            image cloud storage bucket name. If this parameter is set, then we
-            will be using Google Cloud Storage and Google Cloud Build for
-            docker containerization (https://cloud.google.com/cloud-build/).
-            If this parameter is not set, then we will use local docker daemon
-            process for containerization.
-            Cloud build request is queued and we make a maximum of 10 requests
-            with a delay of 30 secs in between these requests to inspect the
-            status of the build.
-            Note when you are using this API from within an iPython notebook,
-            we will default to using Google Cloud Build,
-            so `docker_image_bucket_name` must be specified for this use case.
         job_labels: Dict of str: str. Labels to organize jobs. You can specify
             up to 64 key-value pairs in lowercase letters and numbers, where
             the first character must be lowercase letter. For more details see
@@ -139,6 +124,8 @@ def run(
     if remote():
         return
 
+    docker_base_image = kwargs.pop("docker_base_image", None)
+    docker_image_bucket_name = kwargs.pop("docker_image_bucket_name", None)
     if kwargs:
         # We are using kwargs for forward compatibility in the cloud. For eg.,
         # if a new param is added to `run` API, this will not exist in the
@@ -160,6 +147,12 @@ def run(
         chief_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
     if worker_config == "auto":
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
+    if docker_config == "auto":
+        docker_config = docker_config_module.DockerConfig()
+    docker_base_image = docker_base_image or docker_config.base_image
+    docker_image_build_bucket = (docker_image_bucket_name or
+                                 docker_config.image_build_bucket)
+
     region = gcp.get_region()
     # Working directory in the docker container filesystem.
     destination_dir = "/app/"
@@ -180,7 +173,7 @@ def run(
         region,
         entry_point_args,
         stream_logs,
-        docker_image_bucket_name,
+        docker_image_build_bucket,
         called_from_notebook,
         job_labels=job_labels or {},
         docker_base_image=docker_base_image,
@@ -218,10 +211,10 @@ def run(
         "requirements_txt": requirements_txt,
         "destination_dir": destination_dir,
         "docker_base_image": docker_base_image,
-        "docker_image_bucket_name": docker_image_bucket_name,
+        "docker_image_build_bucket": docker_image_build_bucket,
         "called_from_notebook": called_from_notebook,
     }
-    if docker_image_bucket_name is None:
+    if docker_image_build_bucket is None:
         container_builder = containerize.LocalContainerBuilder(
             *cb_args, **cb_kwargs)
     else:

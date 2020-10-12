@@ -209,13 +209,12 @@ parameter in the API.
 run(entry_point=None,
     requirements_txt=None,
     distribution_strategy='auto',
-    docker_base_image=None,
+    docker_config='auto',
     chief_config='auto',
     worker_config='auto',
     worker_count=0,
     entry_point_args=None,
     stream_logs=False,
-    docker_image_bucket_name=None,
     job_labels=None,
     **kwargs)
 ```
@@ -321,8 +320,8 @@ run(entry_point=None,
     ![Image of colab](https://github.com/tensorflow/cloud/blob/master/images/colab.png)
 
     In this use case, `entry_point` should be `None` and
-    `docker_image_bucket_name` must be specified, to ensure the build can be
-    stored and published.
+    `docker_config.image_build_bucket` must be specified, to ensure the build
+    can be stored and published.
 
     ### Cluster and distribution strategy configuration
 
@@ -411,9 +410,9 @@ The API call will encompass the following:
 
 By default, we will use local docker daemon for building and publishing docker
 images to Google container registry. Images are published to
-`gcr.io/your-gcp-project-id`. If you specify `docker_image_bucket_name`, then we
-will use [Google Cloud build](https://cloud.google.com/cloud-build) to build and
-publish docker images.
+`gcr.io/your-gcp-project-id`. If you specify `docker_config.image_build_bucket`,
+then we will use [Google Cloud build](https://cloud.google.com/cloud-build) to
+build and publish docker images.
 
 We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying
 docker images on GCP.
@@ -497,11 +496,11 @@ Please specify a different runtime version.
 **Warning like**: Docker base image '2.4.0.dev20200720' does not exist. Using
 the latest TF nightly build.
 
-**Solution**: If you do not provide `docker_base_image` param, then by default
-we use pre-built TF docker images as base image. If you do not have TF installed
-on the environment where `run` is called, then TF docker image for the `latest`
-stable release will be used. Otherwise, the version of the docker image will
-match the locally installed TF version. However, pre-built TF docker images
+**Solution**: If you do not provide `docker_config.base_image` param, then by
+default we use pre-built TF docker images as base image. If you do not have TF
+installed on the environment where `run` is called, then TF docker image for the
+`latest` stable release will be used. Otherwise, the version of the docker image
+will match the locally installed TF version. However, pre-built TF docker images
 aren't available for TF nightlies except for the latest. So, if your local TF is
 an older nightly version, we upgrade to the latest nightly automatically and
 raise this warning.

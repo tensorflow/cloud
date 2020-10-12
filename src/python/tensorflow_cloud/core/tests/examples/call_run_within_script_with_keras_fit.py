@@ -136,7 +136,7 @@ tfc.run(
         accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
         accelerator_count=2,
     ),
-    docker_image_bucket_name=GCP_BUCKET,
+    docker_config=tfc.DockerConfig(image_build_bucket=GCP_BUCKET),
 )
 
 # Save, load and evaluate the model

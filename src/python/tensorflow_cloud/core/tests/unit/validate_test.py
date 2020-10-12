@@ -48,7 +48,7 @@ class TestValidate(absltest.TestCase):
             region="us-central1",
             entry_point_args=None,
             stream_logs=True,
-            docker_image_bucket_name=None,
+            docker_image_build_bucket=None,
             called_from_notebook=False,
         )
 
@@ -63,7 +63,7 @@ class TestValidate(absltest.TestCase):
             region="us-central1",
             entry_point_args=["1000"],
             stream_logs=False,
-            docker_image_bucket_name=None,
+            docker_image_build_bucket=None,
             called_from_notebook=False,
         )
 
@@ -78,7 +78,7 @@ class TestValidate(absltest.TestCase):
             region="us-central1",
             entry_point_args=["1000"],
             stream_logs=False,
-            docker_image_bucket_name=None,
+            docker_image_build_bucket=None,
             called_from_notebook=False,
         )
 
@@ -93,7 +93,7 @@ class TestValidate(absltest.TestCase):
             region="us-central1",
             entry_point_args=["1000"],
             stream_logs=False,
-            docker_image_bucket_name="abc",
+            docker_image_build_bucket="abc",
             called_from_notebook=True,
         )
 
@@ -108,7 +108,7 @@ class TestValidate(absltest.TestCase):
             region="us-central1",
             entry_point_args=["1000"],
             stream_logs=False,
-            docker_image_bucket_name="abc",
+            docker_image_build_bucket="abc",
             called_from_notebook=True,
             job_labels={"a": "b"},
         )
@@ -125,7 +125,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -141,7 +141,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -160,7 +160,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -176,7 +176,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -192,7 +192,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -208,7 +208,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -224,7 +224,7 @@ class TestValidate(absltest.TestCase):
                 region=["us-region-a"],
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -240,7 +240,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args="1000",
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -256,14 +256,14 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs="True",
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
     def test_invalid_cloud_bucket_name(self):
         with self.assertRaisesRegex(
             ValueError,
-            r"Invalid `docker_image_bucket_name`",
+            r"Invalid `docker_config.image_build_bucket`",
         ):
             validate.validate(
                 entry_point=None,
@@ -275,7 +275,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=False,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=True,
             )
 
@@ -294,7 +294,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -310,7 +310,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -331,7 +331,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
 
@@ -355,7 +355,7 @@ class TestValidate(absltest.TestCase):
                 region="us-central1",
                 entry_point_args=None,
                 stream_logs=True,
-                docker_image_bucket_name=None,
+                docker_image_build_bucket=None,
                 called_from_notebook=False,
                 docker_base_image=None,
             )
