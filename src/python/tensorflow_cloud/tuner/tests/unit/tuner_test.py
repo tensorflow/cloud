@@ -16,6 +16,7 @@
 
 import os
 import time
+from kerastuner.engine import hypermodel as hypermodel_module
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
@@ -31,6 +32,7 @@ from tensorflow_cloud.experimental.cloud_fit import client
 from tensorflow_cloud.tuner import tuner
 from tensorflow_cloud.tuner.tuner import optimizer_client
 from tensorflow_cloud.utils import google_api_client
+from tensorflow_cloud.utils import tf_utils
 
 
 def build_model(hp):
@@ -57,6 +59,7 @@ class CloudTunerTest(tf.test.TestCase):
         self._region = "us-central1"
         self._remote_dir = "gs://remote_dir"
         self._project_id = "project-a"
+        # TODO(b/170687807) Switch from using "{}".format() to f-string
         self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
             self._project_id, self._region, self._study_id
         )
@@ -85,7 +88,8 @@ class CloudTunerTest(tf.test.TestCase):
             trial_id="1",
             status=trial_module.TrialStatus,
         )
-
+        # TODO(b/170687807) Switch from using "{}".format() to f-string
+        self._job_id = "{}_{}".format(self._study_id, self._test_trial.trial_id)
         self.mock_optimizer_client_module = mock.patch.object(
             tuner, "optimizer_client", autospec=True
         ).start()
@@ -450,22 +454,27 @@ class CloudTunerTest(tf.test.TestCase):
             os.path.join(remote_tuner.directory, trial_id, "checkpoint"))
 
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
-    @mock.patch.object(
-        google_api_client,
-        "wait_for_api_training_job_completion",
-        auto_spec=True)
+    @mock.patch.object(google_api_client,
+                       "wait_for_api_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(google_api_client, "is_api_training_job_running",
+                       auto_spec=True)
+    @mock.patch.object(tf_utils, "get_tensorboard_log_watcher_from_path",
+                       auto_spec=True)
     def test_remote_run_trial_with_successful_job(
-        self, mock_super_tuner, mock_job_status, mock_cloud_fit):
+        self, mock_log_watcher, mock_is_running, mock_super_tuner,
+        mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
+
+        mock_is_running.side_effect = [True, False]
 
         remote_dir = os.path.join(
             remote_tuner.directory, str(self._test_trial.trial_id))
         mock_job_status.return_value = True
         remote_tuner._get_remote_training_metrics = mock.Mock()
-        remote_tuner._get_remote_training_metrics.return_value = [{
-            "loss": 0.001}]
+        remote_tuner._get_remote_training_metrics.return_value = (
+            tuner._TrainingMetrics([{"loss": 0.001}], {}))
         remote_tuner.oracle = mock.Mock()
         remote_tuner.oracle.update_trial = mock.Mock()
         remote_tuner.hypermodel = mock.Mock()
@@ -473,7 +482,7 @@ class CloudTunerTest(tf.test.TestCase):
             self._test_trial, "fit_arg",
             callbacks=["test_call_back"], fit_kwarg=1)
 
-        remote_tuner.oracle.update_trial.assert_called_once()
+        self.assertEqual(2, remote_tuner.oracle.update_trial.call_count)
         mock_cloud_fit.assert_called_with(
             "fit_arg",
             fit_kwarg=1,
@@ -484,28 +493,70 @@ class CloudTunerTest(tf.test.TestCase):
             region=self._region,
             project_id=self._project_id,
             image_uri=self._container_uri,
-            job_id="{}_{}".format(
-                remote_tuner._study_id,
-                self._test_trial.trial_id))
-        remote_tuner._get_remote_training_metrics.assert_called_with(
+            job_id=self._job_id)
+
+        log_path = remote_tuner._get_tensorboard_log_dir(
             self._test_trial.trial_id)
+        mock_log_watcher.assert_called_with(log_path)
+        self.assertEqual(
+            2, remote_tuner._get_remote_training_metrics.call_count)
 
     @mock.patch.object(client, "cloud_fit", auto_spec=True)
-    @mock.patch.object(
-        google_api_client,
-        "wait_for_api_training_job_completion",
-        auto_spec=True)
+    @mock.patch.object(google_api_client,
+                       "wait_for_api_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(google_api_client, "is_api_training_job_running",
+                       auto_spec=True)
     def test_remote_run_trial_with_failed_job(
-        self, mock_super_tuner, mock_job_status, mock_cloud_fit):
+        self, mock_is_running, mock_super_tuner,
+        mock_job_status, mock_cloud_fit):
+
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
+
+        mock_is_running.return_value = False
+
         remote_tuner.hypermodel = mock.Mock()
         mock_job_status.return_value = False
         with self.assertRaises(RuntimeError):
             remote_tuner.run_trial(
                 self._test_trial, "fit_arg",
                 callbacks=["test_call_back"], fit_kwarg=1)
+
+    @mock.patch.object(google_api_client, "stop_aip_training_job",
+                       auto_spec=True)
+    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(google_api_client,
+                       "wait_for_api_training_job_completion", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(google_api_client, "is_api_training_job_running",
+                       auto_spec=True)
+    def test_remote_run_trial_with_oracle_canceling_job(
+        self, mock_is_running, mock_super_tuner,
+        mock_job_status, mock_cloud_fit, mock_stop_job):
+
+        remote_tuner = self._remote_tuner(
+            None, None, self._study_config, max_trials=10)
+
+        mock_is_running.side_effect = [True, False]
+        mock_job_status.return_value = True
+        remote_tuner._get_remote_training_metrics = mock.Mock()
+        remote_tuner._get_remote_training_metrics.return_value = (
+            tuner._TrainingMetrics([{"loss": 0.001}], {}))
+        remote_tuner.oracle = mock.create_autospec(
+            oracle_module.Oracle, instance=True, spec_set=True)
+        remote_tuner.oracle.update_trial = mock.Mock()
+        remote_tuner.oracle.update_trial.return_value = "STOPPED"
+        remote_tuner.hypermodel = mock.create_autospec(
+            hypermodel_module.HyperModel, instance=True, spec_set=True)
+        remote_tuner.run_trial(
+            self._test_trial, "fit_arg",
+            callbacks=["test_call_back"], fit_kwarg=1)
+
+        self.assertEqual(2, remote_tuner.oracle.update_trial.call_count)
+        self.assertEqual(
+            2, remote_tuner._get_remote_training_metrics.call_count)
+        mock_stop_job.assert_called_once_with(self._job_id, self._project_id)
 
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     def test_get_remote_training_metrics(self, mock_super_tuner):
@@ -524,12 +575,14 @@ class CloudTunerTest(tf.test.TestCase):
             tf.summary.scalar(name="epoch_loss", data=0.5, step=2)
             tf.summary.scalar(name="epoch_accuracy", data=0.6, step=2)
 
-        results = remote_tuner._get_remote_training_metrics(
-            self._test_trial.trial_id)
-        self.assertLen(results, 3)
-        self.assertIn("accuracy", results[0])
-        self.assertIn("loss", results[0])
-        self.assertEqual(results[0].get("loss"), tf.constant(0.1))
+        log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_dir)
+        results = remote_tuner._get_remote_training_metrics(log_reader, {})
+
+        self.assertLen(results.completed_epoch_metrics, 3)
+        self.assertIn("accuracy", results.completed_epoch_metrics[0])
+        self.assertIn("loss", results.completed_epoch_metrics[0])
+        self.assertEqual(
+            results.completed_epoch_metrics[0].get("loss"), tf.constant(0.1))
 
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     def test_remote_load_model(self, mock_super_tuner):
@@ -561,14 +614,12 @@ class CloudTunerTest(tf.test.TestCase):
         self, mock_validate, mock_create_request, mock_super_tuner):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config)
-        job_id = "{}_{}".format(
-            remote_tuner._study_id, self._test_trial.trial_id)
 
         # Expected worker configuration based on replica setting
         worker_count = 0
         worker_config = None
 
-        remote_tuner._get_job_spec_from_config(job_id)
+        remote_tuner._get_job_spec_from_config(self._job_id)
 
         mock_validate.assert_called_with(
             chief_config=remote_tuner._replica_config,
@@ -577,7 +628,7 @@ class CloudTunerTest(tf.test.TestCase):
             docker_base_image=remote_tuner._container_uri)
 
         mock_create_request.assert_called_with(
-            job_id=job_id,
+            job_id=self._job_id,
             region=remote_tuner._region,
             image_uri=remote_tuner._container_uri,
             chief_config=remote_tuner._replica_config,
@@ -600,14 +651,11 @@ class CloudTunerTest(tf.test.TestCase):
         remote_tuner._replica_config = replica_config
         remote_tuner._replica_count = replica_count
 
-        job_id = "{}_{}".format(
-            remote_tuner._study_id, self._test_trial.trial_id)
-
         # Expected worker configuration based on replica setting
         worker_count = 1
         worker_config = replica_config
 
-        remote_tuner._get_job_spec_from_config(job_id)
+        remote_tuner._get_job_spec_from_config(self._job_id)
 
         mock_validate.assert_called_with(
             chief_config=replica_config,
@@ -616,7 +664,7 @@ class CloudTunerTest(tf.test.TestCase):
             docker_base_image=remote_tuner._container_uri)
 
         mock_create_request.assert_called_with(
-            job_id=job_id,
+            job_id=self._job_id,
             region=remote_tuner._region,
             image_uri=remote_tuner._container_uri,
             chief_config=replica_config,

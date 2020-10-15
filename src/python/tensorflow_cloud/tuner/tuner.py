@@ -14,6 +14,7 @@
 # limitations under the License.
 """KerasTuner CloudOracle and CloudTuner classes."""
 
+import collections
 import copy
 import datetime
 import os
@@ -38,6 +39,13 @@ from tensorflow_cloud.utils import tf_utils
 
 
 _POLLING_INTERVAL_IN_SECONDS = 30
+
+# A Namedtuple that is used in DistributingCloudTuner to retrieve incremental
+# metrics from remote training Tensorboard logs during training with:
+# - 'completed_epoch_metrics'- a list of epoch metrics for completed epochs.
+# - 'partial_epoch_metrics' - Any incomplete epoch metrics for the last epoch.
+_TrainingMetrics = collections.namedtuple("_TrainingMetrics", [
+    "completed_epoch_metrics", "partial_epoch_metrics"])
 
 
 class CloudOracle(oracle_module.Oracle):
@@ -520,6 +528,8 @@ class DistributingCloudTuner(tuner_module.Tuner):
         model = self.hypermodel.build(trial.hyperparameters)
 
         remote_dir = os.path.join(self.directory, str(trial.trial_id))
+
+        # TODO(b/170687807) Switch from using "{}".format() to f-string
         job_id = "{}_{}".format(self._study_id, trial.trial_id)
 
         # Create job spec from worker count and config
@@ -547,29 +557,63 @@ class DistributingCloudTuner(tuner_module.Tuner):
             *fit_args,
             **copied_fit_kwargs)
 
-        # TODO(b/167569957) Add support for early termination.
+        # Create an instance of tensorboard DirectoryWatcher to retrieve the
+        # logs for this trial run
+        log_path = self._get_tensorboard_log_dir(trial.trial_id)
+
+        # TODO(b/170687807) Switch from using "{}".format() to f-string
+        tf.get_logger().info(
+            "Retrieving training logs for trial {} from {}".format(
+                trial.trial_id, log_path))
+        log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_path)
+
+        training_metrics = _TrainingMetrics([], {})
+        epoch = 0
+
+        while google_api_client.is_api_training_job_running(
+            job_id, self._project_id):
+
+            time.sleep(_POLLING_INTERVAL_IN_SECONDS)
+
+            # Retrieve available metrics if any
+            training_metrics = self._get_remote_training_metrics(
+                log_reader, training_metrics.partial_epoch_metrics)
+
+            for epoch_metrics in training_metrics.completed_epoch_metrics:
+                # TODO(b/169197272) Validate metrics contain oracle objective
+                trial.status = self.oracle.update_trial(
+                    trial_id=trial.trial_id,
+                    metrics=epoch_metrics,
+                    step=epoch)
+                epoch += 1
+
+            if trial.status == "STOPPED":
+                google_api_client.stop_aip_training_job(
+                    job_id, self._project_id)
+                break
+
+        # Ensure the training job has completed successfully.
         if not google_api_client.wait_for_api_training_job_completion(
             job_id, self._project_id):
             raise RuntimeError(
                 "AIP Training job failed, see logs for details at https://console.cloud.google.com/ai-platform/jobs/{}/charts/cpu?project={}"  # pylint: disable=line-too-long
                 .format(job_id, self._project_id))
 
-        # If the job was successful, retrieve the metrics
-        training_metrics = self._get_remote_training_metrics(trial.trial_id)
+        # Retrieve and report any remaining metrics
+        training_metrics = self._get_remote_training_metrics(
+            log_reader, training_metrics.partial_epoch_metrics)
 
-        # Note since we are submitting all job results in one shot, this may
-        # result in going over AI Platform Vizier limit of 1000 RPS. For more
-        # details on API quotas refer to:
-        # https://cloud.google.com/ai-platform/optimizer/docs/overview
-        for epoch, epoch_metrics in enumerate(training_metrics):
-        # TODO(b/169197272) Validate metrics contain oracle objective
+        for epoch_metrics in training_metrics.completed_epoch_metrics:
+            # TODO(b/169197272) Validate metrics contain oracle objective
+            # TODO(b/170907612) Support submit partial results to Oracle
             self.oracle.update_trial(
                 trial_id=trial.trial_id,
                 metrics=epoch_metrics,
                 step=epoch)
+            epoch += 1
 
     def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
-        """Creates request dictionary for the CAIP training service.
+        """Creates a request dictionary for the CAIP training service.
 
         Arguments:
             job_id: Job name that will be used for AIP training
@@ -601,16 +645,33 @@ class DistributingCloudTuner(tuner_module.Tuner):
             job_labels=None)
 
     def _get_remote_training_metrics(
-        self, trial_id: int)-> List[Mapping[Text, Union[int, float]]]:
+        self,
+        log_reader,
+        partial_epoch_metrics: Dict[Text, float]
+        )-> _TrainingMetrics:
+        """Retrieves delta epoch metrics from tensorboard logs since last run.
 
-        log_path = self._get_tensorboard_log_dir(trial_id)
-        tf.get_logger().info(
-            "Retrieving training logs for trial {} from {}".format(
-                trial_id, log_path))
+        This method reports any complete epoch metrics that are available since
+        last run. When this method is called while training is running, all
+        metrics for the last epoch may not be available. Any incomplete metrics
+        for the last epoch are returned in partial_epoch_metrics to be used
+        as a starting point for the next round of _get_remote_training_metrics.
+        All complete epochs metrics (including the last epoch if applicable) are
+        returned as training_metrics.
 
-        log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_path)
-        results = []
-        epoch_metrics = {}
+        Arguments:
+            log_reader: An instance of tensorboard DirectoryWatcher that is
+                pointing to the tensorboard logs directory.
+            partial_epoch_metrics: Any incomplete epoch metrics from previous
+                runs that should be used as a starting point.
+        Returns:
+            An instance of _TrainingMetrics a Namedtuple with
+            - 'completed_epoch_metrics'- a list of epoch metrics for completed
+                epochs.
+            - 'partial_epoch_metrics' - Any incomplete epoch metrics for the
+                last epoch.
+        """
+        completed_epoch_metrics = []
         for event in log_reader.Load():
             for value in event.summary.value:
                 # Note tf.keras.callbacks.TensorBoard() with update_freq="epoch"
@@ -619,16 +680,16 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 if value.tag.startswith("epoch_"):
                     metric = value.tag.replace("epoch_", "")
                     # If we have already seen this metric, this is a new epoch
-                    if metric in epoch_metrics:
-                        results.append(epoch_metrics)
-                        epoch_metrics = {}
+                    if metric in partial_epoch_metrics:
+                        completed_epoch_metrics.append(partial_epoch_metrics)
+                        partial_epoch_metrics = {}
                     # Note this method captures all metrics even if they are not
                     # part of the oracle objectives. We rely on oracle to ignore
                     # the unrelated Objectives.
-                    epoch_metrics[metric] = tf.make_ndarray(
+                    partial_epoch_metrics[metric] = tf.make_ndarray(
                         event.summary.value[0].tensor)
-        results.append(epoch_metrics)
-        return results
+        completed_epoch_metrics.append(partial_epoch_metrics)
+        return _TrainingMetrics(completed_epoch_metrics, partial_epoch_metrics)
 
     def load_model(self, trial):
         # Overriding the Super method for remote execution. In remote execution

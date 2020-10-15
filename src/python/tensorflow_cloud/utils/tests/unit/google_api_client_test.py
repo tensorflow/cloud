@@ -16,6 +16,8 @@
 
 from absl import logging
 from googleapiclient import discovery
+from googleapiclient import errors
+import httplib2
 import mock
 import tensorflow as tf
 from tensorflow_cloud.utils import google_api_client
@@ -40,6 +42,8 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.mock_request = mock.Mock()
         self.mock_apiclient.projects().jobs(
                 ).get.return_value = self.mock_request
+        self.mock_apiclient.projects().jobs(
+                ).cancel.return_value = self.mock_request
 
     @mock.patch.object(logging, "error", auto_spec=True)
     def test_wait_for_api_training_job_completion_non_blocking_success(
@@ -151,6 +155,39 @@ class GoogleApiClientTest(tf.test.TestCase):
             self._job_id, self._project_id)
         self.assertTrue(canceling_status)
         self.assertEqual(4, self.mock_request.execute.call_count)
+
+    def test_stop_aip_training_job_with_running_job(self):
+        self.mock_request.execute.return_value = {}
+        google_api_client.stop_aip_training_job(self._job_id, self._project_id)
+
+        job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
+        self.mock_apiclient.projects().jobs().cancel.assert_called_with(
+            name=job_name)
+
+    @mock.patch.object(logging, "info", auto_spec=True)
+    def test_stop_aip_training_job_with_completed_job(self, mock_logs):
+        self.mock_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 400}), b""
+        )
+        google_api_client.stop_aip_training_job(self._job_id, self._project_id)
+
+        job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
+        self.mock_apiclient.projects().jobs().cancel.assert_called_with(
+            name=job_name)
+        self.assertEqual(2, mock_logs.call_count)
+
+    @mock.patch.object(logging, "error", auto_spec=True)
+    def test_stop_aip_training_job_with_failing_request(self, mock_logs):
+        self.mock_request.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 404}), b"")
+
+        job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
+        with self.assertRaises(errors.HttpError):
+            google_api_client.stop_aip_training_job(
+                self._job_id, self._project_id)
+        self.mock_apiclient.projects().jobs().cancel.assert_called_with(
+            name=job_name)
+        mock_logs.assert_called_once()
 
 if __name__ == "__main__":
     tf.test.main()

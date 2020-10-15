@@ -18,6 +18,7 @@ from typing import Text
 from .. import version
 from absl import logging
 from googleapiclient import discovery
+from googleapiclient import errors
 from googleapiclient import http as googleapiclient_http
 
 _USER_AGENT_FOR_TF_CLOUD_TRACKING = "tf-cloud/" + version.__version__
@@ -42,6 +43,7 @@ class TFCloudHttpRequest(googleapiclient_http.HttpRequest):
         super(TFCloudHttpRequest, self).__init__(*args, **kwargs)
 
 
+# TODO(b/170436896) change wait_for_api_.. to wait_for_aip_..
 def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
     """Blocks until the AIP Training job is completed and returns the status.
 
@@ -49,7 +51,7 @@ def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
         job_id: ID for AIP training job.
         project_id: Project under which the AIP Training job is running.
     Returns:
-        True if job succeeded or it was cancelled, False if job failed.
+        True if the job succeeded or it was cancelled, False if the job failed.
     """
     # Wait for AIP Training job to finish
     job_name = "projects/{}/jobs/{}".format(project_id, job_id)
@@ -80,6 +82,7 @@ def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
     return True
 
 
+# TODO(b/170436896) change is_api_train.. to is_aip_train..
 def is_api_training_job_running(job_id: Text, project_id: Text)->bool:
     """Non-blocking call that checks if AIP Training job is running.
 
@@ -100,3 +103,30 @@ def is_api_training_job_running(job_id: Text, project_id: Text)->bool:
 
     return response["state"] not in ("SUCCEEDED", "FAILED", "CANCELLED")
 
+
+def stop_aip_training_job(job_id: Text, project_id: Text):
+    """Cancels a running AIP Training job.
+
+    Args:
+        job_id: ID for AIP training job.
+        project_id: Project under which the AIP Training job is running.
+    """
+    job_name = "projects/{}/jobs/{}".format(project_id, job_id)
+    api_client = discovery.build("ml", "v1")
+
+    logging.info("Canceling the job %s.", job_name)
+
+    request = api_client.projects().jobs().cancel(name=job_name)
+
+    try:
+        request.execute()
+    except errors.HttpError as e:
+        if e.resp.status == 400:
+            logging.info(
+                # If job is already completed, the request will result in a 400
+                # error with similar to 'description': 'Cannot cancel an already
+                # completed job.' In this case we will absorb the error.
+                "Job %s has already completed.", job_id)
+            return
+        logging.error("Cancel Request for job %s failed.", job_name)
+        raise e
