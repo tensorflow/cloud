@@ -47,7 +47,7 @@ def get_preprocessed_entry_point(
 
     This utility creates a new python script called `preprocessed_entry_point`
     based on the given `entry_point` and `distribution_strategy` inputs. This
-    script will become the new docker entry point python program.
+    script will become the new Docker entry point python program.
 
     1. If `entry_point` is a python file name and `distribution_strategy` is
     auto, then `preprocessed_entry_point` will have the user given

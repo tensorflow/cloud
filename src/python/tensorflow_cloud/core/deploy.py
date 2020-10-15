@@ -26,7 +26,6 @@ from ..utils import google_api_client
 
 
 def deploy_job(
-    region,
     image_uri,
     chief_config,
     worker_count,
@@ -38,8 +37,7 @@ def deploy_job(
     """Deploys job with the given parameters to Google Cloud.
 
     Args:
-        region: GCP region name.
-        image_uri: The docker image uri.
+        image_uri: The Docker image URI.
         chief_config: `MachineConfig` that represents the configuration for
             the chief worker in a distribution cluster.
         worker_count: Integer that represents the number of general workers
@@ -71,7 +69,7 @@ def deploy_job(
 
     request_dict = _create_request_dict(
         job_id,
-        region,
+        gcp.get_region(),
         image_uri,
         chief_config,
         worker_count,

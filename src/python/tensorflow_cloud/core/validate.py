@@ -27,13 +27,12 @@ def validate(
     chief_config,
     worker_config,
     worker_count,
-    region,
     entry_point_args,
     stream_logs,
     docker_image_build_bucket,
     called_from_notebook,
     job_labels=None,
-    docker_base_image=None,
+    docker_parent_image=None,
 ):
     """Validates the inputs.
 
@@ -54,7 +53,6 @@ def validate(
         worker_count: Optional integer that represents the number of workers in
             a distribution cluster. Defaults to 0. This count does not include
             the chief worker.
-        region: String. Cloud region in which to submit the job.
         entry_point_args: Optional list of strings. Defaults to None.
             Command line arguments to pass to the `entry_point` program.
         stream_logs: Boolean flag which when enabled streams logs back from
@@ -64,7 +62,8 @@ def validate(
             notebook environment.
         job_labels: Dict of str: str. Labels to organize jobs. See
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
-        docker_base_image: Optional base docker image to use. Defaults to None.
+        docker_parent_image: Optional parent Docker image to use.
+            Defaults to None.
 
     Raises:
         ValueError: if any of the inputs is invalid.
@@ -72,11 +71,10 @@ def validate(
     _validate_files(entry_point, requirements_txt)
     _validate_distribution_strategy(distribution_strategy)
     _validate_cluster_config(
-        chief_config, worker_count, worker_config, docker_base_image
+        chief_config, worker_count, worker_config, docker_parent_image
     )
     _validate_job_labels(job_labels or {})
     _validate_other_args(
-        region,
         entry_point_args,
         stream_logs,
         docker_image_build_bucket,
@@ -125,7 +123,7 @@ def _validate_distribution_strategy(distribution_strategy):
 
 
 def _validate_cluster_config(
-    chief_config, worker_count, worker_config, docker_base_image
+    chief_config, worker_count, worker_config, docker_parent_image
 ):
     """Validates cluster config params."""
     if not isinstance(chief_config, machine_config.MachineConfig):
@@ -164,8 +162,8 @@ def _validate_cluster_config(
                 "Expected worker_count=1 for TPU `worker_config`. "
                 "Received {}.".format(worker_count)
             )
-        elif docker_base_image is None:
-            # If the user has not provided a custom docker image, then verify
+        elif docker_parent_image is None:
+            # If the user has not provided a custom Docker image, then verify
             # that the TF version is compatible with Cloud TPU support.
             # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
             version = tf_utils.get_version()
@@ -182,15 +180,9 @@ def _validate_job_labels(job_labels):
 
 
 def _validate_other_args(
-    region, args, stream_logs, docker_image_build_bucket, called_from_notebook
+    args, stream_logs, docker_image_build_bucket, called_from_notebook
 ):
     """Validates all non-file/distribution strategy args."""
-    if not isinstance(region, str):
-        raise ValueError(
-            "Invalid `region` input. "
-            "Expected None or a string value. "
-            "Received {}.".format(str(region))
-        )
 
     if args is not None and not isinstance(args, list):
         raise ValueError(
@@ -212,7 +204,7 @@ def _validate_other_args(
             "When `run` API is used within a python notebook, "
             "`docker_config.image_build_bucket` is expected to be specifed. We "
             "will use the bucket name in Google Cloud Storage/Build services "
-            "for docker containerization. Received {}.".format(
+            "for Docker containerization. Received {}.".format(
                 str(docker_image_build_bucket)
             )
         )

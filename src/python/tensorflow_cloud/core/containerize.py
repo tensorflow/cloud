@@ -25,6 +25,7 @@ import time
 import uuid
 import warnings
 
+from . import gcp
 from . import machine_config
 import docker
 from googleapiclient import discovery
@@ -41,8 +42,16 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+def generate_image_uri():
+    """Returns unique name+tag for a Docker image."""
+    # Keeping this name format uniform with the job id.
+    unique_tag = str(uuid.uuid4()).replace("-", "_")
+    docker_registry = "gcr.io/{}".format(gcp.get_project_name())
+    return "{}/{}:{}".format(docker_registry, "tf_cloud_train", unique_tag)
+
+
 class ContainerBuilder(object):
-    """Container builder for building and pushing a docker image."""
+    """Container builder for building and pushing a Docker image."""
 
     def __init__(
         self,
@@ -50,12 +59,9 @@ class ContainerBuilder(object):
         preprocessed_entry_point,
         chief_config,
         worker_config,
-        docker_registry,
-        project_id,
         requirements_txt=None,
         destination_dir="/app/",
-        docker_base_image=None,
-        docker_image_build_bucket=None,
+        docker_config=None,
         called_from_notebook=False,
     ):
         """Constructor.
@@ -76,16 +82,11 @@ class ContainerBuilder(object):
                 the chief worker in a distribution cluster.
             worker_config: `MachineConfig` that represents the configuration
                 for the workers in a distribution cluster.
-            docker_registry: The docker registry name.
-            project_id: Project id string.
             requirements_txt: Optional string. File path to requirements.txt
                 file containing additionally pip dependencies, if any.
-            destination_dir: Optional working directory in the docker container
+            destination_dir: Optional working directory in the Docker container
                 filesystem.
-            docker_base_image: Optional base docker image to use.
-                Defaults to None.
-            docker_image_build_bucket: Optional string that specifies the docker
-                image cloud storage bucket name.
+            docker_config: Optional Docker configuration.
             called_from_notebook: Optional boolean which indicates whether run
                 has been called in a notebook environment.
         """
@@ -93,13 +94,11 @@ class ContainerBuilder(object):
         self.preprocessed_entry_point = preprocessed_entry_point
         self.chief_config = chief_config
         self.worker_config = worker_config
-        self.docker_registry = docker_registry
         self.requirements_txt = requirements_txt
         self.destination_dir = destination_dir
-        self.docker_base_image = docker_base_image
-        self.docker_image_build_bucket = docker_image_build_bucket
+        self.docker_config = docker_config
         self.called_from_notebook = called_from_notebook
-        self.project_id = project_id
+        self.project_id = gcp.get_project_name()
 
         # Those will be populated lazily.
         self.tar_file_path = None
@@ -108,7 +107,7 @@ class ContainerBuilder(object):
     def get_docker_image(
         self, max_status_check_attempts=None, delay_between_status_checks=None
     ):
-        """Builds, publishes and returns a docker image.
+        """Builds, publishes and returns a Docker image.
 
         Args:
             max_status_check_attempts: Maximum number of times allowed to check
@@ -133,52 +132,56 @@ class ContainerBuilder(object):
 
     def _create_docker_file(self):
         """Creates a Dockerfile."""
-        if self.docker_base_image is None:
-            # Use the latest TF docker image if a local installation
+        if self.docker_config:
+          parent_image = self.docker_config.parent_image
+        else:
+          parent_image = None
+        if parent_image is None:
+            # Use the latest TF Docker image if a local installation
             # is not available.
             tf_version = tf_utils.get_version()
             # Updating the name for RC's to match with the TF generated
-            # RC docker image names.
+            # RC Docker image names.
             tf_version = tf_version.replace("-rc", "rc")
-            # Get the TF docker base image to use based on the current
+            # Get the TF Docker parent image to use based on the current
             # TF version.
-            self.docker_base_image = "tensorflow/tensorflow:{}".format(
+            parent_image = "tensorflow/tensorflow:{}".format(
                 tf_version)
             if (
                 self.chief_config.accelerator_type
                 != machine_config.AcceleratorType.NO_ACCELERATOR
             ):
-                self.docker_base_image += "-gpu"
+                parent_image += "-gpu"
 
             # Add python 3 tag for TF version <= 2.1.0
             # https://hub.docker.com/r/tensorflow/tensorflow
             if tf_version != "latest":
                 v = tf_version.split(".")
                 if float(v[0] + "." + v[1]) <= 2.1:
-                    self.docker_base_image += "-py3"
+                    parent_image += "-py3"
 
-            if not self._base_image_exists():
+            if not self._image_exists(parent_image):
                 warnings.warn(
-                    "TF Cloud `run` API uses docker, with a TF base image "
+                    "TF Cloud `run` API uses docker, with a TF parent image "
                     "matching your local TF version, for containerizing your "
-                    "code. A TF docker image does not exist for the TF version "
+                    "code. A TF Docker image does not exist for the TF version "
                     "you are using: {}"
-                    "We are replacing this with the latest stable TF docker "
+                    "We are replacing this with the latest stable TF Docker "
                     "image available: `tensorflow/tensorflow:latest`"
                     "Please see "
                     "https://hub.docker.com/r/tensorflow/tensorflow/ "
-                    "for details on the available docker images."
+                    "for details on the available Docker images."
                     "If you are seeing any code compatibility issues because of"
                     " the TF version change, please try using a custom "
-                    "`docker_base_image` with the required TF version.".format(
-                        tf_version))
+                    "`docker_config.parent_image` with the required "
+                    "TF version.".format(tf_version))
                 newtag = "tensorflow/tensorflow:latest"
-                if self.docker_base_image.endswith("-gpu"):
+                if parent_image.endswith("-gpu"):
                     newtag += "-gpu"
-                self.docker_base_image = newtag
+                parent_image = newtag
 
         lines = [
-            "FROM {}".format(self.docker_base_image),
+            "FROM {}".format(parent_image),
             "WORKDIR {}".format(self.destination_dir),
         ]
 
@@ -206,8 +209,8 @@ class ContainerBuilder(object):
         ):
             lines.append("RUN pip install cloud-tpu-client")
 
-        # Copies the files from the `destination_dir` in docker daemon location
-        # to the `destination_dir` in docker container filesystem.
+        # Copies the files from the `destination_dir` in Docker daemon location
+        # to the `destination_dir` in Docker container filesystem.
         lines.append("COPY {} {}".format(self.destination_dir,
                                          self.destination_dir))
 
@@ -225,13 +228,16 @@ class ContainerBuilder(object):
         with open(self.docker_file_path, "w") as f:
             f.write(content)
 
-    def _base_image_exists(self):
-        """Checks whether the image exists on dockerhub using docker v2 api.
+    def _image_exists(self, image):
+        """Checks whether the image exists on dockerhub using Docker v2 api.
+
+        Args:
+            image: image to check for.
 
         Returns:
             True if the image is found on dockerhub.
         """
-        repo_name, tag_name = self.docker_base_image.split(":")
+        repo_name, tag_name = image.split(":")
         r = requests.get(
             "http://hub.docker.com/v2/repositories/{}/tags/{}".format(
                 repo_name, tag_name
@@ -240,10 +246,10 @@ class ContainerBuilder(object):
         return r.ok
 
     def _get_file_path_map(self):
-        """Maps local file paths to the docker daemon process location.
+        """Maps local file paths to the Docker daemon process location.
 
         Dictionary mapping file paths in the local file system to the paths
-        in the docker daemon process location. The `key` or source is the path
+        in the Docker daemon process location. The `key` or source is the path
         of the file that will be used when creating the archive. The `value`
         or destination is set as the `arcname` for the file at this time.
         When extracting files from the archive, they are extracted to the
@@ -279,26 +285,18 @@ class ContainerBuilder(object):
                 self.destination_dir, requirements_txt_name
             )
 
-        # Place docker file in the root directory.
+        # Place Docker file in the root directory.
         location_map[self.docker_file_path] = "Dockerfile"
         return location_map
 
-    def _generate_name(self):
-        """Returns unique name+tag for the docker image."""
-        # Keeping this name format uniform with the job id.
-        unique_tag = str(uuid.uuid4()).replace("-", "_")
-        return "{}/{}:{}".format(self.docker_registry,
-                                 "tf_cloud_train",
-                                 unique_tag)
-
 
 class LocalContainerBuilder(ContainerBuilder):
-    """Container builder that uses local docker daemon process."""
+    """Container builder that uses local Docker daemon process."""
 
     def get_docker_image(
         self, max_status_check_attempts=None, delay_between_status_checks=None
     ):
-        """Builds, publishes and returns a docker image.
+        """Builds, publishes and returns a Docker image.
 
         Args:
             max_status_check_attempts: Maximum number of times allowed to check
@@ -306,24 +304,35 @@ class LocalContainerBuilder(ContainerBuilder):
             delay_between_status_checks: Time is seconds to wait between status
                 checks. Not applicable to this builder.
         Returns:
-            URI in a registory where the docker image has been built and pushed.
+            URI in a registory where the Docker image has been built and pushed.
         """
         self.docker_client = docker.APIClient(version="auto")
         self._get_tar_file_path()
 
-        # create docker image from tarball
+        # create Docker image from tarball
         image_uri = self._build_docker_image()
         # push to the registry
         self._publish_docker_image(image_uri)
         return image_uri
 
     def _build_docker_image(self):
-        """Builds docker image."""
-        image_uri = self._generate_name()
-        logger.info("Building docker image: %s", image_uri)
+        """Builds Docker image.
+
+        https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.build
+
+        Returns:
+            Image URI.
+        """
+        # Use the given Docker image given, if available.
+        if self.docker_config:
+            image_uri = self.docker_config.image
+        else:
+            image_uri = None
+        image_uri = image_uri or generate_image_uri()
+        logger.info("Building Docker image: %s", image_uri)
 
         # `fileobj` is generally set to the Dockerfile file path. If a tar file
-        # is used for docker build context (ones that includes a Dockerfile)
+        # is used for Docker build context (ones that includes a Dockerfile)
         # then `custom_context` should be enabled.
         with open(self.tar_file_path, "rb") as fileobj:
             bld_logs_generator = self.docker_client.build(
@@ -338,24 +347,24 @@ class LocalContainerBuilder(ContainerBuilder):
         return image_uri
 
     def _publish_docker_image(self, image_uri):
-        """Publishes docker image.
+        """Publishes Docker image.
 
         Args:
             image_uri: String, the registry name and tag.
         """
-        logger.info("Publishing docker image: %s", image_uri)
+        logger.info("Publishing Docker image: %s", image_uri)
         pb_logs_generator = self.docker_client.push(
             image_uri, stream=True, decode=True)
         self._get_logs(pb_logs_generator, "publish", image_uri)
 
     def _get_logs(self, logs_generator, name, image_uri):
-        """Decodes logs from docker and generates user friendly logs.
+        """Decodes logs from Docker and generates user friendly logs.
 
         Args:
-            logs_generator: Generator returned from docker build/push APIs.
+            logs_generator: Generator returned from Docker build/push APIs.
             name: String, 'build' or 'publish' used to identify where the
                 generator came from.
-            image_uri: String, the docker image URI.
+            image_uri: String, the Docker image URI.
 
         Raises:
             RuntimeError: if there are any errors when building or publishing a
@@ -380,7 +389,7 @@ class CloudContainerBuilder(ContainerBuilder):
     def get_docker_image(
         self, max_status_check_attempts=20, delay_between_status_checks=30
     ):
-        """Builds, publishes and returns a docker image.
+        """Builds, publishes and returns a Docker image.
 
         Args:
             max_status_check_attempts: Maximum number of times allowed to check
@@ -388,14 +397,19 @@ class CloudContainerBuilder(ContainerBuilder):
             delay_between_status_checks: Time is seconds to wait between status
                 checks.
         Returns:
-            URI in a registory where the docker image has been built and pushed.
+            URI in a registory where the Docker image has been built and pushed.
         """
         self._get_tar_file_path()
         storage_object_name = self._upload_tar_to_gcs()
-        image_uri = self._generate_name()
+        # Use the given Docker image name, if available.
+        if self.docker_config:
+            image_uri = self.docker_config.image
+        else:
+            image_uri = None
+        image_uri = image_uri or generate_image_uri()
 
         logger.info(
-            "Building and publishing docker image using Google Cloud Build: %s",
+            "Building and publishing Docker image using Google Cloud Build: %s",
             image_uri)
         build_service = discovery.build(
             "cloudbuild",
@@ -408,7 +422,7 @@ class CloudContainerBuilder(ContainerBuilder):
         )
 
         try:
-            # Call to queue request to build and push docker image.
+            # Call to queue request to build and push Docker image.
             create_response = (
                 build_service.projects()
                 .builds()
@@ -458,10 +472,11 @@ class CloudContainerBuilder(ContainerBuilder):
         logger.info("Uploading files to GCS.")
         storage_client = storage.Client()
         try:
-            bucket = storage_client.get_bucket(self.docker_image_build_bucket)
+            bucket = storage_client.get_bucket(
+                self.docker_config.image_build_bucket)
         except NotFound:
             bucket = storage_client.create_bucket(
-                self.docker_image_build_bucket)
+                self.docker_config.image_build_bucket)
 
         unique_tag = str(uuid.uuid4()).replace("-", "_")
         storage_object_name = "tf_cloud_train_tar_{}".format(unique_tag)
@@ -477,7 +492,7 @@ class CloudContainerBuilder(ContainerBuilder):
         https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#Build
 
         Args:
-            image_uri: GCR docker image uri.
+            image_uri: GCR Docker image URI.
             storage_object_name: Name of the tarfile object in GCS.
 
         Returns:
@@ -486,13 +501,32 @@ class CloudContainerBuilder(ContainerBuilder):
         request_dict = {}
         request_dict["projectId"] = self.project_id
         request_dict["images"] = [[image_uri]]
-        request_dict["steps"] = {
+        request_dict["steps"] = []
+        build_args = ["build", "-t", image_uri, "."]
+
+        if self.docker_config:
+            cache_from = (self.docker_config.cache_from or
+                          self.docker_config.image)
+
+        if cache_from:
+            # Use the given Docker image as cache.
+            request_dict["steps"].append({
+                "name": "gcr.io/cloud-builders/docker",
+                "entrypoint": "bash",
+                "args": [
+                    "-c",
+                    "docker pull {} || exit 0".format(cache_from),
+                ],
+            })
+            build_args[3:3] = ["--cache-from", cache_from]
+
+        request_dict["steps"].append({
             "name": "gcr.io/cloud-builders/docker",
-            "args": ["build", "-t", image_uri, "."],
-        }
+            "args": build_args,
+        })
         request_dict["source"] = {
             "storageSource": {
-                "bucket": self.docker_image_build_bucket,
+                "bucket": self.docker_config.image_build_bucket,
                 "object": storage_object_name,
             }
         }

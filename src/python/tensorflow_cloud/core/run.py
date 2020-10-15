@@ -23,7 +23,6 @@ import sys
 from . import containerize
 from . import deploy
 from . import docker_config as docker_config_module
-from . import gcp
 from . import machine_config
 from . import preprocess
 from . import validate
@@ -64,10 +63,15 @@ def run(
             list of pip dependency package names.
             Note this path must be in the current working directory tree.
             Example - 'requirements.txt', 'deps/reqs.txt'
-        docker_config: Optional `DockerConfig`. Represents docker related
+        docker_config: Optional `DockerConfig`. Represents Docker related
             configuration for the `run` API.
-            - base_image: Optional base docker image to use.
-            - image_build_bucket: GCS bucket name used for Google Cloud Build.
+            - image: Optional Docker image URI for the Docker image being built.
+            - parent_image: Optional parent Docker image to use.
+            - cache_from: Optional Docker image URI to be used as a cache when
+                building the new Docker image.
+            - image_build_bucket: Optional GCS bucket name to be used for
+                building a Docker image via
+                [Google Cloud Build](https://cloud.google.com/cloud-build/).
             Defaults to 'auto'. 'auto' maps to a default `tfc.DockerConfig`
             instance.
         distribution_strategy: 'auto' or None. Defaults to 'auto'.
@@ -116,7 +120,13 @@ def run(
         **kwargs: Additional keyword arguments.
 
     Returns:
-        Training job id.
+        Dict.
+        ```
+        {
+          'job_id': training job id,
+          'docker_image': Docker image generated for the training job,
+        }
+        ```
     """
     # If code is triggered in a cloud environment, do nothing.
     # This is required for the use case when `run` is invoked from within
@@ -124,12 +134,10 @@ def run(
     if remote():
         return
 
-    docker_base_image = kwargs.pop("docker_base_image", None)
-    docker_image_bucket_name = kwargs.pop("docker_image_bucket_name", None)
     if kwargs:
         # We are using kwargs for forward compatibility in the cloud. For eg.,
         # if a new param is added to `run` API, this will not exist in the
-        # latest tensorflow-cloud package installed in the cloud docker envs.
+        # latest tensorflow-cloud package installed in the cloud Docker envs.
         # So, if `run` is used inside a python script or notebook, this python
         # code will fail to run in the cloud even before we can check
         # `TF_KERAS_RUNNING_REMOTELY` env var because of an additional unknown
@@ -149,17 +157,16 @@ def run(
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
     if docker_config == "auto":
         docker_config = docker_config_module.DockerConfig()
-    docker_base_image = docker_base_image or docker_config.base_image
-    docker_image_build_bucket = (docker_image_bucket_name or
-                                 docker_config.image_build_bucket)
+    docker_config.parent_image = (docker_config.parent_image or
+                                  kwargs.pop("docker_base_image", None))
+    docker_config.image_build_bucket = (
+        docker_config.image_build_bucket or
+        kwargs.pop("docker_image_bucket_name", None))
 
-    region = gcp.get_region()
-    # Working directory in the docker container filesystem.
+    # Working directory in the Docker container filesystem.
     destination_dir = "/app/"
     if not isinstance(worker_count, int):
         worker_count = int(worker_count)
-    # Default location to which the docker image that is created is pushed.
-    docker_registry = "gcr.io/{}".format(gcp.get_project_name())
     called_from_notebook = _called_from_notebook()
 
     # Run validations.
@@ -170,24 +177,21 @@ def run(
         chief_config,
         worker_config,
         worker_count,
-        region,
         entry_point_args,
         stream_logs,
-        docker_image_build_bucket,
+        docker_config.image_build_bucket,
         called_from_notebook,
         job_labels=job_labels or {},
-        docker_base_image=docker_base_image,
+        docker_parent_image=docker_config.parent_image,
     )
 
     # Make the `entry_point` cloud and distribution ready.
     # A temporary script called `preprocessed_entry_point` is created.
-    # This contains the `entry_point` wrapped in distribution strategy.
+    # This contains the `entry_point` wrapped in a distribution strategy.
     preprocessed_entry_point = None
-    if (
-        distribution_strategy == "auto"
+    if (distribution_strategy == "auto"
         or entry_point.endswith("ipynb")
-        or entry_point is None
-    ):
+        or entry_point is None):
         preprocessed_entry_point = preprocess.get_preprocessed_entry_point(
             entry_point,
             chief_config,
@@ -197,24 +201,21 @@ def run(
             called_from_notebook=called_from_notebook,
         )
 
-    # Create docker file, geenrate a tarball, build and push docker
+    # Create Docker file, generate a tarball, build and push Docker
     # image using the tarball.
     cb_args = (
         entry_point,
         preprocessed_entry_point,
         chief_config,
         worker_config,
-        docker_registry,
-        gcp.get_project_name(),
     )
     cb_kwargs = {
         "requirements_txt": requirements_txt,
         "destination_dir": destination_dir,
-        "docker_base_image": docker_base_image,
-        "docker_image_build_bucket": docker_image_build_bucket,
+        "docker_config": docker_config,
         "called_from_notebook": called_from_notebook,
     }
-    if docker_image_build_bucket is None:
+    if docker_config.image_build_bucket is None:
         container_builder = containerize.LocalContainerBuilder(
             *cb_args, **cb_kwargs)
     else:
@@ -228,9 +229,8 @@ def run(
     for f in container_builder.get_generated_files():
         os.remove(f)
 
-    # Deploy docker image on the cloud.
+    # Deploy Docker image on the cloud.
     job_id = deploy.deploy_job(
-        region,
         docker_img_uri,
         chief_config,
         worker_count,
@@ -244,7 +244,10 @@ def run(
     # To stop execution after encountering a `run` API call in local env.
     if not remote() and entry_point is None and not called_from_notebook:
         sys.exit(0)
-    return job_id
+    return {
+        "job_id": job_id,
+        "docker_image": docker_img_uri,
+    }
 
 
 def _called_from_notebook():

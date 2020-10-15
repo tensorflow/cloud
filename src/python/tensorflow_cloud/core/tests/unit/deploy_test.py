@@ -83,6 +83,13 @@ class TestDeploy(absltest.TestCase):
             return_value=self.mock_project_name,
         ).start()
 
+        mock.patch.object(
+            gcp,
+            "get_region",
+            autospec=True,
+            return_value=self.region,
+        ).start()
+
     def tearDown(self):
         mock.patch.stopall()
         super(TestDeploy, self).tearDown()
@@ -90,7 +97,6 @@ class TestDeploy(absltest.TestCase):
     @mock.patch("sys.stdout", new_callable=io.StringIO)
     def test_deploy_job(self, mock_stdout):
         job_name = deploy.deploy_job(
-            self.region,
             self.docker_img,
             self.chief_config,
             self.worker_count,
@@ -152,7 +158,6 @@ class TestDeploy(absltest.TestCase):
         worker_count = 0
 
         _ = deploy.deploy_job(
-            self.region,
             self.docker_img,
             self.chief_config,
             worker_count,
@@ -181,7 +186,6 @@ class TestDeploy(absltest.TestCase):
 
     def test_request_dict_without_user_args(self):
         _ = deploy.deploy_job(
-            self.region,
             self.docker_img,
             self.chief_config,
             self.worker_count,
@@ -211,7 +215,6 @@ class TestDeploy(absltest.TestCase):
         worker_count = 1
 
         _ = deploy.deploy_job(
-            self.region,
             self.docker_img,
             chief_config,
             worker_count,
@@ -265,7 +268,6 @@ class TestDeploy(absltest.TestCase):
 
         with self.assertRaises(errors.HttpError):
             deploy.deploy_job(
-                self.region,
                 self.docker_img,
                 chief_config,
                 worker_count,
@@ -285,7 +287,6 @@ class TestDeploy(absltest.TestCase):
 
         with self.assertRaises(ValueError):
             deploy.deploy_job(
-                self.region,
                 self.docker_img,
                 chief_config,
                 worker_count,

@@ -631,7 +631,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
             chief_config=self._replica_config,
             worker_count=worker_count,
             worker_config=worker_config,
-            docker_base_image=self._container_uri)
+            docker_parent_image=self._container_uri)
 
         # TODO(b/170218538) Refactor _create_request_dict to a public method
         return deploy._create_request_dict(  # pylint: disable= protected-access

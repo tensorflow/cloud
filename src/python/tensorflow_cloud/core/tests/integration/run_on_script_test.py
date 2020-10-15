@@ -62,7 +62,7 @@ class RunOnScriptTest(tf.test.TestCase):
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
             docker_config=tfc.DockerConfig(
-                base_image="tensorflow/tensorflow:2.1.0"),
+                parent_image="tensorflow/tensorflow:2.1.0"),
         )
 
     def auto_one_device_strategy(self):
@@ -101,7 +101,7 @@ class RunOnScriptTest(tf.test.TestCase):
                                           "requirements.txt"),
         )
 
-    def auto_dist_strat_mwms_custom_img(self):
+    def auto_dist_strat_mwms_with_parent_img(self):
         return tfc.run(
             entry_point=os.path.join(self.test_data_path,
                                      "mnist_example_using_fit.py"),
@@ -109,8 +109,8 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(
-                base_image="gcr.io/deeplearning-platform-release"
-                           "/tf2-gpu.2-2:latest"),
+                parent_image="gcr.io/deeplearning-platform-release"
+                             "/tf2-gpu.2-2:latest"),
         )
 
     def auto_one_device_job_labels(self):
@@ -120,6 +120,40 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             job_labels={"job": "on_script_tests", "team": "keras"},
+        )
+
+    def auto_one_device_strategy_with_image(self):
+        ret_val = tfc.run(
+            entry_point=os.path.join(self.test_data_path,
+                                     "mnist_example_using_fit.py"),
+            requirements_txt=os.path.join(self.test_data_path,
+                                          "requirements.txt"),
+        )
+        return tfc.run(
+            entry_point=os.path.join(self.test_data_path,
+                                     "mnist_example_using_fit.py"),
+            requirements_txt=os.path.join(self.test_data_path,
+                                          "requirements.txt"),
+            docker_config=tfc.DockerConfig(image=ret_val["docker_image"]),
+        )
+
+    def auto_one_device_strategy_cloud_build_image_cache_from(self):
+        ret_val = tfc.run(
+            entry_point=os.path.join(self.test_data_path,
+                                     "mnist_example_using_fit.py"),
+            requirements_txt=os.path.join(self.test_data_path,
+                                          "requirements.txt"),
+            docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
+        )
+        return tfc.run(
+            entry_point=os.path.join(self.test_data_path,
+                                     "mnist_example_using_fit.py"),
+            requirements_txt=os.path.join(self.test_data_path,
+                                          "requirements.txt"),
+            docker_config=tfc.DockerConfig(
+                image_build_bucket=_TEST_BUCKET,
+                image=ret_val["docker_image"],
+                cache_from=ret_val["docker_image"]),
         )
 
     def test_run_on_script(self):
@@ -132,17 +166,21 @@ class RunOnScriptTest(tf.test.TestCase):
             "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),
             "none_dist_strat_multi_worker_strategy":
                 self.none_dist_strat_multi_worker_strategy(),
-            "auto_dist_strat_mwms_custom_img":
-                self.auto_dist_strat_mwms_custom_img(),
+            "auto_dist_strat_mwms_with_parent_img":
+                self.auto_dist_strat_mwms_with_parent_img(),
             "auto_one_device_job_labels": self.auto_one_device_job_labels(),
+            "auto_one_device_strategy_with_image":
+                self.auto_one_device_strategy_with_image(),
+            "auto_one_device_strategy_cloud_build_image_cache_from":
+                self.auto_one_device_strategy_cloud_build_image_cache_from(),
         }
 
-        for test_name, job_id in track_status.items():
+        for test_name, ret_val in track_status.items():
             self.assertTrue(
                 google_api_client.wait_for_api_training_job_completion(
-                    job_id, _PROJECT_ID),
+                    ret_val["job_id"], _PROJECT_ID),
                 "Job {} generated from the test: {} has failed".format(
-                    job_id, test_name))
+                    ret_val["job_id"], test_name))
 
 
 if __name__ == "__main__":

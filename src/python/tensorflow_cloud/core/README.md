@@ -493,11 +493,11 @@ Please specify a different runtime version.
 
 #### TF nightly build.
 
-**Warning like**: Docker base image '2.4.0.dev20200720' does not exist. Using
+**Warning like**: Docker parent image '2.4.0.dev20200720' does not exist. Using
 the latest TF nightly build.
 
-**Solution**: If you do not provide `docker_config.base_image` param, then by
-default we use pre-built TF docker images as base image. If you do not have TF
+**Solution**: If you do not provide `docker_config.parent_image` param, then by
+default we use pre-built TF docker images as parent image. If you do not have TF
 installed on the environment where `run` is called, then TF docker image for the
 `latest` stable release will be used. Otherwise, the version of the docker image
 will match the locally installed TF version. However, pre-built TF docker images

@@ -625,7 +625,7 @@ class CloudTunerTest(tf.test.TestCase):
             chief_config=remote_tuner._replica_config,
             worker_count=worker_count,
             worker_config=worker_config,
-            docker_base_image=remote_tuner._container_uri)
+            docker_parent_image=remote_tuner._container_uri)
 
         mock_create_request.assert_called_with(
             job_id=self._job_id,
@@ -661,7 +661,7 @@ class CloudTunerTest(tf.test.TestCase):
             chief_config=replica_config,
             worker_count=worker_count,
             worker_config=worker_config,
-            docker_base_image=remote_tuner._container_uri)
+            docker_parent_image=remote_tuner._container_uri)
 
         mock_create_request.assert_called_with(
             job_id=self._job_id,
