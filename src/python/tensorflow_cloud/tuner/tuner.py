@@ -282,8 +282,10 @@ class CloudOracle(oracle_module.Oracle):
         if status == trial_module.TrialStatus.COMPLETED:
             final_measurement = optimizer_trial["finalMeasurement"]
             # If epoch = 1, set the best_step = 1.
-            kerastuner_trial.best_step = final_measurement.get("stepCount", 1)
-            kerastuner_trial.score = final_measurement["metrics"][0]["value"]
+            kerastuner_trial.best_step = int(
+                final_measurement.get("stepCount", 1))
+            kerastuner_trial.score = final_measurement["metrics"][0].get(
+                "value")
         self._save_trial(kerastuner_trial)
         self.save()
 
