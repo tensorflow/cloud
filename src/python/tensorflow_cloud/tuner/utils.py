@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Text, Union
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import metrics_tracking
 from kerastuner.engine import oracle as oracle_module
+import numpy as np
 
 # CAIP Optimizer constants.
 _DISCRETE = "DISCRETE"
@@ -53,7 +54,7 @@ def make_study_config(
         objective: String or `oracle_module.Objective`. If a string,
             the direction of the optimization (min or max) will be inferred.
         hyperparams: HyperParameters class instance. Can be used to override (or
-            register in advance) hyperparamters in the search space.
+            register in advance) hyperparameters in the search space.
 
     Returns:
         A dict that holds the study configuration.
@@ -235,7 +236,9 @@ def _convert_hyperparams_to_optimizer_params(
 
         elif isinstance(hp, hp_module.Int):
             if hp.step is not None and hp.step != 1:
-                values = list(range(hp.min_value, hp.max_value, hp.step))
+                # Note: hp.max_value is inclusive, while the end index of
+                # range() is exclusive, hence the +1
+                values = list(range(hp.min_value, hp.max_value + 1, hp.step))
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
             else:
@@ -248,11 +251,9 @@ def _convert_hyperparams_to_optimizer_params(
                     param.update(_get_scale_type(hp.sampling))
         elif isinstance(hp, hp_module.Float):
             if hp.step is not None:
-                values = []
-                val = hp.min_value
-                while val < hp.max_value:
-                    values.append(val)
-                    val += hp.step
+                # Match how KerasTuner generates the range
+                values = np.arange(
+                    hp.min_value, hp.max_value + 1e-7, step=hp.step)
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
             else:
@@ -283,8 +284,9 @@ def _convert_hyperparams_to_optimizer_params(
 
 
 def format_objective(
-    objective: Union[Text, oracle_module.Objective],
-    direction: Text = None) -> Optional[List[oracle_module.Objective]]:
+    objective: Union[Text, oracle_module.Objective,
+                     List[Union[Text, oracle_module.Objective]]],
+    direction: Text = None) -> List[oracle_module.Objective]:
     """Formats objective to a list of oracle_module.Objective.
 
     Arguments:

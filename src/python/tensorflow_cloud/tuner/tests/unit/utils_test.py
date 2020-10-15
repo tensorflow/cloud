@@ -14,6 +14,7 @@
 # limitations under the License.
 """Tests for utils."""
 
+from absl.testing import parameterized
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
 import tensorflow as tf
@@ -57,9 +58,43 @@ STUDY_CONFIG_INT_STEP = {
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "discrete_value_spec": {"values": [32, 64, 96]},
+            "discrete_value_spec": {"values": [32, 64, 96, 128]},
             "parameter": "units",
             "type": "DISCRETE",
+        }
+    ],
+}
+STUDY_CONFIG_FLOAT = {
+    "algorithm": "ALGORITHM_UNSPECIFIED",
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
+    "parameters": [
+        {
+            "double_value_spec": {"max_value": 0.8, "min_value": 0.1},
+            "parameter": "learning_rate",
+            "type": "DOUBLE",
+        }
+    ],
+}
+STUDY_CONFIG_FLOAT_STEP = {
+    "algorithm": "ALGORITHM_UNSPECIFIED",
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
+    "parameters": [
+        {
+            "discrete_value_spec": {"values": [0.1, 0.2, 0.3, 0.4, 0.5]},
+            "parameter": "units",
+            "type": "DISCRETE",
+        }
+    ],
+}
+STUDY_CONFIG_FLOAT_LINEAR_SCALE = {
+    "algorithm": "ALGORITHM_UNSPECIFIED",
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
+    "parameters": [
+        {
+            "double_value_spec": {"max_value": 0.8, "min_value": 0.1},
+            "parameter": "learning_rate",
+            "scale_type": "UNIT_LINEAR_SCALE",
+            "type": "DOUBLE",
         }
     ],
 }
@@ -71,6 +106,18 @@ STUDY_CONFIG_FLOAT_LOG_SCALE = {
             "double_value_spec": {"max_value": 0.1, "min_value": 0.0001},
             "parameter": "learning_rate",
             "scale_type": "UNIT_LOG_SCALE",
+            "type": "DOUBLE",
+        }
+    ],
+}
+STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE = {
+    "algorithm": "ALGORITHM_UNSPECIFIED",
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
+    "parameters": [
+        {
+            "double_value_spec": {"max_value": 0.1, "min_value": 0.0001},
+            "parameter": "learning_rate",
+            "scale_type": "UNIT_REVERSE_LOG_SCALE",
             "type": "DOUBLE",
         }
     ],
@@ -124,15 +171,38 @@ STUDY_CONFIG_FIXED_CATEGORICAL = {
         }
     ],
 }
+STUDY_CONFIG_FIXED_BOOLEAN = {
+    "algorithm": "ALGORITHM_UNSPECIFIED",
+    "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
+    "parameters": [
+        {
+            "categorical_value_spec": {"values": ["True"]},
+            "parameter": "type",
+            "type": "CATEGORICAL",
+        }
+    ],
+}
+OPTIMIZER_TRIAL = {
+    "name": "projects/project/locations/region/studies/study/trials/trial_1",
+    "state": "ACTIVE",
+    "parameters": [
+        {"parameter": "learning_rate", "floatValue": 0.0001},
+        {"parameter": "num_layers", "intValue": "2"},
+        {"parameter": "units_0", "floatValue": 96},
+        {"parameter": "units_1", "floatValue": 352},
+        {"parameter": "type", "stringValue": "WIDE_AND_DEEP"},
+    ],
+}
 EXPECTED_TRIAL_HPS = {
     "learning_rate": 0.0001,
     "num_layers": 2,
     "units_0": 96.0,
     "units_1": 352.0,
+    "type": "WIDE_AND_DEEP",
 }
 
 
-class CloudTunerUtilsTest(tf.test.TestCase):
+class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
 
     def convert_study_config_discrete(self):
         hps = hp_module.HyperParameters()
@@ -141,7 +211,7 @@ class CloudTunerUtilsTest(tf.test.TestCase):
             objective=oracle_module.Objective("val_accuracy", "max"),
             hyperparams=hps
         )
-        self.assertEqual(study_config, STUDY_CONFIG_DISCRETE)
+        self.assertDictEqual(study_config, STUDY_CONFIG_DISCRETE)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
@@ -151,38 +221,40 @@ class CloudTunerUtilsTest(tf.test.TestCase):
         hps.Choice("model_type", ["LINEAR", "WIDE_AND_DEEP"])
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_CATEGORICAL)
+        self.assertDictEqual(study_config, STUDY_CONFIG_CATEGORICAL)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
-    def convert_study_config_int(self):
+    @parameterized.parameters(
+        (1, 4, None, STUDY_CONFIG_INT),
+        (1, 4, 1, STUDY_CONFIG_INT),
+        (32, 128, 32, STUDY_CONFIG_INT_STEP))
+    def convert_study_config_int(self, min_value, max_value, step,
+                                 expected_config):
         hps = hp_module.HyperParameters()
-        hps.Int("units", min_value=1, max_value=4)
+        hps.Int("units", min_value=min_value, max_value=max_value, step=step)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_INT)
+        self.assertDictEqual(study_config, expected_config)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
 
-    def convert_study_config_int_step(self):
+    @parameterized.parameters(
+        (0.1, 0.5, None, None, STUDY_CONFIG_FLOAT),
+        (0.1, 0.5, 0.1, None, STUDY_CONFIG_FLOAT_STEP),
+        (0.1, 0.8, None, "linear", STUDY_CONFIG_FLOAT_LINEAR_SCALE),
+        (1e-4, 1e-1, None, "log", STUDY_CONFIG_FLOAT_LOG_SCALE),
+        (1e-4, 1e-1, None, "reverse_log", STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE))
+    def convert_study_config_float(self, min_value, max_value, step, sampling,
+                                   expected_config):
         hps = hp_module.HyperParameters()
-        hps.Int("units", min_value=32, max_value=128, step=32)
+        hps.Float("learning_rate", min_value=min_value, max_value=max_value,
+                  step=step, sampling=sampling)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_INT_STEP)
-
-        actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
-
-    def convert_study_config_float_log_scale(self):
-        hps = hp_module.HyperParameters()
-        hps.Float("learning_rate", min_value=1e-4, max_value=1e-1,
-                  sampling="log")
-        study_config = utils.make_study_config(
-            objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_FLOAT_LOG_SCALE)
+        self.assertDictEqual(study_config, expected_config)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
@@ -193,7 +265,7 @@ class CloudTunerUtilsTest(tf.test.TestCase):
         hps.Float("r", min_value=0.0, max_value=1.0)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_MULTI_FLOAT)
+        self.assertDictEqual(study_config, STUDY_CONFIG_MULTI_FLOAT)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
         self.assertEqual(actual_hps.space, hps.space)
@@ -203,79 +275,59 @@ class CloudTunerUtilsTest(tf.test.TestCase):
         hps.Boolean("has_beta")
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertEqual(study_config, STUDY_CONFIG_BOOL)
+        self.assertDictEqual(study_config, STUDY_CONFIG_BOOL)
 
-    def convert_study_config_fixed(self):
+    @parameterized.parameters(
+        ("beta", 0.1, STUDY_CONFIG_FIXED_FLOAT),
+        ("type", "WIDE_AND_DEEP", STUDY_CONFIG_INT),
+        ("condition", True, STUDY_CONFIG_FIXED_BOOLEAN))
+    def convert_study_config_fixed(self, name, value, expected_config):
         hps = hp_module.HyperParameters()
-        hps.Fixed("beta", 0.1)
-        study_config_float = utils.make_study_config(
+        hps.Fixed(name, value)
+        study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps
         )
-        self.assertEqual(study_config_float, STUDY_CONFIG_FIXED_FLOAT)
-
-        hps = hp_module.HyperParameters()
-        hps.Fixed("type", "WIDE_AND_DEEP")
-        study_config_categorical = utils.make_study_config(
-            objective="accuracy", hyperparams=hps
-        )
-        self.assertEqual(study_config_categorical,
-                         STUDY_CONFIG_FIXED_CATEGORICAL)
+        self.assertDictEqual(study_config, expected_config)
 
     def test_convert_optimizer_trial_to_dict(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        optimizer_trial = {
-            "name": "trial_name",
-            "state": "ACTIVE",
-            "parameters": [
-                {"parameter": "learning_rate", "floatValue": 0.0001},
-                {"parameter": "num_layers", "intValue": "2"},
-                {"parameter": "units_0", "floatValue": 96},
-                {"parameter": "units_1", "floatValue": 352},
-            ],
-        }
-        params = utils.convert_optimizer_trial_to_dict(optimizer_trial)
+        params = utils.convert_optimizer_trial_to_dict(OPTIMIZER_TRIAL)
         self.assertDictEqual(params, EXPECTED_TRIAL_HPS)
 
     def test_convert_optimizer_trial_to_hps(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        optimizer_trial = {
-            "name": "trial_name",
-            "state": "ACTIVE",
-            "parameters": [
-                {"parameter": "learning_rate", "floatValue": 0.0001},
-                {"parameter": "num_layers", "intValue": "2"},
-                {"parameter": "units_0", "floatValue": 96},
-                {"parameter": "units_1", "floatValue": 352},
-            ],
-        }
-        trial_hps = utils.convert_optimizer_trial_to_hps(hps, optimizer_trial)
+        trial_hps = utils.convert_optimizer_trial_to_hps(hps, OPTIMIZER_TRIAL)
         self.assertDictEqual(trial_hps.values, EXPECTED_TRIAL_HPS)
 
-    def test_format_objective(self):
-        objective = utils.format_objective(
-            oracle_module.Objective(name="val_acc", direction="max")
-        )
-        self.assertEqual(
-            objective,
-            [oracle_module.Objective(name="val_acc", direction="max")]
-        )
+    @parameterized.parameters(
+        ("val_loss", "min",
+         [oracle_module.Objective(name="val_loss", direction="min")]),
+        (oracle_module.Objective(name="val_acc", direction="max"), None,
+         [oracle_module.Objective(name="val_acc", direction="max")]),
+        ("accuracy", None,
+         [oracle_module.Objective(name="accuracy", direction="max")]),
+        (["val_acc", "val_loss"], None, [
+            oracle_module.Objective(name="val_acc", direction="max"),
+            oracle_module.Objective(name="val_loss", direction="min"),
+        ]))
+    def test_format_objective(self, objective, direction, expected_oracle_obj):
+        formatted_objective = utils.format_objective(objective, direction)
+        self.assertEqual(formatted_objective, expected_oracle_obj)
 
-        objective = utils.format_objective("accuracy")
-        self.assertEqual(
-            objective,
-            [oracle_module.Objective(name="accuracy", direction="max")]
-        )
+    @parameterized.parameters(
+        ("max", "MAXIMIZE"),
+        ("min", "MINIMIZE"),
+        ("MAXIMIZE", "max"),
+        ("MINIMIZE", "min"))
+    def test_format_goal(self, metric_direction, expected_goal):
+        goal = utils.format_goal(metric_direction)
+        self.assertEqual(goal, expected_goal)
 
-        objective = utils.format_objective(["val_acc", "val_loss"])
-        self.assertEqual(
-            objective,
-            [
-                oracle_module.Objective(name="val_acc", direction="max"),
-                oracle_module.Objective(name="val_loss", direction="min"),
-            ],
-        )
+    def test_get_trial_id(self):
+        trial_id = utils.get_trial_id(OPTIMIZER_TRIAL)
+        self.assertEqual(trial_id, "trial_1")
 
 
 if __name__ == "__main__":
