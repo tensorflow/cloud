@@ -130,6 +130,56 @@ class ContainerBuilder(object):
             for source, destination in file_path_map.items():
                 tar.add(source, arcname=destination)
 
+    def _get_docker_base_image(self):
+        """Returns the docker image to be used as the default base image."""
+        # If in a Kaggle environment, use the `KAGGLE_DOCKER_IMAGE` as the base
+        # image.
+        img = os.getenv("KAGGLE_DOCKER_IMAGE")
+        if img:
+            return img
+
+        tf_version = tf_utils.get_version()
+        if tf_version is not None:
+            # Updating the name for RC's to match with the TF generated
+            # RC Docker image names.
+            tf_version = tf_version.replace("-rc", "rc")
+            # Get the TF Docker parent image to use based on the current
+            # TF version.
+            img = "tensorflow/tensorflow:{}".format(tf_version)
+            if (self.chief_config.accelerator_type !=
+                machine_config.AcceleratorType.NO_ACCELERATOR):
+                img += "-gpu"
+
+            # Add python 3 tag for TF version <= 2.1.0
+            # https://hub.docker.com/r/tensorflow/tensorflow
+            v = tf_version.split(".")
+            if float(v[0] + "." + v[1]) <= 2.1:
+                img += "-py3"
+
+        # Use the latest TF docker image if a local installation is not
+        # available or if the docker image corresponding to the `tf_version`
+        # does not exist.
+        if not (img and self._image_exists(img)):
+            warnings.warn(
+                "TF Cloud `run` API uses docker, with a TF parent image "
+                "matching your local TF version, for containerizing your "
+                "code. A TF Docker image does not exist for the TF version "
+                "you are using: {}"
+                "We are replacing this with the latest stable TF Docker "
+                "image available: `tensorflow/tensorflow:latest`"
+                "Please see "
+                "https://hub.docker.com/r/tensorflow/tensorflow/ "
+                "for details on the available Docker images."
+                "If you are seeing any code compatibility issues because of"
+                " the TF version change, please try using a custom "
+                "`docker_config.parent_image` with the required "
+                "TF version.".format(tf_version))
+            new_img = "tensorflow/tensorflow:latest"
+            if img and img.endswith("-gpu"):
+                new_img += "-gpu"
+            img = new_img
+        return img
+
     def _create_docker_file(self):
         """Creates a Dockerfile."""
         if self.docker_config:
@@ -137,48 +187,7 @@ class ContainerBuilder(object):
         else:
           parent_image = None
         if parent_image is None:
-            # Use the latest TF Docker image if a local installation
-            # is not available.
-            tf_version = tf_utils.get_version()
-            # Updating the name for RC's to match with the TF generated
-            # RC Docker image names.
-            tf_version = tf_version.replace("-rc", "rc")
-            # Get the TF Docker parent image to use based on the current
-            # TF version.
-            parent_image = "tensorflow/tensorflow:{}".format(
-                tf_version)
-            if (
-                self.chief_config.accelerator_type
-                != machine_config.AcceleratorType.NO_ACCELERATOR
-            ):
-                parent_image += "-gpu"
-
-            # Add python 3 tag for TF version <= 2.1.0
-            # https://hub.docker.com/r/tensorflow/tensorflow
-            if tf_version != "latest":
-                v = tf_version.split(".")
-                if float(v[0] + "." + v[1]) <= 2.1:
-                    parent_image += "-py3"
-
-            if not self._image_exists(parent_image):
-                warnings.warn(
-                    "TF Cloud `run` API uses docker, with a TF parent image "
-                    "matching your local TF version, for containerizing your "
-                    "code. A TF Docker image does not exist for the TF version "
-                    "you are using: {}"
-                    "We are replacing this with the latest stable TF Docker "
-                    "image available: `tensorflow/tensorflow:latest`"
-                    "Please see "
-                    "https://hub.docker.com/r/tensorflow/tensorflow/ "
-                    "for details on the available Docker images."
-                    "If you are seeing any code compatibility issues because of"
-                    " the TF version change, please try using a custom "
-                    "`docker_config.parent_image` with the required "
-                    "TF version.".format(tf_version))
-                newtag = "tensorflow/tensorflow:latest"
-                if parent_image.endswith("-gpu"):
-                    newtag += "-gpu"
-                parent_image = newtag
+            parent_image = self._get_docker_base_image()
 
         lines = [
             "FROM {}".format(parent_image),

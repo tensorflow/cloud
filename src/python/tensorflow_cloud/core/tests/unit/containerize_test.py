@@ -160,6 +160,28 @@ class TestContainerize(absltest.TestCase):
                                 lcb.docker_file_path)
         self.cleanup(lcb.docker_file_path)
 
+    def test_create_docker_file_with_kaggle_base_image(self):
+        self.setup()
+        os.environ["KAGGLE_DOCKER_IMAGE"] = "gcr.io/kaggle-images/python"
+        lcb = containerize.LocalContainerBuilder(
+            self.entry_point,
+            None,
+            self.chief_config,
+            self.worker_config,
+        )
+        lcb._create_docker_file()
+
+        expected_docker_file_lines = [
+            "FROM gcr.io/kaggle-images/python\n",
+            "WORKDIR /app/\n",
+            "COPY /app/ /app/\n",
+            'ENTRYPOINT ["python", "sample.py"]',
+        ]
+        self.assert_docker_file(expected_docker_file_lines,
+                                lcb.docker_file_path)
+        del os.environ["KAGGLE_DOCKER_IMAGE"]
+        self.cleanup(lcb.docker_file_path)
+
     def test_create_docker_file_with_cpu_config(self):
         self.setup()
         lcb = containerize.LocalContainerBuilder(
