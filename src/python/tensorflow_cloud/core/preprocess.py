@@ -190,7 +190,7 @@ def get_preprocessed_entry_point(
                 script_lines.append(line)
 
     # Create a tmp wrapped entry point script file.
-    _, output_file = tempfile.mkstemp(suffix=".py")
+    file_descriptor, output_file = tempfile.mkstemp(suffix=".py")
     with open(output_file, "w") as f:
         f.writelines(script_lines)
         
