@@ -192,13 +192,14 @@ def run(
     if (distribution_strategy == "auto"
         or entry_point.endswith("ipynb")
         or entry_point is None):
-        preprocessed_entry_point = preprocess.get_preprocessed_entry_point(
+        preprocessed_entry_point, pep_file_descriptor = preprocess.get_preprocessed_entry_point(
             entry_point,
             chief_config,
             worker_config,
             worker_count,
             distribution_strategy,
             called_from_notebook=called_from_notebook,
+            return_file_descriptor=True,
         )
 
     # Create Docker file, generate a tarball, build and push Docker
@@ -225,9 +226,11 @@ def run(
 
     # Delete all the temporary files we created.
     if preprocessed_entry_point is not None:
+        os.close(pep_file_descriptor)
         os.remove(preprocessed_entry_point)
-    for f in container_builder.get_generated_files():
-        os.remove(f)
+    for file_path, file_descriptor in container_builder.get_generated_files(return_descriptors=True):
+        os.close(file_descriptor)
+        os.remove(file_path)
 
     # Deploy Docker image on the cloud.
     job_id = deploy.deploy_job(

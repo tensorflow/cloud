@@ -42,6 +42,7 @@ def get_preprocessed_entry_point(
     worker_count,
     distribution_strategy,
     called_from_notebook=False,
+    return_file_descriptor=False
 ):
     """Creates python script for distribution based on the given `entry_point`.
 
@@ -102,6 +103,8 @@ def get_preprocessed_entry_point(
             `worker_count` params.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
+        return_file_descriptor: Boolean. True if the file descriptor for the 
+            temporary file is also returned.
 
     Returns:
         The `preprocessed_entry_point` file path.
@@ -190,7 +193,12 @@ def get_preprocessed_entry_point(
     _, output_file = tempfile.mkstemp(suffix=".py")
     with open(output_file, "w") as f:
         f.writelines(script_lines)
-    return output_file
+        
+    # Returning file descriptor could be necessary for some os.close calls
+    if return_file_descriptor:
+      return (output_file, file_descriptor)
+    else:
+      return output_file
 
 
 def _get_colab_notebook_content():
