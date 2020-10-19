@@ -47,7 +47,7 @@ pip install -U tensorflow-cloud
 #### Install from source
 
 ```shell
-git clone https://github.com/tensorflow/cloud.git
+git clone https://github.com/AdmitHub/cloud.git
 cd cloud
 pip install src/python/.
 ```
