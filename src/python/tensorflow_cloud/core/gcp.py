@@ -117,7 +117,7 @@ def get_machine_type(cpu_cores, memory, accelerator_type):
 
 
 def get_cloud_tpu_supported_tf_versions():
-    return ["2.1", "2.2"]
+    return ["2.1", "2.2.0"]
 
 
 def _get_valid_machine_configurations():

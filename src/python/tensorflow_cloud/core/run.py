@@ -29,8 +29,8 @@ from . import validate
 
 
 def remote():
-  """True when code is run in a remote cloud environment by TF Cloud."""
-  return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
+    """True when code is run in a remote cloud environment by TF Cloud."""
+    return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
 
 
 def run(
@@ -191,7 +191,7 @@ def run(
     preprocessed_entry_point = None
     if (distribution_strategy == "auto"
         or entry_point.endswith("ipynb")
-        or entry_point is None):
+            or entry_point is None):
         preprocessed_entry_point = preprocess.get_preprocessed_entry_point(
             entry_point,
             chief_config,
