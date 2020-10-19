@@ -307,7 +307,7 @@ class TestValidate(absltest.TestCase):
         mock_get_version.return_value = "2.2.0"
         with self.assertRaisesRegex(
             NotImplementedError,
-            r"TPUs are only supported for TF version <= 2.1.0",
+            r"TPUs are only supported for TF version <= 2.2.0",
         ):
             validate.validate(
                 entry_point=None,

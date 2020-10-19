@@ -62,7 +62,7 @@ class RunOnScriptTest(tf.test.TestCase):
             worker_count=1,
             worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"],
             docker_config=tfc.DockerConfig(
-                parent_image="tensorflow/tensorflow:2.1.0"),
+                parent_image="tensorflow/tensorflow:2.2.0"),
         )
 
     def auto_one_device_strategy(self):

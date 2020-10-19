@@ -86,7 +86,7 @@ def _validate_files(entry_point, requirements_txt):
     """Validates all the file path params."""
     cwd = os.getcwd()
     if entry_point is not None and (
-        not os.path.isfile(os.path.join(cwd, entry_point))):
+            not os.path.isfile(os.path.join(cwd, entry_point))):
         raise ValueError(
             "Invalid `entry_point`. "
             "Expected a relative path in the current directory tree. "
@@ -141,7 +141,7 @@ def _validate_cluster_config(
         )
 
     if (worker_count > 0 and
-        not isinstance(worker_config, machine_config.MachineConfig)):
+            not isinstance(worker_config, machine_config.MachineConfig)):
         raise ValueError(
             "Invalid `worker_config` input. "
             'Expected "auto" or `MachineConfig` instance. '
@@ -168,9 +168,9 @@ def _validate_cluster_config(
             # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
             version = tf_utils.get_version()
             if (version is not None and
-                version not in gcp.get_cloud_tpu_supported_tf_versions()):
+                    version not in gcp.get_cloud_tpu_supported_tf_versions()):
                 raise NotImplementedError(
-                    "TPUs are only supported for TF version <= 2.1.0"
+                    "TPUs are only supported for TF version <= 2.2.0"
                 )
 
 

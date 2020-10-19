@@ -148,7 +148,7 @@ def _create_request_dict(
         # Use TF runtime version 2.1 (latest supported) as the default.
         # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
         if machine_config.is_tpu_config(worker_config):
-            worker_machine_config["tpuTfVersion"] = "2.1"
+            worker_machine_config["tpuTfVersion"] = "2.2"
         training_input["workerConfig"] = worker_machine_config
 
     if entry_point_args is not None:
