@@ -154,6 +154,10 @@ class CloudOracle(oracle_module.Oracle):
             SuggestionInactiveError: Indicates that a suggestion was requested
                 from an inactive study.
         """
+        # Allow for multi-worker DistributionStrategy within a Trial.
+        if tuner_id in self.ongoing_trials:
+            return self.ongoing_trials[tuner_id]
+
         # List all trials from the same study and see if any
         # trial.status=STOPPED or if number of trials >= max_limit.
         trial_list = self.service.list_trials()
@@ -280,7 +284,12 @@ class CloudOracle(oracle_module.Oracle):
         )
 
         if status == trial_module.TrialStatus.COMPLETED:
-            final_measurement = optimizer_trial["finalMeasurement"]
+            if optimizer_trial.get("finalMeasurement"):
+                final_measurement = optimizer_trial["finalMeasurement"]
+            else:
+                # If finalMeasurement is None, use the last measurement.
+                final_measurement = optimizer_trial["measurement"][-1]
+
             # If epoch = 1, set the best_step = 1.
             kerastuner_trial.best_step = int(
                 final_measurement.get("stepCount", 1))
