@@ -54,35 +54,35 @@ To start, let's walk through a simple workflow using this API.
 1.  Let's begin with a Keras model training code such as the following, saved as
     `mnist_example.py`.
 
-    ```python
-    import tensorflow as tf
+```python
+import tensorflow as tf
 
-    (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
+(x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
 
-    x_train = x_train.reshape((60000, 28 * 28))
-    x_train = x_train.astype('float32') / 255
+x_train = x_train.reshape((60000, 28 * 28))
+x_train = x_train.astype('float32') / 255
 
-    model = tf.keras.Sequential([
-      tf.keras.layers.Dense(512, activation='relu', input_shape=(28 * 28,)),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.Dense(10, activation='softmax')
-    ])
+model = tf.keras.Sequential([
+  tf.keras.layers.Dense(512, activation='relu', input_shape=(28 * 28,)),
+  tf.keras.layers.Dropout(0.2),
+  tf.keras.layers.Dense(10, activation='softmax')
+])
 
-    model.compile(loss='sparse_categorical_crossentropy',
-                  optimizer=tf.keras.optimizers.Adam(),
-                  metrics=['accuracy'])
+model.compile(loss='sparse_categorical_crossentropy',
+              optimizer=tf.keras.optimizers.Adam(),
+              metrics=['accuracy'])
 
-    model.fit(x_train, y_train, epochs=10, batch_size=128)
-    ```
+model.fit(x_train, y_train, epochs=10, batch_size=128)
+```
 
 1.  After you have tested this model on your local environment for a few epochs,
     probably with a small dataset, you can train the model on Google Cloud by
     writing the following simple script `scale_mnist.py`.
 
-    ```python
-    import tensorflow_cloud as tfc
-    tfc.run(entry_point='mnist_example.py')
-    ```
+```python
+import tensorflow_cloud as tfc
+tfc.run(entry_point='mnist_example.py')
+```
 
     Running `scale_mnist.py` will automatically apply TensorFlow
     [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy)
@@ -93,13 +93,13 @@ To start, let's walk through a simple workflow using this API.
 1.  You will see an output similar to the following on your console. This
     information can be used to track the training job status.
 
-    ```shell
-    user@desktop$ python scale_mnist.py
-    Job submitted successfully.
-    Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
-    Please access your job logs at the following URL:
-    https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
-    ```
+```shell
+user@desktop$ python scale_mnist.py
+Job submitted successfully.
+Your job ID is:  tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e
+Please access your job logs at the following URL:
+https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
+```
 
 ### Setup instructions
 
@@ -107,62 +107,62 @@ End to end instructions to help set up your environment for Tensorflow Cloud.
 
 1.  Create a new local directory
 
-    ```shell
-    mkdir tensorflow_cloud
-    cd tensorflow_cloud
-    ```
+```shell
+mkdir tensorflow_cloud
+cd tensorflow_cloud
+```
 
 1.  Make sure you have `python >= 3.5`
 
-    ```shell
-    python -V
-    ```
+```shell
+python -V
+```
 
 1.  Set up virtual environment
 
-    ```shell
-    virtualenv tfcloud --python=python3
-    source tfcloud/bin/activate
-    ```
+```shell
+virtualenv tfcloud --python=python3
+source tfcloud/bin/activate
+```
 
 1.  [Set up your Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 
     Verify that gcloud sdk is installed.
 
-    ```shell
-    which gcloud
-    ```
+```shell
+which gcloud
+```
 
     Set default gcloud project
 
-    ```shell
-    export PROJECT_ID=<your-project-id>
-    gcloud config set project $PROJECT_ID
-    ```
+```shell
+export PROJECT_ID=<your-project-id>
+gcloud config set project $PROJECT_ID
+```
 
 1.  [Authenticate your GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
 
     Create a service account.
 
-    ```shell
-    export SA_NAME=<your-sa-name>
-    gcloud iam service-accounts create $SA_NAME
-    gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
-        --role 'roles/editor'
-    ```
+```shell
+export SA_NAME=<your-sa-name>
+gcloud iam service-accounts create $SA_NAME
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
+    --role 'roles/editor'
+```
 
     Create a key for your service account.
 
-    ```shell
-    gcloud iam service-accounts keys create ~/key.json --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
-    ```
+```shell
+gcloud iam service-accounts keys create ~/key.json --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
+```
 
     Create the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
-    ```shell
-    export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
-    ```
+```shell
+export GOOGLE_APPLICATION_CREDENTIALS=~/key.json
+```
 
 1.  [Create a Cloud Storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket).
     Using [Google Cloud build](https://cloud.google.com/cloud-build) is the
@@ -171,28 +171,34 @@ End to end instructions to help set up your environment for Tensorflow Cloud.
     [docker daemon process](https://docs.docker.com/config/daemon/#start-the-daemon-manually)
     depending on your specific needs.
 
-    ```shell
-    BUCKET_NAME="your-bucket-name"
-    REGION="us-central1"
-    gcloud auth login
-    gsutil mb -l $REGION gs://$BUCKET_NAME
-    ```
+```shell
+BUCKET_NAME="your-bucket-name"
+REGION="us-central1"
+gcloud auth login
+gsutil mb -l $REGION gs://$BUCKET_NAME
+```
 
     (optional for local docker setup) `shell sudo dockerd`
+
+1.  Authenticate access to Google Cloud registry.
+
+```shell
+gcloud auth configure-docker
+```
 
 1.  Install [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you plan
     to use a notebook file `entry_point` as shown in
     [usage guide #4](#usage-guide).
 
-    ```shell
-    pip install nbconvert
-    ```
+```shell
+pip install nbconvert
+```
 
 1.  Install latest release of tensorflow-cloud
 
-    ```shell
-    pip install tensorflow-cloud
-    ```
+```shell
+pip install tensorflow-cloud
+```
 
 ### Usage guide
 
@@ -225,10 +231,10 @@ run(entry_point=None,
     then you can write the following simple script (`scale_mnist.py`) to scale
     your model on GCP.
 
-    ```python
-    import tensorflow_cloud as tfc
-    tfc.run(entry_point='mnist_example.py')
-    ```
+```python
+import tensorflow_cloud as tfc
+tfc.run(entry_point='mnist_example.py')
+```
 
     Please note that all the files in the same directory tree as `entry_point`
     will be packaged in the docker image created, along with the `entry_point`
@@ -242,10 +248,10 @@ run(entry_point=None,
     (`mnist_example.ipynb`), then you can write the following simple script
     (`scale_mnist.py`) to scale your model on GCP.
 
-    ```python
-    import tensorflow_cloud as tfc
-    tfc.run(entry_point='mnist_example.ipynb')
-    ```
+```python
+import tensorflow_cloud as tfc
+tfc.run(entry_point='mnist_example.ipynb')
+```
 
     Please note that all the files in the same directory tree as `entry_point`
     will be packaged in the docker image created, along with the `entry_point`
@@ -261,53 +267,53 @@ run(entry_point=None,
     executed remotely. The API can be called at the end to run the script
     locally for debugging purposes (possibly with fewer epochs and other flags).
 
-    ```python
-    import tensorflow_datasets as tfds
-    import tensorflow as tf
-    import tensorflow_cloud as tfc
+```python
+import tensorflow_datasets as tfds
+import tensorflow as tf
+import tensorflow_cloud as tfc
 
-    tfc.run(
-        entry_point=None,
-        distribution_strategy='auto',
-        requirements_txt='requirements.txt',
-        chief_config=tfc.MachineConfig(
-                cpu_cores=8,
-                memory=30,
-                accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
-                accelerator_count=2),
-        worker_count=0)
+tfc.run(
+    entry_point=None,
+    distribution_strategy='auto',
+    requirements_txt='requirements.txt',
+    chief_config=tfc.MachineConfig(
+            cpu_cores=8,
+            memory=30,
+            accelerator_type=tfc.AcceleratorType.NVIDIA_TESLA_T4,
+            accelerator_count=2),
+    worker_count=0)
 
-    datasets, info = tfds.load(name='mnist', with_info=True, as_supervised=True)
-    mnist_train, mnist_test = datasets['train'], datasets['test']
+datasets, info = tfds.load(name='mnist', with_info=True, as_supervised=True)
+mnist_train, mnist_test = datasets['train'], datasets['test']
 
-    num_train_examples = info.splits['train'].num_examples
-    num_test_examples = info.splits['test'].num_examples
+num_train_examples = info.splits['train'].num_examples
+num_test_examples = info.splits['test'].num_examples
 
-    BUFFER_SIZE = 10000
-    BATCH_SIZE = 64
+BUFFER_SIZE = 10000
+BATCH_SIZE = 64
 
-    def scale(image, label):
-        image = tf.cast(image, tf.float32)
-        image /= 255
-        return image, label
+def scale(image, label):
+    image = tf.cast(image, tf.float32)
+    image /= 255
+    return image, label
 
-    train_dataset = mnist_train.map(scale).cache()
-    train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+train_dataset = mnist_train.map(scale).cache()
+train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
-    model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, 3, activation='relu', input_shape=(
-            28, 28, 1)),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(10, activation='softmax')
-    ])
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, 3, activation='relu', input_shape=(
+        28, 28, 1)),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
 
-    model.compile(loss='sparse_categorical_crossentropy',
-                  optimizer=tf.keras.optimizers.Adam(),
-                  metrics=['accuracy'])
-    model.fit(train_dataset, epochs=12)
-    ```
+model.compile(loss='sparse_categorical_crossentropy',
+              optimizer=tf.keras.optimizers.Adam(),
+              metrics=['accuracy'])
+model.fit(train_dataset, epochs=12)
+```
 
     Please note that all the files in the same directory tree as the python
     script will be packaged in the docker image created, along with the python
@@ -332,51 +338,51 @@ run(entry_point=None,
 
     CPU chief config and no additional workers
 
-    ```python
-    tfc.run(entry_point='mnist_example.py',
-            chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'])
-    ```
+```python
+tfc.run(entry_point='mnist_example.py',
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'])
+```
 
     ***OneDeviceStrategy***
 
     1 GPU on chief (defaults to `AcceleratorType.NVIDIA_TESLA_T4`) and no
     additional workers.
 
-    ```python
-    tfc.run(entry_point='mnist_example.py')
-    ```
+```python
+tfc.run(entry_point='mnist_example.py')
+```
 
     ***MirroredStrategy***
 
     Chief config with multiple GPUS (`AcceleratorType.NVIDIA_TESLA_V100`).
 
-    ```python
-    tfc.run(entry_point='mnist_example.py',
-            chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_4X'])
-    ```
+```python
+tfc.run(entry_point='mnist_example.py',
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_4X'])
+```
 
     ***MultiWorkerMirroredStrategy***
 
     Chief config with 1 GPU and 2 workers each with 8 GPUs
     (`AcceleratorType.NVIDIA_TESLA_V100`).
 
-    ```python
-    tfc.run(entry_point='mnist_example.py',
-            chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_1X'],
-            worker_count=2,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
-    ```
+```python
+tfc.run(entry_point='mnist_example.py',
+        chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_1X'],
+        worker_count=2,
+        worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
+```
 
     ***TPUStrategy***
 
     Chief config with 1 CPU and 1 worker with TPU.
 
-    ```python
-    tfc.run(entry_point="mnist_example.py",
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
-            worker_count=1,
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"])
-    ```
+```python
+tfc.run(entry_point="mnist_example.py",
+        chief_config=tfc.COMMON_MACHINE_CONFIGS["CPU"],
+        worker_count=1,
+        worker_config=tfc.COMMON_MACHINE_CONFIGS["TPU"])
+```
 
     Please note that TPUStrategy with TensorFlow Cloud works only with TF
     version 2.1 as this is the latest version supported by
@@ -389,11 +395,11 @@ run(entry_point=None,
     `distribution_stategy` as `None`. This will be required for example when you
     are using `strategy.experimental_distribute_dataset`.
 
-    ```python
-    tfc.run(entry_point='mnist_example.py',
-            distribution_strategy=None,
-            worker_count=2)
-    ```
+```python
+tfc.run(entry_point='mnist_example.py',
+        distribution_strategy=None,
+        worker_count=2)
+```
 
 #### What happens when you call run?
 
