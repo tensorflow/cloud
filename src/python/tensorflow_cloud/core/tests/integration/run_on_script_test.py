@@ -169,6 +169,18 @@ class RunOnScriptTest(tf.test.TestCase):
             chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
         )
 
+    def cloud_build_base_image_backward_compatibility(self):
+        return tfc.run(
+            entry_point=os.path.join(self.test_data_path,
+                                     "mnist_example_using_fit.py"),
+            requirements_txt=os.path.join(self.test_data_path,
+                                          "requirements.txt"),
+            docker_image_bucket_name=_TEST_BUCKET,
+            docker_base_image="gcr.io/deeplearning-platform-release"
+                              "/tf2-gpu.2-2:latest",
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+        )
+
     def test_run_on_script(self):
         track_status = {
             "auto_mirrored_strategy": self.auto_mirrored_strategy(),
@@ -181,6 +193,8 @@ class RunOnScriptTest(tf.test.TestCase):
             "docker_config_image": self.docker_config_image(),
             "docker_config_cache_from": self.docker_config_cache_from(),
             "job_labels": self.job_labels(),
+            "cloud_build_base_image_backward_compatibility":
+                self.cloud_build_base_image_backward_compatibility(),
         }
 
         for test_name, ret_val in track_status.items():

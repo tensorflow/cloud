@@ -134,6 +134,9 @@ def run(
     if remote():
         return
 
+    docker_base_image = kwargs.pop("docker_base_image", None)
+    docker_image_bucket_name = kwargs.pop("docker_image_bucket_name", None)
+
     if kwargs:
         # We are using kwargs for forward compatibility in the cloud. For eg.,
         # if a new param is added to `run` API, this will not exist in the
@@ -158,10 +161,9 @@ def run(
     if docker_config == "auto":
         docker_config = docker_config_module.DockerConfig()
     docker_config.parent_image = (docker_config.parent_image or
-                                  kwargs.pop("docker_base_image", None))
-    docker_config.image_build_bucket = (
-        docker_config.image_build_bucket or
-        kwargs.pop("docker_image_bucket_name", None))
+                                  docker_base_image)
+    docker_config.image_build_bucket = (docker_config.image_build_bucket or
+                                        docker_image_bucket_name)
 
     # Working directory in the Docker container filesystem.
     destination_dir = "/app/"
