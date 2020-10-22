@@ -317,6 +317,35 @@ class CloudTunerTest(tf.test.TestCase):
         with self.assertRaises(ValueError):
             self.tuner.oracle.end_trial(trial_id="1", status="FOO")
 
+    def test_get_trial_success(self):
+        self._tuner_with_hparams()
+        self.mock_client.get_trial.return_value = {
+            "name": "1",
+            "state": "COMPLETED",
+            "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
+            "finalMeasurement": {
+                "stepCount": 3,
+                "metrics": [{"metric": "val_acc", "value": 0.7}],
+            },
+            "trial_infeasible": False,
+            "infeasible_reason": None,
+        }
+        trial = self.tuner.oracle.get_trial(trial_id="1")
+        self.mock_client.get_trial.assert_called_once_with("1")
+        self.assertEqual(trial.trial_id, "1")
+        self.assertEqual(trial.score, 0.7)
+        self.assertEqual(trial.status, trial_module.TrialStatus.COMPLETED)
+        self.assertEqual(trial.hyperparameters.values, {"learning_rate": 0.01})
+
+    def test_get_trial_failed(self):
+        self._tuner_with_hparams()
+        self.mock_client.get_trial.return_value = {
+            "name": "1",
+            "state": "FOO"
+        }
+        with self.assertRaises(ValueError):
+            self.tuner.oracle.get_trial(trial_id="1")
+
     def test_get_best_trials(self):
         self._tuner_with_hparams()
 

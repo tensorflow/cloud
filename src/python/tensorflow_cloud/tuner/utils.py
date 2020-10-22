@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Text, Union
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import metrics_tracking
 from kerastuner.engine import oracle as oracle_module
+from kerastuner.engine import trial as trial_module
 import numpy as np
 
 # CAIP Optimizer constants.
@@ -413,6 +414,39 @@ def convert_optimizer_trial_to_hps(
     hps = hp_module.HyperParameters.from_config(hps.get_config())
     hps.values = convert_optimizer_trial_to_dict(optimizer_trial)
     return hps
+
+
+def convert_optimizer_trial_to_keras_trial(
+    optimizer_trial: Dict[Text, Any],
+    hyperparameter_space: hp_module.HyperParameters,
+) -> trial_module.Trial:
+    """Converts completed Optimizer Trial into KerasTuner Trial.
+
+    Arguments:
+        optimizer_trial: A CAIP Optimizer Trial Instance.
+        hyperparameter_space: Mandatory and must include definitions for all
+            hyperparameters used during the search.
+
+    Returns:
+        A KerasTuner Trial.
+    """
+    kerastuner_trial = trial_module.Trial(
+        hyperparameters=convert_optimizer_trial_to_hps(
+            hyperparameter_space, optimizer_trial
+        ),
+        trial_id=get_trial_id(optimizer_trial),
+        status=trial_module.TrialStatus.COMPLETED,
+    )
+    # If trial had ended before having intermediate metric reporting,
+    # set stepCount = 0.
+    final_measurement = optimizer_trial.get("finalMeasurement")
+    if not final_measurement:
+        raise ValueError('"finalMeasurement" not found in this trial {}'
+                         .format(optimizer_trial))
+
+    kerastuner_trial.best_step = final_measurement.get("stepCount", 0)
+    kerastuner_trial.score = final_measurement["metrics"][0].get("value")
+    return kerastuner_trial
 
 
 def _format_sampling(scale_type: Text) -> Optional[Text]:

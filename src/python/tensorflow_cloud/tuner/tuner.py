@@ -281,13 +281,29 @@ class CloudOracle(oracle_module.Oracle):
 
         if status == trial_module.TrialStatus.COMPLETED:
             final_measurement = optimizer_trial["finalMeasurement"]
-            # If epoch = 1, set the best_step = 1.
+            # If epochs = 1, set the best_step = 0.
             kerastuner_trial.best_step = int(
-                final_measurement.get("stepCount", 1))
+                final_measurement.get("stepCount", 0))
             kerastuner_trial.score = final_measurement["metrics"][0].get(
                 "value")
         self._save_trial(kerastuner_trial)
         self.save()
+
+    def get_trial(self, trial_id: Text) -> trial_module.Trial:
+        """Returns a completed KerasTuner Trial given the trial_id."""
+        # Note that this is called in Tuner.on_trial_end.
+
+        optimizer_trial = self.service.get_trial(trial_id)
+
+        if optimizer_trial["state"] != "COMPLETED":
+            raise ValueError("The trial status is not COMPLETED, found {}"
+                             .format(optimizer_trial["state"]))
+
+        # Convert a completed Optimizer trial to KerasTuner Trial instance.
+        kerastuner_trial = utils.convert_optimizer_trial_to_keras_trial(
+            optimizer_trial,
+            self.hyperparameters.copy())
+        return kerastuner_trial
 
     def get_best_trials(self, num_trials: int = 1) -> List[trial_module.Trial]:
         """Returns the trials with the best objective values found so far.
@@ -322,20 +338,11 @@ class CloudOracle(oracle_module.Oracle):
         best_optimizer_trials = sorted_trials[:num_trials]
 
         best_trials = []
-        # Convert Optimizer trials to KerasTuner Trial instance
+        # Convert completed Optimizer trials to KerasTuner Trial instances.
         for optimizer_trial in best_optimizer_trials:
-            final_measurement = optimizer_trial["finalMeasurement"]
-            kerastuner_trial = trial_module.Trial(
-                hyperparameters=utils.convert_optimizer_trial_to_hps(
-                    self.hyperparameters.copy(), optimizer_trial
-                ),
-                trial_id=utils.get_trial_id(optimizer_trial),
-                status=trial_module.TrialStatus.COMPLETED,
-            )
-            # If trial had ended before having intermediate metric reporting,
-            # set epoch = 1.
-            kerastuner_trial.best_step = final_measurement.get("stepCount", 1)
-            kerastuner_trial.score = final_measurement["metrics"][0]["value"]
+            kerastuner_trial = utils.convert_optimizer_trial_to_keras_trial(
+                optimizer_trial,
+                self.hyperparameters.copy())
             best_trials.append(kerastuner_trial)
         return best_trials
 

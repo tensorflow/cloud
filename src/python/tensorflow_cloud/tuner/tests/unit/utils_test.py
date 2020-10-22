@@ -17,6 +17,7 @@
 from absl.testing import parameterized
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
+from kerastuner.engine import trial as trial_module
 import tensorflow as tf
 from tensorflow_cloud.tuner.tuner import utils
 
@@ -193,6 +194,17 @@ OPTIMIZER_TRIAL = {
         {"parameter": "type", "stringValue": "WIDE_AND_DEEP"},
     ],
 }
+COMPLETED_OPTIMIZER_TRIAL = {
+    "name": "projects/project/locations/region/studies/study/trials/trial_1",
+    "state": "ACTIVE",
+    "parameters": [
+        {"parameter": "learning_rate", "floatValue": 0.0001},
+    ],
+    "finalMeasurement":
+        {
+            "stepCount": 1,
+            "metrics": [{"value": 0.9}]},
+}
 EXPECTED_TRIAL_HPS = {
     "learning_rate": 0.0001,
     "num_layers": 2,
@@ -300,6 +312,17 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
         trial_hps = utils.convert_optimizer_trial_to_hps(hps, OPTIMIZER_TRIAL)
         self.assertDictEqual(trial_hps.values, EXPECTED_TRIAL_HPS)
+
+    def test_convert_optimizer_trial_to_keras_trial(self):
+        hps = hp_module.HyperParameters()
+        hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
+        trial = utils.convert_optimizer_trial_to_keras_trial(
+            COMPLETED_OPTIMIZER_TRIAL, hps)
+        self.assertEqual(trial.trial_id, "trial_1")
+        self.assertEqual(trial.score, 0.9)
+        self.assertEqual(trial.status, trial_module.TrialStatus.COMPLETED)
+        self.assertEqual(
+            trial.hyperparameters.values, {"learning_rate": 0.0001})
 
     @parameterized.parameters(
         ("val_loss", "min",
