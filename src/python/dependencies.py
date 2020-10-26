@@ -34,4 +34,5 @@ def make_required_test_packages():
         "flake8",
         "mock",
         "numpy",
+        "nbconvert",
     ]
