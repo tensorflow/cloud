@@ -22,8 +22,8 @@ from googleapiclient import discovery
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from tensorflow_cloud.experimental.cloud_fit import client
-from tensorflow_cloud.experimental.cloud_fit import utils
+from tensorflow_cloud.tuner import cloud_fit_client as client
+from tensorflow_cloud.tuner import cloud_fit_utils as utils
 from tensorflow_cloud.utils import google_api_client
 
 # Can only export Datasets which were created executing eagerly

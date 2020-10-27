@@ -31,11 +31,11 @@ from absl import logging
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from tensorflow_cloud.experimental.cloud_fit import utils
+from tensorflow_cloud.tuner import cloud_fit_utils
 
-MULTI_WORKER_MIRRORED_STRATEGY_NAME = utils.MULTI_WORKER_MIRRORED_STRATEGY_NAME
-MIRRORED_STRATEGY_NAME = utils.MIRRORED_STRATEGY_NAME
-SUPPORTED_DISTRIBUTION_STRATEGIES = utils.SUPPORTED_DISTRIBUTION_STRATEGIES
+MULTI_WORKER_MIRRORED_STRATEGY_NAME = cloud_fit_utils.MULTI_WORKER_MIRRORED_STRATEGY_NAME
+MIRRORED_STRATEGY_NAME = cloud_fit_utils.MIRRORED_STRATEGY_NAME
+SUPPORTED_DISTRIBUTION_STRATEGIES = cloud_fit_utils.SUPPORTED_DISTRIBUTION_STRATEGIES
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string(
@@ -88,7 +88,7 @@ def run(
     ]()
 
     with distribution_strategy.scope():
-        if utils.is_tf_v1():
+        if cloud_fit_utils.is_tf_v1():
             training_assets_graph = tf.compat.v2.saved_model.load(
                 export_dir=os.path.join(remote_dir, "training_assets"),
                 tags=None)

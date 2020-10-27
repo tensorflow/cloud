@@ -2,7 +2,7 @@
 
 ## What is this module?
 
-`cloud_fit` is an experimental module which is part of the broader
+`cloud_fit` is a module which is part of the broader
 `tensorflow_cloud`. This module provides an API that enables training
 on [Google Cloud AI Platform](https://cloud.google.com/ai-platform). `cloud_fit`
 serializes the model, datasets, and callback functions and submits them for
@@ -33,7 +33,7 @@ parameters to enable remote execution on AI Platform.
 
 ```python
 import tensorflow as tf
-from tensorflow_cloud.experimental.cloud_fit import client
+from tensorflow_cloud.tuner import cloud_fit_client as client
 
 (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
 
@@ -158,7 +158,7 @@ you can skip the setup and authentication steps and start from step 8.
     RUN pip3 install --upgrade /tmp/tensorflow_cloud-*.whl --quiet
 
     # Sets up the entry point to invoke cloud_fit.
-    ENTRYPOINT ["python3","-m","tensorflow_cloud.experimental.cloud_fit.remote"]
+    ENTRYPOINT ["python3","-m","tensorflow_cloud.tuner.cloud_fit_remote"]
     ```
 
     Build and push a docker image using the dockerfile above, where IMAGE_URI
@@ -171,7 +171,7 @@ you can skip the setup and authentication steps and start from step 8.
     ```
 
     You are all set! You can now follow our
-    [examples](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/experimental/cloud_fit/tests/examples/cloud_fit.ipynb)
+    [examples](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/tests/examples/cloud_fit.ipynb)
     to try out `cloud_fit`.
 
 ## License

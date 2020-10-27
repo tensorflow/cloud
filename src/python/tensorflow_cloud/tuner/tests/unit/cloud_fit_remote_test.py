@@ -22,9 +22,9 @@ from absl import flags
 import numpy as np
 import tensorflow as tf
 
-from tensorflow_cloud.experimental.cloud_fit import client
-from tensorflow_cloud.experimental.cloud_fit import remote
-from tensorflow_cloud.experimental.cloud_fit import utils
+from tensorflow_cloud.tuner import cloud_fit_client as client
+from tensorflow_cloud.tuner import cloud_fit_remote as remote
+from tensorflow_cloud.tuner import cloud_fit_utils as utils
 
 # Can only export Datasets which were created executing eagerly
 utils.enable_eager_for_tf_1()

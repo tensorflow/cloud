@@ -28,7 +28,7 @@ import tensorflow as tf
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
-from tensorflow_cloud.experimental.cloud_fit import client
+from tensorflow_cloud.tuner import cloud_fit_client
 from tensorflow_cloud.tuner import tuner
 from tensorflow_cloud.tuner.tuner import optimizer_client
 from tensorflow_cloud.utils import google_api_client
@@ -482,7 +482,7 @@ class CloudTunerTest(tf.test.TestCase):
             callbacks[0].filepath,
             os.path.join(remote_tuner.directory, trial_id, "checkpoint"))
 
-    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
                        "wait_for_api_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
@@ -530,7 +530,7 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(
             2, remote_tuner._get_remote_training_metrics.call_count)
 
-    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
                        "wait_for_api_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
@@ -554,7 +554,7 @@ class CloudTunerTest(tf.test.TestCase):
 
     @mock.patch.object(google_api_client, "stop_aip_training_job",
                        auto_spec=True)
-    @mock.patch.object(client, "cloud_fit", auto_spec=True)
+    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
                        "wait_for_api_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
