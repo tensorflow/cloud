@@ -164,7 +164,7 @@ class CloudOracle(oracle_module.Oracle):
             len(trial_list) >= self.max_trials) or stopping_trials:
             trial_id = "n"
             hyperparameters = self.hyperparameters.copy()
-            hyperparameters.values = None
+            hyperparameters.values = {}
             # This will break the search loop later.
             return trial_module.Trial(
                 hyperparameters=hyperparameters,

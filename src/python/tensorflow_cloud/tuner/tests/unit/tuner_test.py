@@ -237,7 +237,7 @@ class CloudTunerTest(tf.test.TestCase):
         trial = self.tuner.oracle.create_trial("tuner_0")
 
         self.mock_client.list_trials.assert_called_once()
-        self.assertIsNone(trial.hyperparameters.values)
+        self.assertEqual(trial.hyperparameters.values, {})
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
     def test_create_trial_after_early_stopping(self):
@@ -248,7 +248,7 @@ class CloudTunerTest(tf.test.TestCase):
         trial = self.tuner.oracle.create_trial("tuner_0")
 
         self.mock_client.list_trials.assert_called_once()
-        self.assertIsNone(trial.hyperparameters.values)
+        self.assertEqual(trial.hyperparameters.values, {})
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
     def test_update_trial(self):
