@@ -83,8 +83,8 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             worker_count=1,
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
+            worker_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def none_dist_strat(self):
@@ -95,8 +95,8 @@ class RunOnScriptTest(tf.test.TestCase):
                                           "requirements.txt"),
             distribution_strategy=None,
             worker_count=2,
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
+            worker_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def docker_config_cloud_build(self):
@@ -106,7 +106,7 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def docker_config_parent_img(self):
@@ -118,7 +118,7 @@ class RunOnScriptTest(tf.test.TestCase):
             docker_config=tfc.DockerConfig(
                 parent_image="gcr.io/deeplearning-platform-release"
                              "/tf2-gpu.2-2:latest"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def docker_config_image(self):
@@ -127,7 +127,7 @@ class RunOnScriptTest(tf.test.TestCase):
                                      "mnist_example_using_fit.py"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
         return tfc.run(
             entry_point=os.path.join(self.test_data_path,
@@ -135,7 +135,7 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image=ret_val["docker_image"]),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def docker_config_cache_from(self):
@@ -145,7 +145,7 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
         return tfc.run(
             entry_point=os.path.join(self.test_data_path,
@@ -156,7 +156,7 @@ class RunOnScriptTest(tf.test.TestCase):
                 image_build_bucket=_TEST_BUCKET,
                 image=ret_val["docker_image"],
                 cache_from=ret_val["docker_image"]),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def job_labels(self):
@@ -166,7 +166,7 @@ class RunOnScriptTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             job_labels={"job": "on_script_tests", "team": "keras"},
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def cloud_build_base_image_backward_compatibility(self):
@@ -178,7 +178,7 @@ class RunOnScriptTest(tf.test.TestCase):
             docker_image_bucket_name=_TEST_BUCKET,
             docker_base_image="gcr.io/deeplearning-platform-release"
                               "/tf2-gpu.2-2:latest",
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
         )
 
     def test_run_on_script(self):

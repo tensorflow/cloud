@@ -95,8 +95,8 @@ class RunOnNotebookTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             worker_count=1,
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
-            worker_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
+            worker_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "auto_multi_worker_strategy",
                 "team": "on_notebook_tests",
@@ -110,7 +110,7 @@ class RunOnNotebookTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_cloud_build",
                 "team": "on_notebook_tests",
@@ -126,7 +126,7 @@ class RunOnNotebookTest(tf.test.TestCase):
             docker_config=tfc.DockerConfig(
                 parent_image="gcr.io/deeplearning-platform-release"
                              "/tf2-gpu.2-2:latest"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_parent_img",
                 "team": "on_notebook_tests",
@@ -139,7 +139,7 @@ class RunOnNotebookTest(tf.test.TestCase):
                                      "mnist_example_using_fit.ipynb"),
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_image",
                 "team": "on_notebook_tests",
@@ -151,7 +151,7 @@ class RunOnNotebookTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image=ret_val["docker_image"]),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_image",
                 "team": "on_notebook_tests",
@@ -165,7 +165,7 @@ class RunOnNotebookTest(tf.test.TestCase):
             requirements_txt=os.path.join(self.test_data_path,
                                           "requirements.txt"),
             docker_config=tfc.DockerConfig(image_build_bucket=_TEST_BUCKET),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_cache_from",
                 "team": "on_notebook_tests",
@@ -180,7 +180,7 @@ class RunOnNotebookTest(tf.test.TestCase):
                 image_build_bucket=_TEST_BUCKET,
                 image=ret_val["docker_image"],
                 cache_from=ret_val["docker_image"]),
-            chief_config=tfc.COMMON_MACHINE_CONFIGS["K80_1X"],
+            chief_config=tfc.COMMON_MACHINE_CONFIGS["P100_1X"],
             job_labels={
                 "job": "docker_config_cache_from",
                 "team": "on_notebook_tests",
