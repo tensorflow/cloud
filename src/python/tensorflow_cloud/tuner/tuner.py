@@ -31,7 +31,7 @@ import tensorflow as tf
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
-from tensorflow_cloud.experimental.cloud_fit import client
+from tensorflow_cloud.tuner import cloud_fit_client
 from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner import utils
 from tensorflow_cloud.utils import google_api_client
@@ -555,7 +555,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
             "job_spec": job_spec,
             "**copied_fit_kwargs": copied_fit_kwargs})
 
-        client.cloud_fit(
+        cloud_fit_client.cloud_fit(
             model=model,
             remote_dir=remote_dir,
             region=self._region,
