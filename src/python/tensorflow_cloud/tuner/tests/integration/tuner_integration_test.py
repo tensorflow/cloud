@@ -284,7 +284,7 @@ class CloudTunerIntegrationTest(_CloudTunerIntegrationTestBase):
         self._assert_output(
             tuner.search_space_summary,
             r".*Search space summary(?=.*learning_rate \(Choice\))"
-            r"(?=.*num_layers \(Int\))(?=.*units \(Choice\))",
+            r"(?=.*num_layers \(Int\))(?=.*units \(Int\))",
         )
 
         tuner.search(

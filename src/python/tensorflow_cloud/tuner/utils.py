@@ -117,7 +117,43 @@ def convert_study_config_to_hps(
         _is_parameter_valid(param)
         name = param["parameter"]
         if param["type"] == _DISCRETE:
-            hps.Choice(name, param["discrete_value_spec"]["values"])
+            values = param["discrete_value_spec"]["values"]
+            is_numeric = True
+            for v in values:
+                if not isinstance(v, (int, float)):
+                    is_numeric = False
+            if (
+                is_numeric and len(values) > 2 and
+                np.all(np.diff(values, 2) == 0)
+            ):
+                # If the numeric sequence is an arithmetic sequence, use
+                # Int/Float with step
+                is_int = True
+                for v in values:
+                    if not isinstance(v, int):
+                        is_int = False
+                hps_type = hps.Int if is_int else hps.Float
+
+                if (
+                    param.get("scale_type")
+                    and param["scale_type"] != _SCALE_TYPE_UNSPECIFIED
+                ):
+                    hps_type(
+                        name,
+                        min_value=values[0],
+                        max_value=values[-1],
+                        step=values[1] - values[0],
+                        sampling=_format_sampling(param["scale_type"]),
+                    )
+                else:
+                    hps_type(
+                        name,
+                        min_value=values[0],
+                        max_value=values[-1],
+                        step=values[1] - values[0],
+                    )
+            else:
+                hps.Choice(name, values)
         elif param["type"] == _CATEGORICAL:
             hps.Choice(name, param["categorical_value_spec"]["values"])
         elif param["type"] == _DOUBLE:
@@ -234,7 +270,6 @@ def _convert_hyperparams_to_optimizer_params(
             else:
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
-
         elif isinstance(hp, hp_module.Int):
             if hp.step is not None and hp.step != 1:
                 # Note: hp.max_value is inclusive, while the end index of
@@ -254,7 +289,7 @@ def _convert_hyperparams_to_optimizer_params(
             if hp.step is not None:
                 # Match how KerasTuner generates the range
                 values = np.arange(
-                    hp.min_value, hp.max_value + 1e-7, step=hp.step)
+                    hp.min_value, hp.max_value + 1e-7, step=hp.step).tolist()
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
             else:

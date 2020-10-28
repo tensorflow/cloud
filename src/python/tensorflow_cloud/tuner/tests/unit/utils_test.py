@@ -14,6 +14,7 @@
 # limitations under the License.
 """Tests for utils."""
 
+import copy
 from absl.testing import parameterized
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import oracle as oracle_module
@@ -22,7 +23,6 @@ import tensorflow as tf
 from tensorflow_cloud.tuner.tuner import utils
 
 STUDY_CONFIG_DISCRETE = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
     "parameters": [
         {
@@ -33,7 +33,6 @@ STUDY_CONFIG_DISCRETE = {
     ],
 }
 STUDY_CONFIG_CATEGORICAL = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -44,7 +43,6 @@ STUDY_CONFIG_CATEGORICAL = {
     ],
 }
 STUDY_CONFIG_INT = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -55,7 +53,6 @@ STUDY_CONFIG_INT = {
     ],
 }
 STUDY_CONFIG_INT_STEP = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -66,29 +63,26 @@ STUDY_CONFIG_INT_STEP = {
     ],
 }
 STUDY_CONFIG_FLOAT = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "double_value_spec": {"max_value": 0.8, "min_value": 0.1},
+            "double_value_spec": {"max_value": 0.5, "min_value": 0.1},
             "parameter": "learning_rate",
             "type": "DOUBLE",
         }
     ],
 }
 STUDY_CONFIG_FLOAT_STEP = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "discrete_value_spec": {"values": [0.1, 0.2, 0.3, 0.4, 0.5]},
-            "parameter": "units",
+            "discrete_value_spec": {"values": [1, 1.25, 1.5, 1.75, 2]},
+            "parameter": "learning_rate",
             "type": "DISCRETE",
         }
     ],
 }
 STUDY_CONFIG_FLOAT_LINEAR_SCALE = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -100,7 +94,6 @@ STUDY_CONFIG_FLOAT_LINEAR_SCALE = {
     ],
 }
 STUDY_CONFIG_FLOAT_LOG_SCALE = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -112,7 +105,6 @@ STUDY_CONFIG_FLOAT_LOG_SCALE = {
     ],
 }
 STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -124,7 +116,6 @@ STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE = {
     ],
 }
 STUDY_CONFIG_MULTI_FLOAT = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
@@ -140,30 +131,27 @@ STUDY_CONFIG_MULTI_FLOAT = {
     ],
 }
 STUDY_CONFIG_BOOL = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
-    "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "categorical_value_spec": {"values": ["True", "False"],},
+            "categorical_value_spec": {"values": ["True", "False"]},
             "parameter": "has_beta",
             "type": "CATEGORICAL",
         }
     ],
 }
 STUDY_CONFIG_FIXED_FLOAT = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
-    "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "discrete_value_spec": {"values": [1.0],},
+            "discrete_value_spec": {"values": [0.1]},
             "parameter": "beta",
             "type": "DISCRETE",
         }
     ],
 }
 STUDY_CONFIG_FIXED_CATEGORICAL = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
-    "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
             "categorical_value_spec": {"values": ["WIDE_AND_DEEP"]},
@@ -173,13 +161,12 @@ STUDY_CONFIG_FIXED_CATEGORICAL = {
     ],
 }
 STUDY_CONFIG_FIXED_BOOLEAN = {
-    "algorithm": "ALGORITHM_UNSPECIFIED",
-    "metrics": [{"goal": "MAXIMIZE", "metric": "val_accuracy"}],
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
-            "categorical_value_spec": {"values": ["True"]},
-            "parameter": "type",
-            "type": "CATEGORICAL",
+            "discrete_value_spec": {"values": [1.0]},
+            "parameter": "condition",
+            "type": "DISCRETE",
         }
     ],
 }
@@ -200,10 +187,10 @@ COMPLETED_OPTIMIZER_TRIAL = {
     "parameters": [
         {"parameter": "learning_rate", "floatValue": 0.0001},
     ],
-    "finalMeasurement":
-        {
-            "stepCount": 1,
-            "metrics": [{"value": 0.9}]},
+    "finalMeasurement": {
+        "stepCount": 1,
+        "metrics": [{"value": 0.9}],
+    },
 }
 EXPECTED_TRIAL_HPS = {
     "learning_rate": 0.0001,
@@ -216,90 +203,94 @@ EXPECTED_TRIAL_HPS = {
 
 class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
 
-    def convert_study_config_discrete(self):
+    def test_convert_study_config_discrete(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
         study_config = utils.make_study_config(
             objective=oracle_module.Objective("val_accuracy", "max"),
             hyperparams=hps
         )
-        self.assertDictEqual(study_config, STUDY_CONFIG_DISCRETE)
+        self._assert_study_config_equal(study_config, STUDY_CONFIG_DISCRETE)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
+        self._assert_hps_equal(actual_hps, hps)
 
-    def convert_study_config_categorical(self):
+    def test_convert_study_config_categorical(self):
         hps = hp_module.HyperParameters()
         hps.Choice("model_type", ["LINEAR", "WIDE_AND_DEEP"])
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertDictEqual(study_config, STUDY_CONFIG_CATEGORICAL)
+        self._assert_study_config_equal(study_config, STUDY_CONFIG_CATEGORICAL)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
+        self._assert_hps_equal(actual_hps, hps)
 
     @parameterized.parameters(
         (1, 4, None, STUDY_CONFIG_INT),
         (1, 4, 1, STUDY_CONFIG_INT),
         (32, 128, 32, STUDY_CONFIG_INT_STEP))
-    def convert_study_config_int(self, min_value, max_value, step,
-                                 expected_config):
+    def test_convert_study_config_int(self, min_value, max_value, step,
+                                      expected_config):
         hps = hp_module.HyperParameters()
-        hps.Int("units", min_value=min_value, max_value=max_value, step=step)
+        if step:
+            hps.Int(
+                "units", min_value=min_value, max_value=max_value, step=step)
+        else:
+            hps.Int("units", min_value=min_value, max_value=max_value)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertDictEqual(study_config, expected_config)
+        self._assert_study_config_equal(study_config, expected_config)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
+        self._assert_hps_equal(actual_hps, hps)
 
     @parameterized.parameters(
         (0.1, 0.5, None, None, STUDY_CONFIG_FLOAT),
-        (0.1, 0.5, 0.1, None, STUDY_CONFIG_FLOAT_STEP),
+        (1, 2, 0.25, None, STUDY_CONFIG_FLOAT_STEP),
         (0.1, 0.8, None, "linear", STUDY_CONFIG_FLOAT_LINEAR_SCALE),
         (1e-4, 1e-1, None, "log", STUDY_CONFIG_FLOAT_LOG_SCALE),
         (1e-4, 1e-1, None, "reverse_log", STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE))
-    def convert_study_config_float(self, min_value, max_value, step, sampling,
-                                   expected_config):
+    def test_convert_study_config_float(self, min_value, max_value, step,
+                                        sampling, expected_config):
         hps = hp_module.HyperParameters()
         hps.Float("learning_rate", min_value=min_value, max_value=max_value,
                   step=step, sampling=sampling)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertDictEqual(study_config, expected_config)
+        self._assert_study_config_equal(study_config, expected_config)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
+        self._assert_hps_equal(actual_hps, hps)
 
-    def convert_study_config_multi_float(self):
+    def test_convert_study_config_multi_float(self):
         hps = hp_module.HyperParameters()
         hps.Float("theta", min_value=0.0, max_value=1.57)
         hps.Float("r", min_value=0.0, max_value=1.0)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertDictEqual(study_config, STUDY_CONFIG_MULTI_FLOAT)
+        self._assert_study_config_equal(study_config, STUDY_CONFIG_MULTI_FLOAT)
 
         actual_hps = utils.convert_study_config_to_hps(study_config)
-        self.assertEqual(actual_hps.space, hps.space)
+        self._assert_hps_equal(actual_hps, hps)
 
-    def convert_study_config_bool(self):
+    def test_convert_study_config_bool(self):
         hps = hp_module.HyperParameters()
         hps.Boolean("has_beta")
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps)
-        self.assertDictEqual(study_config, STUDY_CONFIG_BOOL)
+        self._assert_study_config_equal(study_config, STUDY_CONFIG_BOOL)
 
     @parameterized.parameters(
         ("beta", 0.1, STUDY_CONFIG_FIXED_FLOAT),
-        ("type", "WIDE_AND_DEEP", STUDY_CONFIG_INT),
+        ("type", "WIDE_AND_DEEP", STUDY_CONFIG_FIXED_CATEGORICAL),
         ("condition", True, STUDY_CONFIG_FIXED_BOOLEAN))
-    def convert_study_config_fixed(self, name, value, expected_config):
+    def test_convert_study_config_fixed(self, name, value, expected_config):
         hps = hp_module.HyperParameters()
         hps.Fixed(name, value)
         study_config = utils.make_study_config(
             objective="accuracy", hyperparams=hps
         )
-        self.assertDictEqual(study_config, expected_config)
+        self._assert_study_config_equal(study_config, expected_config)
 
     def test_convert_optimizer_trial_to_dict(self):
         hps = hp_module.HyperParameters()
@@ -351,6 +342,34 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
     def test_get_trial_id(self):
         trial_id = utils.get_trial_id(OPTIMIZER_TRIAL)
         self.assertEqual(trial_id, "trial_1")
+
+    def _assert_hps_equal(self, hps1, hps2):
+        self.assertEqual(len(hps1.space), len(hps2.space))
+        for hp1, hp2 in zip(hps1.space, hps2.space):
+            self.assertEqual(repr(hp1), repr(hp2))
+
+    def _assert_study_config_equal(
+        self, test_study_config, expected_study_config
+    ):
+        study_config = copy.deepcopy(test_study_config)
+        expected_config = copy.deepcopy(expected_study_config)
+
+        algo = study_config.pop("algorithm")
+        self.assertEqual(algo, "ALGORITHM_UNSPECIFIED")
+
+        stopping_config = study_config.pop("automatedStoppingConfig")
+        self.assertDictEqual(stopping_config, {
+            "decayCurveStoppingConfig": {
+                "useElapsedTime": True
+            }
+        })
+
+        params = study_config.pop("parameters")
+        expected_params = expected_config.pop("parameters")
+        self.assertCountEqual(params, expected_params)
+
+        # Check the rest of the study config
+        self.assertDictEqual(study_config, expected_config)
 
 
 if __name__ == "__main__":
