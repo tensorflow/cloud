@@ -25,6 +25,7 @@ from kerastuner.engine import tuner as super_tuner
 import mock
 
 import tensorflow as tf
+from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
@@ -125,9 +126,10 @@ class CloudTunerTest(tf.test.TestCase):
                 objective,
                 hyperparameters,
                 study_config,
-                directory="gs://remote_dir",
+                directory=None,
                 max_trials=None
                 ):
+        directory = directory or self._remote_dir
         return tuner.DistributingCloudTuner(
             hypermodel=build_model,
             objective=objective,
@@ -457,19 +459,66 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(best_trials_1[0].best_step, 3)
 
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    def test_add_tensorboard_callback(self, mock_super_tuner):
+    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
+    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    def test_add_logging_user_specified(
+        self, mock_hparams, mock_create_file_writer, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
 
-        callbacks = [
-            tf.keras.callbacks.TensorBoard(log_dir="user_defined_path_1"),
-            tf.keras.callbacks.TensorBoard(log_dir="user_defined_path_2")]
+        callbacks = [tf.keras.callbacks.TensorBoard(
+            log_dir=remote_tuner.directory,
+            write_images=True)]
 
-        trial_id = "test_trial_id"
-        remote_tuner._add_tensorboard_callback(callbacks, trial_id)
+        remote_tuner._add_logging(callbacks, self._test_trial)
+
+        expected_logdir = os.path.join(
+            remote_tuner.directory, self._test_trial.trial_id, "logs")
+        expected_hparams = {hparams_api.HParam(
+            "learning_rate", hparams_api.Discrete([1e-4, 1e-3, 1e-2])): 1e-4}
+
         self.assertLen(callbacks, 1)
+        self.assertEqual(callbacks[0].log_dir, expected_logdir)
+        self.assertEqual(callbacks[0].write_images, True)
+        mock_create_file_writer.assert_called_once_with(expected_logdir)
+        self.assertEqual(mock_hparams.call_count, 1)
         self.assertEqual(
-            callbacks[0].log_dir,
-            os.path.join(remote_tuner.directory, trial_id, "logs"))
+            repr(mock_hparams.call_args[0][0]), repr(expected_hparams))
+
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
+    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    def test_add_logging_not_specified(
+        self, mock_hparams, mock_create_file_writer, mock_super_tuner):
+        remote_tuner = self._remote_tuner(None, None, self._study_config)
+
+        callbacks = []
+        remote_tuner._add_logging(callbacks, self._test_trial)
+
+        expected_logdir = os.path.join(
+            remote_tuner.directory, self._test_trial.trial_id, "logs")
+
+        self.assertLen(callbacks, 1)
+        self.assertEqual(callbacks[0].log_dir, expected_logdir)
+        mock_create_file_writer.assert_not_called()
+        mock_hparams.assert_not_called()
+
+    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
+    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    def test_add_logging_mismatched_dir(
+        self, mock_hparams, mock_create_file_writer, mock_super_tuner):
+        remote_tuner = self._remote_tuner(None, None, self._study_config)
+
+        callbacks = [tf.keras.callbacks.TensorBoard(
+            log_dir=os.path.join(remote_tuner.directory, "logs"))]
+
+        with self.assertRaisesRegex(
+            ValueError, "log_dir in TensorBoard callback should be "
+                        "gs://remote_dir, but was gs://remote_dir/logs"):
+            remote_tuner._add_logging(callbacks, self._test_trial)
+
+        mock_create_file_writer.assert_not_called()
+        mock_hparams.assert_not_called()
 
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     def test_add_model_checkpoint_callback(self, mock_super_tuner):

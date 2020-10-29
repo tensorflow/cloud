@@ -21,6 +21,7 @@ from kerastuner.engine import metrics_tracking
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
 import numpy as np
+from tensorboard.plugins.hparams import api as hparams_api
 
 # CAIP Optimizer constants.
 _DISCRETE = "DISCRETE"
@@ -271,13 +272,7 @@ def _convert_hyperparams_to_optimizer_params(
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
         elif isinstance(hp, hp_module.Int):
-            if hp.step is not None and hp.step != 1:
-                # Note: hp.max_value is inclusive, while the end index of
-                # range() is exclusive, hence the +1
-                values = list(range(hp.min_value, hp.max_value + 1, hp.step))
-                param["type"] = _DISCRETE
-                param["discrete_value_spec"] = {"values": values}
-            else:
+            if hp.step is None or hp.step == 1:
                 param["type"] = _INTEGER
                 param["integer_value_spec"] = {
                     "min_value": hp.min_value,
@@ -285,14 +280,14 @@ def _convert_hyperparams_to_optimizer_params(
                 }
                 if hp.sampling is not None:
                     param.update(_get_scale_type(hp.sampling))
-        elif isinstance(hp, hp_module.Float):
-            if hp.step is not None:
-                # Match how KerasTuner generates the range
-                values = np.arange(
-                    hp.min_value, hp.max_value + 1e-7, step=hp.step).tolist()
+            else:
+                # Note: hp.max_value is inclusive, while the end index of
+                # range() is exclusive, hence the +1
+                values = list(range(hp.min_value, hp.max_value + 1, hp.step))
                 param["type"] = _DISCRETE
                 param["discrete_value_spec"] = {"values": values}
-            else:
+        elif isinstance(hp, hp_module.Float):
+            if hp.step is None:
                 param["type"] = _DOUBLE
                 param["double_value_spec"] = {
                     "min_value": hp.min_value,
@@ -300,6 +295,12 @@ def _convert_hyperparams_to_optimizer_params(
                 }
                 if hp.sampling is not None:
                     param.update(_get_scale_type(hp.sampling))
+            else:
+                # Match how KerasTuner generates the range
+                values = np.arange(
+                    hp.min_value, hp.max_value + 1e-7, step=hp.step).tolist()
+                param["type"] = _DISCRETE
+                param["discrete_value_spec"] = {"values": values}
         elif isinstance(hp, hp_module.Boolean):
             param["type"] = _CATEGORICAL
             param["categorical_value_spec"] = {"values": ["True", "False"]}
@@ -317,6 +318,63 @@ def _convert_hyperparams_to_optimizer_params(
         param_type.append(param)
 
     return param_type
+
+
+def convert_hyperparams_to_hparams(
+    hyperparams: hp_module.HyperParameters) -> Dict[hparams_api.HParam, Any]:
+    """Converts KerasTuner HyperParameters to TensorBoard HParams.
+
+    Args:
+        hyperparams: A KerasTuner HyperParameters instance
+
+    Returns:
+        A dict that maps TensorBoard HParams to current values.
+    """
+    hparams = {}
+    for hp in hyperparams.space:
+        hparams_value = {}
+        try:
+            hparams_value = hyperparams.get(hp.name)
+        except ValueError:
+            continue
+
+        hparams_domain = {}
+        if isinstance(hp, hp_module.Choice):
+            hparams_domain = hparams_api.Discrete(hp.values)
+        elif isinstance(hp, hp_module.Int):
+            if hp.step is None or hp.step == 1:
+                hparams_domain = hparams_api.IntInterval(
+                    hp.min_value, hp.max_value)
+            else:
+                # Note: `hp.max_value` is inclusive, unlike the end index
+                # of Python `range()`, which is exclusive
+                values = list(
+                    range(hp.min_value, hp.max_value + 1, hp.step))
+                hparams_domain = hparams_api.Discrete(values)
+        elif isinstance(hp, hp_module.Float):
+            if hp.step is None:
+                hparams_domain = hparams_api.RealInterval(
+                    hp.min_value, hp.max_value)
+            else:
+                # Note: `hp.max_value` is inclusive, which is also
+                # the default for Numpy's linspace
+                num_samples = int((hp.max_value - hp.min_value) / hp.step)
+                end_value = hp.min_value + (num_samples * hp.step)
+                values = np.linspace(
+                    hp.min_value, end_value, num_samples + 1).tolist()
+                hparams_domain = hparams_api.Discrete(values)
+        elif isinstance(hp, hp_module.Boolean):
+            hparams_domain = hparams_api.Discrete([True, False])
+        elif isinstance(hp, hp_module.Fixed):
+            hparams_domain = hparams_api.Discrete([hp.value])
+        else:
+            raise ValueError(
+                "`HyperParameter` type not recognized: {}".format(hp))
+
+        hparams_key = hparams_api.HParam(hp.name, hparams_domain)
+        hparams[hparams_key] = hparams_value
+
+    return hparams
 
 
 def format_objective(

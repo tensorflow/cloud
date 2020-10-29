@@ -28,6 +28,7 @@ from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
 import tensorflow as tf
 
+from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
@@ -492,8 +493,8 @@ class DistributingCloudTuner(tuner_module.Tuner):
         super(DistributingCloudTuner, self,).__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs
         )
-        # If study id is not provided cloud_oracle creates ones. Setting the
-        # study_id based on cloud oracles logic to ensure they are the same.
+        # If study_id is not provided, CloudOracle creates one. Setting the
+        # study_id to what CloudOracle generates, to ensure they are the same.
         self._study_id = oracle.study_id
         self.directory = directory
 
@@ -519,16 +520,15 @@ class DistributingCloudTuner(tuner_module.Tuner):
         callbacks = fit_kwargs.pop("callbacks", [])
         callbacks = self._deepcopy_callbacks(callbacks)
 
-        # Note run_trial does not use `TunerCallback` calls, since
+        # Note: run_trial does not use `TunerCallback` calls, since
         # training is performed on AI Platform training remotely.
 
-        # Creating a tensorboard callback with log-dir path specific for this
-        # trail_id. The tensorboard logs are used for passing metrics back from
-        # remote execution.
-        self._add_tensorboard_callback(callbacks, trial.trial_id)
+        # Handle TensorBoard/hyperparameter logging here. The TensorBoard
+        # logs are used for passing metrics back from remote execution.
+        self._add_logging(callbacks, trial)
 
         # Creating a save_model checkpoint callback with a saved model file path
-        # specific to this trial, this is to prevent different trials from
+        # specific to this trial. This is to prevent different trials from
         # overwriting each other.
         self._add_model_checkpoint_callback(
             callbacks, trial.trial_id)
@@ -605,7 +605,9 @@ class DistributingCloudTuner(tuner_module.Tuner):
         if not google_api_client.wait_for_api_training_job_completion(
             job_id, self._project_id):
             raise RuntimeError(
-                "AIP Training job failed, see logs for details at https://console.cloud.google.com/ai-platform/jobs/{}/charts/cpu?project={}"  # pylint: disable=line-too-long
+                "AIP Training job failed, see logs for details at "
+                "https://console.cloud.google.com/ai-platform/jobs/"
+                "{}/charts/cpu?project={}"
                 .format(job_id, self._project_id))
 
         # Retrieve and report any remaining metrics
@@ -657,7 +659,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         self,
         log_reader,
         partial_epoch_metrics: Dict[Text, float]
-        )-> _TrainingMetrics:
+        ) -> _TrainingMetrics:
         """Retrieves delta epoch metrics from tensorboard logs since last run.
 
         This method reports any complete epoch metrics that are available since
@@ -683,9 +685,9 @@ class DistributingCloudTuner(tuner_module.Tuner):
         completed_epoch_metrics = []
         for event in log_reader.Load():
             for value in event.summary.value:
-                # Note tf.keras.callbacks.TensorBoard() with update_freq="epoch"
-                # logs the epoch related metrics with a "epoch_" prefix. This is
-                # not a requirement by tensorboard.
+                # Note: tf.keras.callbacks.TensorBoard.on_epoch_end() logs the
+                # epoch related metrics with a "epoch_" prefix. Please refer to
+                # https://github.com/tensorflow/tensorflow/blob/fcc4b966f1265f466e82617020af93670141b009/tensorflow/python/keras/callbacks.py#L2179 # pylint: disable=line-too-long
                 if value.tag.startswith("epoch_"):
                     metric = value.tag.replace("epoch_", "")
                     # If we have already seen this metric, this is a new epoch
@@ -708,7 +710,6 @@ class DistributingCloudTuner(tuner_module.Tuner):
         raise NotImplementedError("load_model for remote run is not supported.")
 
     def save_model(self, trial_id: int, model, step: int = 0):
-
         # In remote execution models are saved automatically in Google Cloud
         # Storage (GCS) bucket hence no additional actions are needed to save
         # the model.
@@ -719,27 +720,58 @@ class DistributingCloudTuner(tuner_module.Tuner):
             filepath=self._get_model_checkpoint_dir(trial_id),
             save_freq="epoch"))
 
-    def _add_tensorboard_callback(self, callbacks, trial_id):
-        # due to https://github.com/keras-team/keras/issues/14223 multiple
-        # tensorboard callbacks are not supported. Removing user defined
-        # tf.keras.callbacks.TensorBoard callback.
+    def _add_logging(self, callbacks, trial):
+        """Add a TensorBoard callback if needed, otherwise log hyperparameters.
 
-        tf.get_logger().info(
-            "Only one tf.keras.callbacks.TensorBoard callback is allowed, removing user defined callbacks."  # pylint: disable=line-too-long
-            )
-        callbacks[:] = [
-            x for x in callbacks if x.__class__.__name__ != "TensorBoard"]
+        Note: Due to https://github.com/keras-team/keras/issues/14223, multiple
+        TensorBoard callbacks are not supported. If user specified a TensorBoard
+        callback, we treat it as an intent to log the metrics, and we shall
+        additionally log the hyperparameters as well. Otherwise, we'll add a
+        TensorBoard callback to pass back the epoch related metrics from
+        remote execution.
 
-        callbacks.append(tf.keras.callbacks.TensorBoard(
-            log_dir=self._get_tensorboard_log_dir(trial_id)))
+        Arguments:
+            callbacks: List of callbacks passed in to the search function.
+            trial: A `Trial` instance.
+        Raises:
+            ValueError: If TensorBoard callback's log_dir does not match
+            self.directory.
+        """
 
-    def _get_tensorboard_log_dir(self, trial_id)-> Text:
+        logdir = self._get_tensorboard_log_dir(trial.trial_id)
+        for callback in callbacks:
+            if callback.__class__.__name__ == "TensorBoard":
+                # Validate TensorBoard log_dir
+                if callback.log_dir != self.directory:
+                    # TODO(b/170687807) Switch from using .format() to f-string
+                    raise ValueError(
+                        "log_dir in TensorBoard callback should be {}, "
+                        "but was {}".format(self.directory, callback.log_dir)
+                    )
+                # Patch the log_dir
+                callback.log_dir = logdir
+                # Do hyperparameter logging here to avoid having to
+                # serialize/deserialize the hyperparameters if logged through
+                # passing hparams_api.KerasCallback to client.cloud_fit.
+                with tf.summary.create_file_writer(logdir).as_default():
+                    hparams_api.hparams(utils.convert_hyperparams_to_hparams(
+                        trial.hyperparameters))
+                # We're done here, since there should only be one TensorBoard
+                # callback
+                return
+
+        # TensorBoard callback not specified by user, add it here. The
+        # TensorBoard logs are used for passing metrics back from
+        # remote execution.
+        callbacks.append(tf.keras.callbacks.TensorBoard(log_dir=logdir))
+
+    def _get_tensorboard_log_dir(self, trial_id) -> Text:
         # Defining <directory>/<trial_id>/logs as log structure.
         # self._add_tensorboard_callback uses this directory structure to
         # configure the tf.keras.callbacks.TensorBoard() for each trial.
         return os.path.join(self.directory, str(trial_id), "logs")
 
-    def _get_model_checkpoint_dir(self, trial_id)->Text:
+    def _get_model_checkpoint_dir(self, trial_id) -> Text:
         # Defining <directory>/<trial_id>/checkpoint as checkpoint structure.
         # self._add_model_checkpoint_callback uses this directory structure to
         # configure the tf.keras.callbacks.ModelCheckpoint() for each trial.
