@@ -45,6 +45,9 @@ _POLLING_INTERVAL_IN_SECONDS = 30
 # metrics from remote training Tensorboard logs during training with:
 # - 'completed_epoch_metrics'- a list of epoch metrics for completed epochs.
 # - 'partial_epoch_metrics' - Any incomplete epoch metrics for the last epoch.
+#   If training has completed this will contain metrics for the final epoch of
+#   training.
+
 _TrainingMetrics = collections.namedtuple("_TrainingMetrics", [
     "completed_epoch_metrics", "partial_epoch_metrics"])
 
@@ -568,7 +571,11 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         # Create an instance of tensorboard DirectoryWatcher to retrieve the
         # logs for this trial run
-        log_path = self._get_tensorboard_log_dir(trial.trial_id)
+        log_path = os.path.join(
+            self._get_tensorboard_log_dir(trial.trial_id), "train")
+
+        # Tensorboard log watcher expects the path to exist
+        tf.io.gfile.makedirs(log_path)
 
         # TODO(b/170687807) Switch from using "{}".format() to f-string
         tf.get_logger().info(
@@ -590,11 +597,12 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
             for epoch_metrics in training_metrics.completed_epoch_metrics:
                 # TODO(b/169197272) Validate metrics contain oracle objective
-                trial.status = self.oracle.update_trial(
-                    trial_id=trial.trial_id,
-                    metrics=epoch_metrics,
-                    step=epoch)
-                epoch += 1
+                if epoch_metrics:
+                    trial.status = self.oracle.update_trial(
+                        trial_id=trial.trial_id,
+                        metrics=epoch_metrics,
+                        step=epoch)
+                    epoch += 1
 
             if trial.status == "STOPPED":
                 google_api_client.stop_aip_training_job(
@@ -617,11 +625,19 @@ class DistributingCloudTuner(tuner_module.Tuner):
         for epoch_metrics in training_metrics.completed_epoch_metrics:
             # TODO(b/169197272) Validate metrics contain oracle objective
             # TODO(b/170907612) Support submit partial results to Oracle
+            if epoch_metrics:
+                self.oracle.update_trial(
+                    trial_id=trial.trial_id,
+                    metrics=epoch_metrics,
+                    step=epoch)
+                epoch += 1
+
+        # submit final epoch metrics
+        if training_metrics.partial_epoch_metrics:
             self.oracle.update_trial(
                 trial_id=trial.trial_id,
-                metrics=epoch_metrics,
+                metrics=training_metrics.partial_epoch_metrics,
                 step=epoch)
-            epoch += 1
 
     def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
         """Creates a request dictionary for the CAIP training service.
@@ -680,7 +696,9 @@ class DistributingCloudTuner(tuner_module.Tuner):
             - 'completed_epoch_metrics'- a list of epoch metrics for completed
                 epochs.
             - 'partial_epoch_metrics' - Any incomplete epoch metrics for the
-                last epoch.
+                last epoch. Once training completes, the final epoch metrics
+                will be stored here, this is not included in
+                completed_epoch_metrics.
         """
         completed_epoch_metrics = []
         for event in log_reader.Load():
@@ -699,7 +717,6 @@ class DistributingCloudTuner(tuner_module.Tuner):
                     # the unrelated Objectives.
                     partial_epoch_metrics[metric] = tf.make_ndarray(
                         event.summary.value[0].tensor)
-        completed_epoch_metrics.append(partial_epoch_metrics)
         return _TrainingMetrics(completed_epoch_metrics, partial_epoch_metrics)
 
     def load_model(self, trial):

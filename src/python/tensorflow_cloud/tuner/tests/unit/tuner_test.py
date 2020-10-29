@@ -539,8 +539,9 @@ class CloudTunerTest(tf.test.TestCase):
                        auto_spec=True)
     @mock.patch.object(tf_utils, "get_tensorboard_log_watcher_from_path",
                        auto_spec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
     def test_remote_run_trial_with_successful_job(
-        self, mock_log_watcher, mock_is_running, mock_super_tuner,
+        self, mock_tf_io, mock_log_watcher, mock_is_running, mock_super_tuner,
         mock_job_status, mock_cloud_fit):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
@@ -573,11 +574,12 @@ class CloudTunerTest(tf.test.TestCase):
             image_uri=self._container_uri,
             job_id=self._job_id)
 
-        log_path = remote_tuner._get_tensorboard_log_dir(
-            self._test_trial.trial_id)
+        log_path = os.path.join(remote_tuner._get_tensorboard_log_dir(
+            self._test_trial.trial_id), "train")
         mock_log_watcher.assert_called_with(log_path)
         self.assertEqual(
             2, remote_tuner._get_remote_training_metrics.call_count)
+        mock_tf_io.assert_called_with(log_path)
 
     @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
@@ -585,9 +587,10 @@ class CloudTunerTest(tf.test.TestCase):
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     @mock.patch.object(google_api_client, "is_api_training_job_running",
                        auto_spec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
     def test_remote_run_trial_with_failed_job(
-        self, mock_is_running, mock_super_tuner,
-        mock_job_status, mock_cloud_fit):
+        self, mock_tf_io, mock_is_running, mock_super_tuner, mock_job_status,
+        mock_cloud_fit):
 
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
@@ -609,8 +612,9 @@ class CloudTunerTest(tf.test.TestCase):
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     @mock.patch.object(google_api_client, "is_api_training_job_running",
                        auto_spec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
     def test_remote_run_trial_with_oracle_canceling_job(
-        self, mock_is_running, mock_super_tuner,
+        self, mock_tf_io, mock_is_running, mock_super_tuner,
         mock_job_status, mock_cloud_fit, mock_stop_job):
 
         remote_tuner = self._remote_tuner(
@@ -656,7 +660,7 @@ class CloudTunerTest(tf.test.TestCase):
         log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_dir)
         results = remote_tuner._get_remote_training_metrics(log_reader, {})
 
-        self.assertLen(results.completed_epoch_metrics, 3)
+        self.assertLen(results.completed_epoch_metrics, 2)
         self.assertIn("accuracy", results.completed_epoch_metrics[0])
         self.assertIn("loss", results.completed_epoch_metrics[0])
         self.assertEqual(

@@ -55,7 +55,9 @@ def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
     """
     # Wait for AIP Training job to finish
     job_name = "projects/{}/jobs/{}".format(project_id, job_id)
-    api_client = discovery.build("ml", "v1")
+    # Disable cache_discovery to remove excessive info logs see:
+    # https://github.com/googleapis/google-api-python-client/issues/299
+    api_client = discovery.build("ml", "v1", cache_discovery=False)
 
     request = api_client.projects().jobs().get(name=job_name)
 
@@ -94,7 +96,9 @@ def is_api_training_job_running(job_id: Text, project_id: Text)->bool:
         cancelled.
     """
     job_name = "projects/{}/jobs/{}".format(project_id, job_id)
-    api_client = discovery.build("ml", "v1")
+    # Disable cache_discovery to remove excessive info logs see:
+    # https://github.com/googleapis/google-api-python-client/issues/299
+    api_client = discovery.build("ml", "v1", cache_discovery=False)
 
     logging.info("Retrieving status for job %s.", job_name)
 
@@ -112,7 +116,9 @@ def stop_aip_training_job(job_id: Text, project_id: Text):
         project_id: Project under which the AIP Training job is running.
     """
     job_name = "projects/{}/jobs/{}".format(project_id, job_id)
-    api_client = discovery.build("ml", "v1")
+    # Disable cache_discovery to remove excessive info logs see:
+    # https://github.com/googleapis/google-api-python-client/issues/299
+    api_client = discovery.build("ml", "v1", cache_discovery=False)
 
     logging.info("Canceling the job %s.", job_name)
 
