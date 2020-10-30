@@ -1,6 +1,10 @@
-# Current Version (Still in Development)
+# Release 0.1.8
 
-*   Add notes for next release here.
+*   Added Kaggle integration
+*   `cloud_fit` now moved to a sub-module under `Tuner`
+*   HParams plugin integration with DistributingCloudTuner
+*   Added integration tests
+*   Small bug fixes.
 
 # Release 0.1.7
 
