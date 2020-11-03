@@ -13,4 +13,4 @@
 # limitations under the License.
 """Contains the version string of TensorFlow Cloud."""
 
-__version__ = "0.1.9"
+__version__ = "0.1.9dev"
