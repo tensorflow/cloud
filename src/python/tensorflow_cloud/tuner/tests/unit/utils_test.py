@@ -439,8 +439,9 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
 
     def _assert_hps_equal(self, hps1, hps2):
         self.assertEqual(len(hps1.space), len(hps2.space))
-        for hp1, hp2 in zip(hps1.space, hps2.space):
-            self.assertEqual(repr(hp1), repr(hp2))
+        hps1_repr_list = [repr(x) for x in hps1.space]
+        hps2_repr_list = [repr(x) for x in hps2.space]
+        self.assertCountEqual(hps1_repr_list, hps2_repr_list)
 
     def _assert_study_config_equal(
         self, test_study_config, expected_study_config
