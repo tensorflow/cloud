@@ -2,17 +2,6 @@
 
 *   Add notes for next release here.
 
-# Release 0.1.9
-
-*   Added Kaggle integration
-
-# Release 0.1.8
-
-*   `cloud_fit` now moved to a sub-module under `Tuner`
-*   HParams plugin integration with DistributingCloudTuner
-*   Added integration tests
-*   Small bug fixes.
-
 # Release 0.1.7
 
 *   `cloud_fit` uses pickle instead of cloudpickle.
