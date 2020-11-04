@@ -39,6 +39,7 @@ from tensorflow_cloud.utils import google_api_client
 from tensorflow_cloud.utils import tf_utils
 
 
+_UNUSED = 1
 _POLLING_INTERVAL_IN_SECONDS = 30
 
 # A Namedtuple that is used in DistributingCloudTuner to retrieve incremental
