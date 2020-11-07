@@ -33,6 +33,7 @@ def deploy_job(
     entry_point_args,
     enable_stream_logs,
     job_labels=None,
+    job_dir=None,
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -51,6 +52,7 @@ def deploy_job(
             back from the cloud job.
         job_labels: Dict of str: str. Labels to organize jobs. See
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
+        job_dir: Optional. A Google Cloud Storage path in which to store training outputs.
 
     Returns:
         ID of the invoked remote Cloud AI Platform job.
@@ -76,6 +78,7 @@ def deploy_job(
         worker_config,
         entry_point_args,
         job_labels=job_labels or {},
+        job_dir=job_dir
     )
     try:
         unused_response = (
@@ -102,6 +105,7 @@ def _create_request_dict(
     worker_config,
     entry_point_args,
     job_labels,
+    job_dir,
 ):
     """Creates request dictionary for the CAIP training service."""
     training_input = {}
@@ -159,6 +163,8 @@ def _create_request_dict(
     training_input["use_chief_in_tf_config"] = True
     request_dict = {}
     request_dict["jobId"] = job_id
+    if job_dir:
+        training_input["jobDir"] = job_dir     
     request_dict["trainingInput"] = training_input
     if job_labels:
         request_dict["labels"] = job_labels

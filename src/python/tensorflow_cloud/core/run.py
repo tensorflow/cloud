@@ -44,6 +44,7 @@ def run(
     entry_point_args=None,
     stream_logs=False,
     job_labels=None,
+    job_dir=None,
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -117,6 +118,7 @@ def run(
             up to 64 key-value pairs in lowercase letters and numbers, where
             the first character must be lowercase letter. For more details see
             https://cloud.google.com/ai-platform/training/docs/resource-labels.
+        job_dir: Optional. A Google Cloud Storage path in which to store training outputs.
         **kwargs: Additional keyword arguments.
 
     Returns:
@@ -240,6 +242,7 @@ def run(
         entry_point_args,
         stream_logs,
         job_labels=job_labels,
+        job_dir=job_dir,
     )
 
     # Call `exit` to prevent training the Keras model in the local env.
