@@ -228,7 +228,8 @@ def run(
     if preprocessed_entry_point is not None:
         os.close(pep_file_descriptor)
         os.remove(preprocessed_entry_point)
-    for file_path, file_descriptor in container_builder.get_generated_files(return_descriptors=True):
+    for file_path, file_descriptor \
+        in container_builder.get_generated_files(return_descriptors=True):
         os.close(file_descriptor)
         os.remove(file_path)
 
