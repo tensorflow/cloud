@@ -124,6 +124,10 @@ class ContainerBuilder(object):
 
         Args:
             return_descriptors: Whether to return descriptors as well.
+        
+        Returns:
+          Docker and tar file paths. Depending on return_descriptors, possibly
+          their file descriptors as well. 
         """
         if return_descriptors:
           return [
