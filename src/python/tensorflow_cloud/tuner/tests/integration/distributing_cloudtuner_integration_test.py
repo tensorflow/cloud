@@ -21,6 +21,7 @@ import re
 import kerastuner
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner.tuner import DistributingCloudTuner
 
@@ -130,6 +131,8 @@ class DistributingCloudTunerIntegrationTest(
         super(DistributingCloudTunerIntegrationTest, self).setUp()
         (self._x, self._y), (self._val_x, self._val_y) = _load_data(
             self.get_temp_dir())
+        self._replica_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
+        self._replica_count = 2
 
     def testCloudTunerHyperparameters(self):
         """Test case to configure Distributing Tuner with HyperParameters."""
@@ -145,7 +148,9 @@ class DistributingCloudTunerIntegrationTest(
             max_trials=2,
             study_id=study_id,
             directory=_REMOTE_DIR,
-            container_uri=_DOCKER_IMAGE
+            container_uri=_DOCKER_IMAGE,
+            replica_config=self._replica_config,
+            replica_count=self._replica_count
         )
 
         tuner.search(
