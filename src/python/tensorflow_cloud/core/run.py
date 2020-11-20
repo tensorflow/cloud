@@ -192,7 +192,8 @@ def run(
     if (distribution_strategy == "auto"
         or entry_point.endswith("ipynb")
         or entry_point is None):
-        preprocessed_entry_point, pep_file_descriptor = preprocess.get_preprocessed_entry_point(
+        preprocessed_entry_point, \
+          pep_file_descriptor = preprocess.get_preprocessed_entry_point(
             entry_point,
             chief_config,
             worker_config,

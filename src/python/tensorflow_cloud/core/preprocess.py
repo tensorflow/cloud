@@ -193,7 +193,7 @@ def get_preprocessed_entry_point(
     file_descriptor, output_file = tempfile.mkstemp(suffix=".py")
     with open(output_file, "w") as f:
         f.writelines(script_lines)
-        
+
     # Returning file descriptor could be necessary for some os.close calls
     if return_file_descriptor:
       return (output_file, file_descriptor)
