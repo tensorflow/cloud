@@ -509,7 +509,7 @@ def convert_optimizer_trial_to_hps(
     return hps
 
 
-def convert_optimizer_trial_to_keras_trial(
+def convert_completed_optimizer_trial_to_keras_trial(
     optimizer_trial: Dict[Text, Any],
     hyperparameter_space: hp_module.HyperParameters,
 ) -> trial_module.Trial:
@@ -537,7 +537,7 @@ def convert_optimizer_trial_to_keras_trial(
         raise ValueError('"finalMeasurement" not found in this trial {}'
                          .format(optimizer_trial))
 
-    kerastuner_trial.best_step = final_measurement.get("stepCount", 0)
+    kerastuner_trial.best_step = int(final_measurement.get("stepCount", 0))
     kerastuner_trial.score = final_measurement["metrics"][0].get("value")
     return kerastuner_trial
 

@@ -393,6 +393,17 @@ class OptimizerClientTest(tf.test.TestCase):
         mock_get_trial.assert_called_once_with(name=self._trial_name)
         self.assertEqual(trial, expected_trial)
 
+    def test_get_trial_with_404_raises(self):
+        mock_get_trial = mock.MagicMock()
+        mock_get_trial.return_value.execute.side_effect = errors.HttpError(
+            httplib2.Response(info={"status": 404}), b"")
+
+        self._mock_discovery.projects().locations().studies().trials(
+            ).get = mock_get_trial
+
+        with self.assertRaises(errors.HttpError):
+            self._client.get_trial(trial_id="1")
+
     def test_list_trials(self):
         mock_list_trials = mock.MagicMock()
         expected_trials = {

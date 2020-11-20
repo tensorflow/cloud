@@ -87,7 +87,7 @@ class CloudTunerTest(tf.test.TestCase):
         self._test_trial = trial_module.Trial(
             hyperparameters=self._test_hyperparameters,
             trial_id="1",
-            status=trial_module.TrialStatus,
+            status=trial_module.TrialStatus.RUNNING,
         )
         # TODO(b/170687807) Switch from using "{}".format() to f-string
         self._job_id = "{}_{}".format(self._study_id, self._test_trial.trial_id)
@@ -253,7 +253,8 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(trial.hyperparameters.values, {})
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
-    def test_update_trial(self):
+    @mock.patch.object(oracle_module.Oracle, "update_trial", auto_spec=True)
+    def test_update_trial(self, mock_super_update_trial):
         self._tuner_with_hparams()
 
         self.mock_client.should_trial_stop.return_value = True
@@ -277,6 +278,9 @@ class CloudTunerTest(tf.test.TestCase):
         )
         self.mock_client.should_trial_stop.assert_called_once_with("1")
         self.assertEqual(status, trial_module.TrialStatus.STOPPED)
+        mock_super_update_trial.assert_called_once_with(
+            "1", {"val_acc": 0.8}, 3
+        )
 
     def test_end_trial_success(self):
         self._tuner_with_hparams()
@@ -285,17 +289,29 @@ class CloudTunerTest(tf.test.TestCase):
             "state": "COMPLETED",
             "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
             "finalMeasurement": {
-                "stepCount": 3,
+                "stepCount": "3",
                 "metrics": [{"metric": "val_acc", "value": 0.7}],
             },
             "trial_infeasible": False,
             "infeasible_reason": None,
         }
-
+        mock_save_trial = mock.Mock()
+        self.tuner.oracle._save_trial = mock_save_trial
         self.tuner.oracle.ongoing_trials = {"tuner_0": self._test_trial}
+        expected_trial = trial_module.Trial(
+            hyperparameters=self._test_hyperparameters,
+            trial_id="1",
+            status=trial_module.TrialStatus.COMPLETED,
+        )
+        expected_trial.best_step = 3
+        expected_trial.score = 0.7
+
         self.tuner.oracle.end_trial(trial_id="1")
+
         self.mock_client.complete_trial.assert_called_once_with(
             "1", False, None)
+        self.assertEqual(repr(mock_save_trial.call_args[0][0].get_state()),
+                         repr(expected_trial.get_state()))
 
     def test_end_trial_infeasible_trial(self):
         self._tuner_with_hparams()
@@ -319,35 +335,6 @@ class CloudTunerTest(tf.test.TestCase):
         with self.assertRaises(ValueError):
             self.tuner.oracle.end_trial(trial_id="1", status="FOO")
 
-    def test_get_trial_success(self):
-        self._tuner_with_hparams()
-        self.mock_client.get_trial.return_value = {
-            "name": "1",
-            "state": "COMPLETED",
-            "parameters": [{"parameter": "learning_rate", "floatValue": 0.01}],
-            "finalMeasurement": {
-                "stepCount": 3,
-                "metrics": [{"metric": "val_acc", "value": 0.7}],
-            },
-            "trial_infeasible": False,
-            "infeasible_reason": None,
-        }
-        trial = self.tuner.oracle.get_trial(trial_id="1")
-        self.mock_client.get_trial.assert_called_once_with("1")
-        self.assertEqual(trial.trial_id, "1")
-        self.assertEqual(trial.score, 0.7)
-        self.assertEqual(trial.status, trial_module.TrialStatus.COMPLETED)
-        self.assertEqual(trial.hyperparameters.values, {"learning_rate": 0.01})
-
-    def test_get_trial_failed(self):
-        self._tuner_with_hparams()
-        self.mock_client.get_trial.return_value = {
-            "name": "1",
-            "state": "FOO"
-        }
-        with self.assertRaises(ValueError):
-            self.tuner.oracle.get_trial(trial_id="1")
-
     def test_get_best_trials(self):
         self._tuner_with_hparams()
 
@@ -358,7 +345,7 @@ class CloudTunerTest(tf.test.TestCase):
                 "parameters":
                     [{"parameter": "learning_rate", "floatValue": 0.01}],
                 "finalMeasurement": {
-                    "stepCount": 3,
+                    "stepCount": "3",
                     "metrics": [{"metric": "val_acc", "value": 0.7}],
                 },
                 "trial_infeasible": False,
@@ -370,7 +357,7 @@ class CloudTunerTest(tf.test.TestCase):
                 "parameters":
                     [{"parameter": "learning_rate", "floatValue": 0.001}],
                 "finalMeasurement": {
-                    "stepCount": 3,
+                    "stepCount": "3",
                     "metrics": [{"metric": "val_acc", "value": 0.9}],
                 },
                 "trial_infeasible": False,
@@ -425,7 +412,7 @@ class CloudTunerTest(tf.test.TestCase):
                 "parameters":
                     [{"parameter": "learning_rate", "floatValue": 0.01}],
                 "finalMeasurement": {
-                    "stepCount": 3,
+                    "stepCount": "3",
                     "metrics": [{"metric": "val_acc", "value": 0.7}],
                 },
                 "trial_infeasible": False,
@@ -437,7 +424,7 @@ class CloudTunerTest(tf.test.TestCase):
                 "parameters":
                     [{"parameter": "learning_rate", "floatValue": 0.001}],
                 "finalMeasurement": {
-                    "stepCount": 3,
+                    "stepCount": "3",
                     "metrics": [{"metric": "val_acc", "value": 0.9}],
                 },
                 "trial_infeasible": False,
@@ -457,6 +444,11 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(best_trials_1[1].trial_id, best_trials_2[1].trial_id)
         self.assertEqual(best_trials_1[0].score, 0.9)
         self.assertEqual(best_trials_1[0].best_step, 3)
+
+    def test_get_single_objective(self):
+        self._tuner_with_hparams()
+        self.assertEqual([self.tuner.oracle.objective],
+                         self.tuner.oracle._get_objective())
 
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
     @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)

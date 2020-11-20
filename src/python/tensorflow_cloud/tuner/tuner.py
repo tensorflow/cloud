@@ -123,7 +123,11 @@ class CloudOracle(oracle_module.Oracle):
             raise ValueError('"region" is not found.')
         self._region = region
 
-        self.objective = utils.format_objective(objective)
+        # If it's just single objective, let it be an Objective instead of a
+        # list, to keep it consistent with how KerasTuner formats objectives
+        obj = utils.format_objective(objective)
+        self.objective = obj[0] if len(obj) == 1 else obj
+
         self.hyperparameters = hyperparameters
         self.max_trials = max_trials
 
@@ -218,6 +222,7 @@ class CloudOracle(oracle_module.Oracle):
         """Used by a worker to report the status of a trial."""
         # Constructs the measurement.
         # Adds the measurement of the objective functions to a trial.
+        super(CloudOracle, self).update_trial(trial_id, metrics, step)
         elapsed_secs = time.time() - self._start_time
         if elapsed_secs < 0 or step < 0:
             raise ValueError(
@@ -227,7 +232,7 @@ class CloudOracle(oracle_module.Oracle):
                 "At least one of {elapsed_secs, step} must be positive")
 
         metric_list = []
-        for ob in self.objective:
+        for ob in self._get_objective():
             if ob.name not in metrics:
                 tf.get_logger().info(
                     'Objective "{}" is not found in metrics.'.format(ob.name)
@@ -293,22 +298,6 @@ class CloudOracle(oracle_module.Oracle):
         self._save_trial(kerastuner_trial)
         self.save()
 
-    def get_trial(self, trial_id: Text) -> trial_module.Trial:
-        """Returns a completed KerasTuner Trial given the trial_id."""
-        # Note that this is called in Tuner.on_trial_end.
-
-        optimizer_trial = self.service.get_trial(trial_id)
-
-        if optimizer_trial["state"] != "COMPLETED":
-            raise ValueError("The trial status is not COMPLETED, found {}"
-                             .format(optimizer_trial["state"]))
-
-        # Convert a completed Optimizer trial to KerasTuner Trial instance.
-        kerastuner_trial = utils.convert_optimizer_trial_to_keras_trial(
-            optimizer_trial,
-            self.hyperparameters.copy())
-        return kerastuner_trial
-
     def get_best_trials(self, num_trials: int = 1) -> List[trial_module.Trial]:
         """Returns the trials with the best objective values found so far.
 
@@ -317,14 +306,14 @@ class CloudOracle(oracle_module.Oracle):
         Returns:
             List of KerasTuner Trials.
         """
-        if len(self.objective) > 1:
+        objective = self._get_objective()
+        if len(objective) > 1:
             raise ValueError(
                 "Getting the best trials for multi-objective optimization "
                 "is not supported."
             )
 
-        maximizing = (
-            utils.format_goal(self.objective[0].direction) == "MAXIMIZE")
+        maximizing = (utils.format_goal(objective[0].direction) == "MAXIMIZE")
 
         # List all trials associated with the same study
         trial_list = self.service.list_trials()
@@ -336,7 +325,7 @@ class CloudOracle(oracle_module.Oracle):
 
         sorted_trials = sorted(
             optimizer_trials,
-            key=lambda t: t["finalMeasurement"]["metrics"][0]["value"],
+            key=lambda t: t["finalMeasurement"]["metrics"][0].get("value"),
             reverse=maximizing,
         )
         best_optimizer_trials = sorted_trials[:num_trials]
@@ -344,11 +333,17 @@ class CloudOracle(oracle_module.Oracle):
         best_trials = []
         # Convert completed Optimizer trials to KerasTuner Trial instances.
         for optimizer_trial in best_optimizer_trials:
-            kerastuner_trial = utils.convert_optimizer_trial_to_keras_trial(
-                optimizer_trial,
-                self.hyperparameters.copy())
+            kerastuner_trial = (
+                utils.convert_completed_optimizer_trial_to_keras_trial(
+                    optimizer_trial,
+                    self.hyperparameters.copy()))
             best_trials.append(kerastuner_trial)
         return best_trials
+
+    def _get_objective(self):
+        """Returns the Objective(s) as a list."""
+        return self.objective if isinstance(self.objective,
+                                            list) else [self.objective]
 
 
 class CloudTuner(tuner_module.Tuner):
