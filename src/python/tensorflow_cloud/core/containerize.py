@@ -135,7 +135,7 @@ class ContainerBuilder(object):
                 (self.tar_file_path, self.tar_file_descriptor)
             ]
         else:
-          return [self.docker_file_path, self.tar_file_path]
+            return [self.docker_file_path, self.tar_file_path]
 
     def _get_tar_file_path(self):
         """Packages files into a tarball."""
