@@ -13,7 +13,7 @@ as a backend to get suggestions of hyperparameters and run trials.
 
 ### Requirements
 
--   Python >= 3.5
+-   Python >= 3.6
 -   Tensorflow >= 2.0
 -   [Set up your Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 -   [Authenticate your GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
@@ -86,7 +86,7 @@ you can skip the setup and authentication steps and start from step 8.
     cd tuner
     ```
 
-1.  Make sure you have `python >= 3.5`
+1.  Make sure you have `python >= 3.6`
 
     ```shell
     python -V

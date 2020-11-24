@@ -16,7 +16,7 @@ environment to distributed training/tuning on Cloud.
 
 #### Requirements
 
--   Python >= 3.5
+-   Python >= 3.6
 -   [A Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
 -   An
     [authenticated GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
@@ -118,7 +118,7 @@ mkdir tensorflow_cloud
 cd tensorflow_cloud
 ```
 
-1.  Make sure you have `python >= 3.5`
+1.  Make sure you have `python >= 3.6`
 
 ```shell
 python -V
