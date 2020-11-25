@@ -1,6 +1,7 @@
 # Current Version (Still in Development)
 
 *   Add notes for next release here.
+*   Py 3.5 support removed.
 
 # Release 0.1.9
 
