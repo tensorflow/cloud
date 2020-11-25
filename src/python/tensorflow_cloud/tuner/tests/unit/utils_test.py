@@ -406,7 +406,7 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
         hps.Fixed("condition", True)
         hparams = utils.convert_hyperparams_to_hparams(hps)
         expected_hparams = {
-            hparams_api.HParam("condition", hparams_api.Discrete([1])): 1,
+            hparams_api.HParam("condition", hparams_api.Discrete([True])): True,
         }
         self.assertEqual(repr(hparams), repr(expected_hparams))
 
