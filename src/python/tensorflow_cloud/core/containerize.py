@@ -474,7 +474,7 @@ class CloudContainerBuilder(ContainerBuilder):
                 )
 
         except errors.HttpError as err:
-            RuntimeError(
+            raise RuntimeError(
                 "There was an error submitting the cloud build job. ", err)
         return image_uri
 
