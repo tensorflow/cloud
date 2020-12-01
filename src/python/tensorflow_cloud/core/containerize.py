@@ -396,7 +396,7 @@ class CloudContainerBuilder(ContainerBuilder):
     """Container builder that uses Google cloud build."""
 
     def get_docker_image(
-        self, max_status_check_attempts=20, delay_between_status_checks=30
+        self, max_status_check_attempts=40, delay_between_status_checks=30
     ):
         """Builds, publishes and returns a Docker image.
 
@@ -427,7 +427,9 @@ class CloudContainerBuilder(ContainerBuilder):
             requestBuilder=google_api_client.TFCloudHttpRequest,
         )
         request_dict = self._create_cloud_build_request_dict(
-            image_uri, storage_object_name
+            image_uri,
+            storage_object_name,
+            max_status_check_attempts*delay_between_status_checks
         )
 
         try:
@@ -494,7 +496,9 @@ class CloudContainerBuilder(ContainerBuilder):
         blob.upload_from_filename(self.tar_file_path)
         return storage_object_name
 
-    def _create_cloud_build_request_dict(self, image_uri, storage_object_name):
+    def _create_cloud_build_request_dict(
+        self, image_uri, storage_object_name, timeout_sec
+    ):
         """Creates request body for cloud build JSON API call.
 
         `create` body should be a `Build` object
@@ -503,6 +507,7 @@ class CloudContainerBuilder(ContainerBuilder):
         Args:
             image_uri: GCR Docker image URI.
             storage_object_name: Name of the tarfile object in GCS.
+            timeout_sec: timeout for the CloudBuild in seconds.
 
         Returns:
             Build request dictionary.
@@ -511,6 +516,7 @@ class CloudContainerBuilder(ContainerBuilder):
         request_dict["projectId"] = self.project_id
         request_dict["images"] = [[image_uri]]
         request_dict["steps"] = []
+        request_dict["timeout"] = "{}s".format(timeout_sec)
         build_args = ["build", "-t", image_uri, "."]
 
         if self.docker_config:

@@ -444,6 +444,7 @@ class TestContainerize(absltest.TestCase):
 
         request_dict = {}
         request_dict["projectId"] = self.project_id
+        request_dict["timeout"] = "1200s"
         request_dict["images"] = [["gcr.io/my-project/tf_cloud_train:abcde"]]
         request_dict["steps"] = [{
             "name": "gcr.io/cloud-builders/docker",
@@ -612,6 +613,7 @@ class TestContainerize(absltest.TestCase):
 
         request_dict = {}
         request_dict["projectId"] = self.project_id
+        request_dict["timeout"] = "1200s"
         request_dict["images"] = [[img_tag]]
         request_dict["steps"] = [{
             "name": "gcr.io/cloud-builders/docker",
@@ -732,6 +734,7 @@ class TestContainerize(absltest.TestCase):
 
         request_dict = {}
         request_dict["projectId"] = self.project_id
+        request_dict["timeout"] = "1200s"
         request_dict["images"] = [[img_tag]]
         request_dict["steps"] = [{
             "name": "gcr.io/cloud-builders/docker",
