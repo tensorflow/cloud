@@ -111,7 +111,7 @@ def get_preprocessed_entry_point(
 
     Raises:
         RuntimeError: If invoked from Notebook but unable to access it.
-                      Typically, this is due to missing the `nbconvert` package.
+            Typically, this is due to missing the `nbconvert` package.
     """
 
     # Set `TF_KERAS_RUNNING_REMOTELY` env variable. This is required in order
