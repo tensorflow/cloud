@@ -103,6 +103,8 @@ class ContainerBuilder(object):
         # Those will be populated lazily.
         self.tar_file_path = None
         self.docker_client = None
+        self.tar_file_descriptor = None
+        self.docker_file_descriptor = None
 
     def get_docker_image(
         self, max_status_check_attempts=None, delay_between_status_checks=None
@@ -117,15 +119,30 @@ class ContainerBuilder(object):
         """
         raise NotImplementedError
 
-    def get_generated_files(self):
-        return [self.docker_file_path, self.tar_file_path]
+    def get_generated_files(self, return_descriptors=False):
+        """Get generated file paths and/or descriptors for generated files.
+
+        Args:
+            return_descriptors: Whether to return descriptors as well.
+
+        Returns:
+          Docker and tar file paths. Depending on return_descriptors, possibly
+          their file descriptors as well.
+        """
+        if return_descriptors:
+            return [
+                (self.docker_file_path, self.docker_file_descriptor),
+                (self.tar_file_path, self.tar_file_descriptor)
+            ]
+        else:
+            return [self.docker_file_path, self.tar_file_path]
 
     def _get_tar_file_path(self):
         """Packages files into a tarball."""
         self._create_docker_file()
         file_path_map = self._get_file_path_map()
 
-        _, self.tar_file_path = tempfile.mkstemp()
+        self.tar_file_descriptor, self.tar_file_path = tempfile.mkstemp()
         with tarfile.open(self.tar_file_path, "w:gz", dereference=True) as tar:
             for source, destination in file_path_map.items():
                 tar.add(source, arcname=destination)
@@ -233,7 +250,7 @@ class ContainerBuilder(object):
         )
 
         content = "\n".join(lines)
-        _, self.docker_file_path = tempfile.mkstemp()
+        self.docker_file_descriptor, self.docker_file_path = tempfile.mkstemp()
         with open(self.docker_file_path, "w") as f:
             f.write(content)
 
