@@ -103,7 +103,7 @@ def get_preprocessed_entry_point(
             `worker_count` params.
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
-        return_file_descriptor: Boolean. True if the file descriptor for the 
+        return_file_descriptor: Boolean. True if the file descriptor for the
             temporary file is also returned.
 
     Returns:
