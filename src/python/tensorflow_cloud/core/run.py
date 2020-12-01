@@ -194,14 +194,14 @@ def run(
         or entry_point is None):
         preprocessed_entry_point, \
           pep_file_descriptor = preprocess.get_preprocessed_entry_point(
-            entry_point,
-            chief_config,
-            worker_config,
-            worker_count,
-            distribution_strategy,
-            called_from_notebook=called_from_notebook,
-            return_file_descriptor=True,
-        )
+              entry_point,
+              chief_config,
+              worker_config,
+              worker_count,
+              distribution_strategy,
+              called_from_notebook=called_from_notebook,
+              return_file_descriptor=True,
+          )
 
     # Create Docker file, generate a tarball, build and push Docker
     # image using the tarball.
