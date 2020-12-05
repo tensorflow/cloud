@@ -52,7 +52,7 @@ def make_study_config(
     hyperparams: hp_module.HyperParameters) -> Dict[Text, Any]:
     """Generates Optimizer study_config from kerastuner configurations.
 
-    Arguments:
+    Args:
         objective: String or `oracle_module.Objective`. If a string,
             the direction of the optimization (min or max) will be inferred.
         hyperparams: HyperParameters class instance. Can be used to override (or
@@ -383,7 +383,7 @@ def format_objective(
     direction: Text = None) -> List[oracle_module.Objective]:
     """Formats objective to a list of oracle_module.Objective.
 
-    Arguments:
+    Args:
         objective: If a string, the direction of the optimization (min or max)
             will be inferred.
         direction: Optional. e.g. 'min' or 'max'.
@@ -456,7 +456,7 @@ def _get_scale_type(sampling):
 def get_trial_id(optimizer_trial: Dict[Text, Any]) -> Text:
     r"""Gets trial_id from a CAIP Optimizer Trial.
 
-    Arguments:
+    Args:
         optimizer_trial: A CAIP Optimizer Trial instance.
 
     Returns:
@@ -472,7 +472,7 @@ def convert_optimizer_trial_to_dict(
 ) -> Dict[Text, Any]:
     """Converts Optimizer Trial parameters into a Python dict.
 
-    Arguments:
+    Args:
         optimizer_trial: A CAIP Optimizer Trial instance.
 
     Returns:
@@ -496,7 +496,7 @@ def convert_optimizer_trial_to_hps(
 ) -> hp_module.HyperParameters:
     """Converts Optimizer Trial parameters into KerasTuner HyperParameters.
 
-    Arguments:
+    Args:
         hps: Sample KerasTuner HyperParameters object for config initialization
         optimizer_trial: A CAIP Optimizer Trial instance.
 
@@ -515,7 +515,7 @@ def convert_completed_optimizer_trial_to_keras_trial(
 ) -> trial_module.Trial:
     """Converts completed Optimizer Trial into KerasTuner Trial.
 
-    Arguments:
+    Args:
         optimizer_trial: A CAIP Optimizer Trial Instance.
         hyperparameter_space: Mandatory and must include definitions for all
             hyperparameters used during the search.
