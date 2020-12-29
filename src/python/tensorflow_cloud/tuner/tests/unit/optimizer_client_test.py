@@ -15,13 +15,10 @@
 """Tests for optimizer_client."""
 
 from googleapiclient import errors
-from googleapiclient import http as googleapiclient_http
 import httplib2
 import mock
 import tensorflow as tf
-from tensorflow_cloud import version
 from tensorflow_cloud.tuner import optimizer_client
-from tensorflow_cloud.utils import google_api_client
 
 
 class OptimizerClientTest(tf.test.TestCase):
@@ -510,18 +507,6 @@ class OptimizerClientTest(tf.test.TestCase):
             "DeleteStudy failed. Study not found: {}."
             .format(self._trial_parent)):
             self._client.delete_study()
-
-    def test_cloud_tuner_request_header(self):
-        http_request = google_api_client.TFCloudHttpRequest(
-            googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
-            object(),
-            "fake_uri",
-        )
-        self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
-        self.assertEqual(
-            {"user-agent": "tf-cloud/" + version.__version__},
-            http_request.headers
-        )
 
 
 if __name__ == "__main__":
