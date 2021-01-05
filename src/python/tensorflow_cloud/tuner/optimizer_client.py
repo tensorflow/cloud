@@ -24,6 +24,7 @@ from googleapiclient import discovery
 from googleapiclient import errors
 import tensorflow as tf
 
+from tensorflow_cloud.tuner import vizier_client_interface
 from tensorflow_cloud.tuner import constants
 from tensorflow_cloud.utils import google_api_client
 
@@ -32,7 +33,7 @@ class SuggestionInactiveError(Exception):
     """Indicates that GetSuggestion was called on an inactive study."""
 
 
-class _OptimizerClient(object):
+class _OptimizerClient(vizier_client_interface.VizierClientInterface):
     """A wrapper class that allows for easy interaction with a Study."""
 
     def __init__(self,
