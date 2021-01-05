@@ -61,7 +61,7 @@ class CloudFitRemoteTest(tf.test.TestCase):
         self._image_uri = "gcr.io/some_test_image:latest"
         self._project_id = "test_project_id"
         self._remote_dir = tempfile.mkdtemp()
-        self._output_dir = os.path.join(self._remote_dir, "output")
+        self._output_dir = os.path.join(self._remote_dir, "checkpoint")
         self._x = np.random.random(10)
         self._y = np.random.random(10)
         self._model = self._model()
