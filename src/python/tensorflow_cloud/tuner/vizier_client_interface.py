@@ -80,7 +80,7 @@ class VizierClientInterface(abc.ABC):
   def complete_trial(self,
                      trial_id: Text,
                      trial_infeasible: bool,
-                     infeasibility_reason: Text = None):
+                     infeasibility_reason: Text = None) -> Dict[Text, Text]:
     """Marks the trial as COMPLETED and sets the final measurement.
 
     Args:
