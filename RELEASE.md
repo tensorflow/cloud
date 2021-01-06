@@ -1,6 +1,7 @@
-# Current Version (Still in Development)
+# Release 0.1.11
 
-*   Add notes for next release here.
+*   Telemetry additions
+*   Address test failures/flakiness
 
 # Release 0.1.10
 
