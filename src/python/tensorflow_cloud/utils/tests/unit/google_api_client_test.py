@@ -45,7 +45,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.mock_apiclient.projects().jobs(
                 ).cancel.return_value = self.mock_request
 
-    @mock.patch.object(logging, "error", auto_spec=True)
+    @mock.patch.object(logging, "error", autospec=True)
     def test_wait_for_aip_training_job_completion_non_blocking_success(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
@@ -60,7 +60,7 @@ class GoogleApiClientTest(tf.test.TestCase):
             name=job_name)
         mock_log_error.assert_not_called()
 
-    @mock.patch.object(logging, "error", auto_spec=True)
+    @mock.patch.object(logging, "error", autospec=True)
     def test_wait_for_aip_training_job_completion_non_blocking_cancelled(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
@@ -75,7 +75,7 @@ class GoogleApiClientTest(tf.test.TestCase):
             name=job_name)
         mock_log_error.assert_not_called()
 
-    @mock.patch.object(logging, "error", auto_spec=True)
+    @mock.patch.object(logging, "error", autospec=True)
     def test_wait_for_aip_training_job_completion_non_blocking_failed(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
@@ -99,7 +99,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.assertTrue(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
 
-    @mock.patch.object(logging, "error", auto_spec=True)
+    @mock.patch.object(logging, "error", autospec=True)
     def test_wait_for_aip_training_job_completion_multiple_checks_failed(
         self, mock_log_error):
         self.mock_request.execute.side_effect = [
@@ -164,7 +164,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.mock_apiclient.projects().jobs().cancel.assert_called_with(
             name=job_name)
 
-    @mock.patch.object(logging, "info", auto_spec=True)
+    @mock.patch.object(logging, "info", autospec=True)
     def test_stop_aip_training_job_with_completed_job(self, mock_logs):
         self.mock_request.execute.side_effect = errors.HttpError(
             httplib2.Response(info={"status": 400}), b""
@@ -176,7 +176,7 @@ class GoogleApiClientTest(tf.test.TestCase):
             name=job_name)
         self.assertEqual(2, mock_logs.call_count)
 
-    @mock.patch.object(logging, "error", auto_spec=True)
+    @mock.patch.object(logging, "error", autospec=True)
     def test_stop_aip_training_job_with_failing_request(self, mock_logs):
         self.mock_request.execute.side_effect = errors.HttpError(
             httplib2.Response(info={"status": 404}), b"")
