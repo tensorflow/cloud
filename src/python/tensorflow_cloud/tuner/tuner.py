@@ -536,8 +536,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         remote_dir = os.path.join(self.directory, str(trial.trial_id))
 
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
-        job_id = "{}_{}".format(self._study_id, trial.trial_id)
+        job_id = f"{self._study_id}_{trial.trial_id}"
 
         # Create job spec from worker count and config
         job_spec = self._get_job_spec_from_config(job_id)
@@ -572,16 +571,15 @@ class DistributingCloudTuner(tuner_module.Tuner):
         # Tensorboard log watcher expects the path to exist
         tf.io.gfile.makedirs(log_path)
 
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
         tf.get_logger().info(
-            "Retrieving training logs for trial {} from {}".format(
-                trial.trial_id, log_path))
+            f"Retrieving training logs for trial {trial.trial_id} from"
+            f" {log_path}")
         log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_path)
 
         training_metrics = _TrainingMetrics([], {})
         epoch = 0
 
-        while google_api_client.is_api_training_job_running(
+        while google_api_client.is_aip_training_job_running(
             job_id, self._project_id):
 
             time.sleep(_POLLING_INTERVAL_IN_SECONDS)
@@ -605,7 +603,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 break
 
         # Ensure the training job has completed successfully.
-        if not google_api_client.wait_for_api_training_job_completion(
+        if not google_api_client.wait_for_aip_training_job_completion(
             job_id, self._project_id):
             raise RuntimeError(
                 "AIP Training job failed, see logs for details at "
@@ -752,13 +750,12 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         logdir = self._get_tensorboard_log_dir(trial.trial_id)
         for callback in callbacks:
-            if callback.__class__.__name__ == "TensorBoard":
+            if issubclass(callback.__class__, tf.keras.callbacks.TensorBoard):
                 # Validate TensorBoard log_dir
                 if callback.log_dir != self.directory:
-                    # TODO(b/170687807) Switch from using .format() to f-string
                     raise ValueError(
-                        "log_dir in TensorBoard callback should be {}, "
-                        "but was {}".format(self.directory, callback.log_dir)
+                        f"log_dir in TensorBoard callback should be "
+                        f"{self.directory}, but was {callback.log_dir}"
                     )
                 # Patch the log_dir
                 callback.log_dir = logdir

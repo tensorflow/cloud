@@ -184,8 +184,7 @@ def optout_metrics_reporting():
     logging.info("Client side metrics reporting has been disabled.")
 
 
-# TODO(b/170436896) change wait_for_api_.. to wait_for_aip_..
-def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
+def wait_for_aip_training_job_completion(job_id: Text, project_id: Text)->bool:
     """Blocks until the AIP Training job is completed and returns the status.
 
     Args:
@@ -225,8 +224,7 @@ def wait_for_api_training_job_completion(job_id: Text, project_id: Text)->bool:
     return True
 
 
-# TODO(b/170436896) change is_api_train.. to is_aip_train..
-def is_api_training_job_running(job_id: Text, project_id: Text)->bool:
+def is_aip_training_job_running(job_id: Text, project_id: Text)->bool:
     """Non-blocking call that checks if AIP Training job is running.
 
     Args:

@@ -127,7 +127,7 @@ class CloudFitIntegrationTest(tf.test.TestCase):
 
         # Wait for AIP Training job to finish successfully
         self.assertTrue(
-            google_api_client.wait_for_api_training_job_completion(
+            google_api_client.wait_for_aip_training_job_completion(
                 job_id, self._project_id))
 
         # load model from remote dir

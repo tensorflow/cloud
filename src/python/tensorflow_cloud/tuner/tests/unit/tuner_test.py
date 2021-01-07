@@ -60,10 +60,9 @@ class CloudTunerTest(tf.test.TestCase):
         self._region = "us-central1"
         self._remote_dir = "gs://remote_dir"
         self._project_id = "project-a"
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
-        self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
-            self._project_id, self._region, self._study_id
-        )
+        self._trial_parent = (
+            f"projects/{self._project_id}/locations/{self._region}/studies/"
+            f"{self._study_id}")
         self._container_uri = "test_container_uri",
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
@@ -89,8 +88,7 @@ class CloudTunerTest(tf.test.TestCase):
             trial_id="1",
             status=trial_module.TrialStatus.RUNNING,
         )
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
-        self._job_id = "{}_{}".format(self._study_id, self._test_trial.trial_id)
+        self._job_id = f"{self._study_id}_{self._test_trial.trial_id}"
         self.mock_optimizer_client_module = mock.patch.object(
             tuner, "optimizer_client", autospec=True
         ).start()
@@ -525,9 +523,9 @@ class CloudTunerTest(tf.test.TestCase):
 
     @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
+                       "wait_for_aip_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
                        auto_spec=True)
     @mock.patch.object(tf_utils, "get_tensorboard_log_watcher_from_path",
                        auto_spec=True)
@@ -575,9 +573,9 @@ class CloudTunerTest(tf.test.TestCase):
 
     @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
+                       "wait_for_aip_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
                        auto_spec=True)
     @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
     def test_remote_run_trial_with_failed_job(
@@ -600,9 +598,9 @@ class CloudTunerTest(tf.test.TestCase):
                        auto_spec=True)
     @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
+                       "wait_for_aip_training_job_completion", auto_spec=True)
     @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
                        auto_spec=True)
     @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
     def test_remote_run_trial_with_oracle_canceling_job(

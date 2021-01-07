@@ -46,12 +46,12 @@ class GoogleApiClientTest(tf.test.TestCase):
                 ).cancel.return_value = self.mock_request
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_wait_for_api_training_job_completion_non_blocking_success(
+    def test_wait_for_aip_training_job_completion_non_blocking_success(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
             "state": "SUCCEEDED",
         }
-        status = google_api_client.wait_for_api_training_job_completion(
+        status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertTrue(status)
         self.mock_request.execute.assert_called_once()
@@ -61,12 +61,12 @@ class GoogleApiClientTest(tf.test.TestCase):
         mock_log_error.assert_not_called()
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_wait_for_api_training_job_completion_non_blocking_cancelled(
+    def test_wait_for_aip_training_job_completion_non_blocking_cancelled(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
             "state": "CANCELLED",
         }
-        status = google_api_client.wait_for_api_training_job_completion(
+        status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertTrue(status)
         self.mock_request.execute.assert_called_once()
@@ -76,11 +76,11 @@ class GoogleApiClientTest(tf.test.TestCase):
         mock_log_error.assert_not_called()
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_wait_for_api_training_job_completion_non_blocking_failed(
+    def test_wait_for_aip_training_job_completion_non_blocking_failed(
         self, mock_log_error):
         self.mock_request.execute.return_value = {
             "state": "FAILED", "errorMessage": "test_error_message"}
-        status = google_api_client.wait_for_api_training_job_completion(
+        status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.mock_request.execute.assert_called_once()
@@ -88,25 +88,25 @@ class GoogleApiClientTest(tf.test.TestCase):
             "AIP Training job %s failed with error %s.",
             self._job_id, "test_error_message")
 
-    def test_wait_for_api_training_job_completion_multiple_checks_success(self):
+    def test_wait_for_aip_training_job_completion_multiple_checks_success(self):
         self.mock_request.execute.side_effect = [
             {"state": "PREPARING"},
             {"state": "RUNNING"},
             {"state": "SUCCEEDED"}
         ]
-        status = google_api_client.wait_for_api_training_job_completion(
+        status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertTrue(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
 
     @mock.patch.object(logging, "error", auto_spec=True)
-    def test_wait_for_api_training_job_completion_multiple_checks_failed(
+    def test_wait_for_aip_training_job_completion_multiple_checks_failed(
         self, mock_log_error):
         self.mock_request.execute.side_effect = [
             {"state": "PREPARING"},
             {"state": "RUNNING"},
             {"state": "FAILED", "errorMessage": "test_error_message"}]
-        status = google_api_client.wait_for_api_training_job_completion(
+        status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
@@ -114,44 +114,44 @@ class GoogleApiClientTest(tf.test.TestCase):
             "AIP Training job %s failed with error %s.",
             self._job_id, "test_error_message")
 
-    def test_is_api_training_job_running_with_completed_job(self):
+    def test_is_aip_training_job_running_with_completed_job(self):
         self.mock_request.execute.side_effect = [
             {"state": "SUCCEEDED"},
             {"state": "CANCELLED"},
             {"state": "FAILED", "errorMessage": "test_error_message"}]
-        succeeded_status = google_api_client.is_api_training_job_running(
+        succeeded_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertFalse(succeeded_status)
         job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
         self.mock_apiclient.projects().jobs().get.assert_called_with(
             name=job_name)
-        cancelled_status = google_api_client.is_api_training_job_running(
+        cancelled_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertFalse(cancelled_status)
-        failed_status = google_api_client.is_api_training_job_running(
+        failed_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertFalse(failed_status)
         self.assertEqual(3, self.mock_request.execute.call_count)
 
-    def test_is_api_training_job_running_with_running_job(self):
+    def test_is_aip_training_job_running_with_running_job(self):
         self.mock_request.execute.side_effect = [
             {"state": "QUEUED"},
             {"state": "PREPARING"},
             {"state": "RUNNING"},
             {"state": "CANCELLING"}]
-        queued_status = google_api_client.is_api_training_job_running(
+        queued_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertTrue(queued_status)
         job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
         self.mock_apiclient.projects().jobs().get.assert_called_with(
             name=job_name)
-        preparing_status = google_api_client.is_api_training_job_running(
+        preparing_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertTrue(preparing_status)
-        running_status = google_api_client.is_api_training_job_running(
+        running_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertTrue(running_status)
-        canceling_status = google_api_client.is_api_training_job_running(
+        canceling_status = google_api_client.is_aip_training_job_running(
             self._job_id, self._project_id)
         self.assertTrue(canceling_status)
         self.assertEqual(4, self.mock_request.execute.call_count)
