@@ -18,7 +18,7 @@ import json
 import os
 import sys
 import time
-from typing import Dict, Text
+from typing import Dict, Text, Union
 from .. import version
 from absl import logging
 from googleapiclient import discovery
@@ -39,6 +39,10 @@ tensorflow_cloud.utils.google_api_client.optout_metrics_reporting().
 
 _TELEMETRY_REJECTED_CONFIG = "telemetry_rejected"
 _TELEMETRY_VERSION_CONFIG = "notification_version"
+
+
+_KAGGLE_ENV_VARIABLE = "KAGGLE_CONTAINER_NAME"
+_DL_ENV_PATH_VARIABLE = "DL_PATH"
 
 
 class ClientEnvironment(enum.Enum):
@@ -105,17 +109,17 @@ def get_client_environment_name() -> Text:
     Returns:
         ClientEnvironment Enum representing the environment type.
     """
-    if os.getenv("KAGGLE_CONTAINER_NAME"):
+    if _get_env_variable(_KAGGLE_ENV_VARIABLE):
         logging.info("Kaggle client environment detected.")
         return ClientEnvironment.KAGGLE_NOTEBOOK.name
 
-    if "google.colab" in sys.modules:
+    if _is_module_present("google.colab"):
         logging.info("Detected running in COLAB environment.")
         return ClientEnvironment.COLAB.name
 
-    if os.getenv("DL_PATH"):
+    if _get_env_variable(_DL_ENV_PATH_VARIABLE):
         # TODO(b/171720710) Update logic based resolution of the issue.
-        if os.getenv("USER") == "jupyter":
+        if _get_env_variable("USER") == "jupyter":
             logging.info("Detected running in HOSTED_NOTEBOOK environment.")
             return ClientEnvironment.HOSTED_NOTEBOOK.name
 
@@ -124,12 +128,35 @@ def get_client_environment_name() -> Text:
         return ClientEnvironment.DLVM.name
 
     # TODO(b/175815580) Update logic based resolution of the issue.
-    if "google" in sys.modules:
+    if  _is_module_present("google"):
         logging.info("Detected running in DL_CONTAINER environment.")
         return ClientEnvironment.DL_CONTAINER.name
 
     logging.info("Detected running in UNKNOWN environment.")
     return ClientEnvironment.UNKNOWN.name
+
+
+def _is_module_present(module_name: Text) -> bool:
+    """Checks if module_name is present in sys.modules.
+
+    Args:
+        module_name: Name of the module to look up in the system modules.
+    Returns:
+        True if module exists, False otherwise.
+    """
+    return module_name in sys.modules
+
+
+def _get_env_variable(variable_name: Text) -> Union[Text, None]:
+    """Looks up the value of environment varialbe variable_name.
+
+    Args:
+        variable_name: Name of the variable to look up in the environment.
+    Returns:
+        A string representing the varialbe value or None if varialbe is not
+        defined in the environment.
+    """
+    return os.getenv(variable_name)
 
 
 def get_or_set_consent_status()-> bool:

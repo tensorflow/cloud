@@ -14,11 +14,15 @@
 # limitations under the License.
 """Unit test for utilities module."""
 
+import json
+import os
 from googleapiclient import discovery
 from googleapiclient import errors
+from googleapiclient import http as googleapiclient_http
 import httplib2
 import mock
 import tensorflow as tf
+from tensorflow_cloud import version
 from tensorflow_cloud.utils import google_api_client
 
 
@@ -43,7 +47,11 @@ class GoogleApiClientTest(tf.test.TestCase):
                 ).get.return_value = self.mock_request
         self.mock_apiclient.projects().jobs(
                 ).cancel.return_value = self.mock_request
+        self._local_config_path = os.path.join(
+            self.get_temp_dir(), "config.json")
+        google_api_client._LOCAL_CONFIG_PATH = self._local_config_path
 
+    # TODO(b/177023448) Remove mock on logging.error here and below.
     def test_wait_for_aip_training_job_completion_non_blocking_success(self):
         self.mock_request.execute.return_value = {
             "state": "SUCCEEDED",
@@ -167,6 +175,171 @@ class GoogleApiClientTest(tf.test.TestCase):
                 self._job_id, self._project_id)
         self.mock_apiclient.projects().jobs().cancel.assert_called_with(
             name=job_name)
+
+    def test_get_client_environment_name_with_kaggle(self):
+        os.environ["KAGGLE_CONTAINER_NAME"] = "test_container_name"
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.KAGGLE_NOTEBOOK.name)
+
+    def test_get_client_environment_name_with_hosted_notebook(self):
+        os.environ["DL_PATH"] = "test_dl_path"
+        os.environ["USER"] = "jupyter"
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.HOSTED_NOTEBOOK.name)
+
+    def test_get_client_environment_name_with_hosted_dlvm(self):
+        os.environ["DL_PATH"] = "test_dl_path"
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.DLVM.name)
+
+    @mock.patch.object(google_api_client, "_is_module_present", autospec=True)
+    @mock.patch.object(google_api_client, "_get_env_variable", autospec=True)
+    def test_get_client_environment_name_with_hosted_unknown(
+        self, mock_getenv, mock_modules):
+        mock_getenv.return_value = None
+        mock_modules.return_value = {}
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.UNKNOWN.name)
+
+    @mock.patch.object(google_api_client, "_is_module_present", autospec=True)
+    @mock.patch.object(google_api_client, "_get_env_variable", autospec=True)
+    def test_get_client_environment_name_with_hosted_colab(
+        self, mock_getenv, mock_modules):
+        mock_getenv.return_value = None
+        mock_modules.return_value = True
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.COLAB.name)
+
+    @mock.patch.object(google_api_client, "_is_module_present", autospec=True)
+    @mock.patch.object(google_api_client, "_get_env_variable", autospec=True)
+    def test_get_client_environment_name_with_hosted_dl_container(
+        self, mock_getenv, mock_modules):
+        mock_getenv.return_value = None
+        mock_modules.side_effect = [False, True]
+        self.assertEqual(
+            google_api_client.get_client_environment_name(),
+            google_api_client.ClientEnvironment.DL_CONTAINER.name)
+
+    def test_get_or_set_consent_status_rejected(self):
+        config_data = {}
+        config_data["telemetry_rejected"] = True
+
+        # Create the config path if it does not already exist
+        os.makedirs(os.path.dirname(self._local_config_path), exist_ok=True)
+
+        with open(self._local_config_path, "w") as config_json:
+            json.dump(config_data, config_json)
+
+        self.assertFalse(google_api_client.get_or_set_consent_status())
+
+    def test_get_or_set_consent_status_verified(self):
+        config_data = {}
+        config_data["notification_version"] = version.__version__
+
+        # Create the config path if it does not already exist
+        os.makedirs(os.path.dirname(self._local_config_path), exist_ok=True)
+
+        with open(self._local_config_path, "w") as config_json:
+            json.dump(config_data, config_json)
+
+        self.assertTrue(google_api_client.get_or_set_consent_status())
+
+    def test_get_or_set_consent_status_notify_user(self):
+        if os.path.exists(self._local_config_path):
+            os.remove(self._local_config_path)
+
+        self.assertTrue(google_api_client.get_or_set_consent_status())
+
+        with open(self._local_config_path) as config_json:
+            config_data = json.load(config_json)
+            self.assertDictContainsSubset(
+                config_data, {"notification_version": version.__version__})
+
+    @mock.patch.object(google_api_client,
+                       "get_or_set_consent_status", autospec=True)
+    def test_TFCloudHttpRequest_with_rejected_consent(
+        self, mock_consent_status):
+
+        mock_consent_status.return_value = False
+        http_request = google_api_client.TFCloudHttpRequest(
+            googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
+            object(),
+            "fake_uri",
+        )
+        self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
+        self.assertIn("user-agent", http_request.headers)
+        self.assertDictEqual(
+            {"user-agent": f"tf-cloud/{version.__version__} ()"},
+            http_request.headers)
+
+    @mock.patch.object(google_api_client,
+                       "get_or_set_consent_status", autospec=True)
+    @mock.patch.object(google_api_client,
+                       "get_client_environment_name", autospec=True)
+    def test_TFCloudHttpRequest_with_consent(
+        self, mock_get_env_name, mock_consent_status):
+
+        mock_consent_status.return_value = True
+        mock_get_env_name.return_value = "TEST_ENV"
+        google_api_client.TFCloudHttpRequest.set_telemetry_dict({})
+        http_request = google_api_client.TFCloudHttpRequest(
+            googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
+            object(),
+            "fake_uri",
+        )
+        self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
+        self.assertIn("user-agent", http_request.headers)
+
+        header_comment = "client_environment:TEST_ENV;"
+        full_header = f"tf-cloud/{version.__version__} ({header_comment})"
+
+        self.assertDictEqual({"user-agent": full_header}, http_request.headers)
+
+    @mock.patch.object(google_api_client,
+                       "get_or_set_consent_status", autospec=True)
+    @mock.patch.object(google_api_client,
+                       "get_client_environment_name", autospec=True)
+    def test_TFCloudHttpRequest_with_additional_metrics(
+        self, mock_get_env_name, mock_consent_status):
+
+        google_api_client.TFCloudHttpRequest.set_telemetry_dict(
+            {"TEST_KEY1": "TEST_VALUE1"})
+        mock_consent_status.return_value = True
+        mock_get_env_name.return_value = "TEST_ENV"
+        http_request = google_api_client.TFCloudHttpRequest(
+            googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
+            object(),
+            "fake_uri",
+        )
+        self.assertIsInstance(http_request, googleapiclient_http.HttpRequest)
+        self.assertIn("user-agent", http_request.headers)
+
+        header_comment = "TEST_KEY1:TEST_VALUE1;client_environment:TEST_ENV;"
+        full_header = f"tf-cloud/{version.__version__} ({header_comment})"
+
+        self.assertDictEqual({"user-agent": full_header}, http_request.headers)
+
+        # Verify when telemetry dict is refreshed it is used in new http request
+        google_api_client.TFCloudHttpRequest.set_telemetry_dict(
+            {"TEST_KEY2": "TEST_VALUE2"})
+        mock_consent_status.return_value = True
+        mock_get_env_name.return_value = "TEST_ENV"
+        http_request = google_api_client.TFCloudHttpRequest(
+            googleapiclient_http.HttpMockSequence([({"status": "200"}, "{}")]),
+            object(),
+            "fake_uri",
+        )
+
+        header_comment = "TEST_KEY2:TEST_VALUE2;client_environment:TEST_ENV;"
+        full_header = f"tf-cloud/{version.__version__} ({header_comment})"
+
+        self.assertDictEqual({"user-agent": full_header}, http_request.headers)
+
 
 if __name__ == "__main__":
     tf.test.main()
