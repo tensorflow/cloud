@@ -14,7 +14,6 @@
 # limitations under the License.
 """Unit test for utilities module."""
 
-from absl import logging
 from googleapiclient import discovery
 from googleapiclient import errors
 import httplib2
@@ -45,9 +44,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.mock_apiclient.projects().jobs(
                 ).cancel.return_value = self.mock_request
 
-    @mock.patch.object(logging, "error", autospec=True)
-    def test_wait_for_aip_training_job_completion_non_blocking_success(
-        self, mock_log_error):
+    def test_wait_for_aip_training_job_completion_non_blocking_success(self):
         self.mock_request.execute.return_value = {
             "state": "SUCCEEDED",
         }
@@ -58,11 +55,8 @@ class GoogleApiClientTest(tf.test.TestCase):
         job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
         self.mock_apiclient.projects().jobs().get.assert_called_with(
             name=job_name)
-        mock_log_error.assert_not_called()
 
-    @mock.patch.object(logging, "error", autospec=True)
-    def test_wait_for_aip_training_job_completion_non_blocking_cancelled(
-        self, mock_log_error):
+    def test_wait_for_aip_training_job_completion_non_blocking_cancelled(self):
         self.mock_request.execute.return_value = {
             "state": "CANCELLED",
         }
@@ -73,20 +67,14 @@ class GoogleApiClientTest(tf.test.TestCase):
         job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
         self.mock_apiclient.projects().jobs().get.assert_called_with(
             name=job_name)
-        mock_log_error.assert_not_called()
 
-    @mock.patch.object(logging, "error", autospec=True)
-    def test_wait_for_aip_training_job_completion_non_blocking_failed(
-        self, mock_log_error):
+    def test_wait_for_aip_training_job_completion_non_blocking_failed(self):
         self.mock_request.execute.return_value = {
             "state": "FAILED", "errorMessage": "test_error_message"}
         status = google_api_client.wait_for_aip_training_job_completion(
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.mock_request.execute.assert_called_once()
-        mock_log_error.assert_called_once_with(
-            "AIP Training job %s failed with error %s.",
-            self._job_id, "test_error_message")
 
     def test_wait_for_aip_training_job_completion_multiple_checks_success(self):
         self.mock_request.execute.side_effect = [
@@ -99,9 +87,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.assertTrue(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
 
-    @mock.patch.object(logging, "error", autospec=True)
-    def test_wait_for_aip_training_job_completion_multiple_checks_failed(
-        self, mock_log_error):
+    def test_wait_for_aip_training_job_completion_multiple_checks_failed(self):
         self.mock_request.execute.side_effect = [
             {"state": "PREPARING"},
             {"state": "RUNNING"},
@@ -110,9 +96,6 @@ class GoogleApiClientTest(tf.test.TestCase):
             self._job_id, self._project_id)
         self.assertFalse(status)
         self.assertEqual(3, self.mock_request.execute.call_count)
-        mock_log_error.assert_called_once_with(
-            "AIP Training job %s failed with error %s.",
-            self._job_id, "test_error_message")
 
     def test_is_aip_training_job_running_with_completed_job(self):
         self.mock_request.execute.side_effect = [
@@ -164,8 +147,7 @@ class GoogleApiClientTest(tf.test.TestCase):
         self.mock_apiclient.projects().jobs().cancel.assert_called_with(
             name=job_name)
 
-    @mock.patch.object(logging, "info", autospec=True)
-    def test_stop_aip_training_job_with_completed_job(self, mock_logs):
+    def test_stop_aip_training_job_with_completed_job(self):
         self.mock_request.execute.side_effect = errors.HttpError(
             httplib2.Response(info={"status": 400}), b""
         )
@@ -174,10 +156,8 @@ class GoogleApiClientTest(tf.test.TestCase):
         job_name = "projects/{}/jobs/{}".format(self._project_id, self._job_id)
         self.mock_apiclient.projects().jobs().cancel.assert_called_with(
             name=job_name)
-        self.assertEqual(2, mock_logs.call_count)
 
-    @mock.patch.object(logging, "error", autospec=True)
-    def test_stop_aip_training_job_with_failing_request(self, mock_logs):
+    def test_stop_aip_training_job_with_failing_request(self):
         self.mock_request.execute.side_effect = errors.HttpError(
             httplib2.Response(info={"status": 404}), b"")
 
@@ -187,7 +167,6 @@ class GoogleApiClientTest(tf.test.TestCase):
                 self._job_id, self._project_id)
         self.mock_apiclient.projects().jobs().cancel.assert_called_with(
             name=job_name)
-        mock_logs.assert_called_once()
 
 if __name__ == "__main__":
     tf.test.main()
