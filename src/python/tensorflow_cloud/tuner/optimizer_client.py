@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A thin client for the Cloud AI Platform Optimizer Service."""
-
 import datetime
 import http
 import json
@@ -70,7 +69,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
         self,
         client_id: Text,
         suggestion_count: int = constants.SUGGESTION_COUNT_PER_REQUEST
-    ) -> Dict[Text, Any]:
+    ) -> List[Dict[Text, Any]]:
         """Gets a list of suggested Trials.
 
         Args:
@@ -84,10 +83,11 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
             suggestion_count: The number of suggestions to request.
 
         Returns:
-            A list of Trials, This may be an empty list in case that a finite
-            search space has been exhausted, if max_num_trials = 1000 has been
-            reached, or if there are no longer any trials that match a supplied
-            Context.
+          A list of Trials (represented by JSON dicts). This may be an empty
+          list if:
+          1. A finite search space has been exhausted.
+          2. If max_num_trials = 1000 has been reached.
+          3. Or if there are no longer any trials that match a supplied Context.
 
         Raises:
             SuggestionInactiveError: Indicates that a suggestion was requested
@@ -120,7 +120,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
                 # trial, while the other tuner worker has not completed training
                 # the 1000th trial, and triggers this error.
                 tf.get_logger().info("Reached max number of trials.")
-                return {}
+                return []
             else:
                 tf.get_logger().info("SuggestTrial failed.")
                 raise e
@@ -136,7 +136,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
                 raise SuggestionInactiveError(
                     "The study is stopped due to an internal error."
                 )
-        return suggestions
+        return suggestions["trials"]
 
     def report_intermediate_objective_value(
         self,
@@ -209,7 +209,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
     def complete_trial(self,
                        trial_id: Text,
                        trial_infeasible: bool,
-                       infeasibility_reason: Text = None):
+                       infeasibility_reason: Text = None)  -> Dict[Text, Any]:
         """Marks the trial as COMPLETED and sets the final measurement.
 
         Args:
@@ -219,7 +219,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
                 only be non-empty if trial_infeasible==True.
 
         Returns:
-            The Completed Optimizer trials.
+            The Completed Optimizer trial, represented as a JSON Dictionary.
         """
         try:
             optimizer_trial = (
@@ -241,7 +241,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
             raise e
         return optimizer_trial
 
-    def get_trial(self, trial_id: Text) -> Dict[Text, Text]:
+    def get_trial(self, trial_id: Text) -> Dict[Text, Any]:
         """Return the Optimizer trial for the given trial_id."""
         try:
             trial = (
@@ -257,7 +257,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
             raise
         return trial
 
-    def list_trials(self) -> List[Text]:
+    def list_trials(self) -> List[Dict[Text, Any]]:
         """List trials."""
         study_name = self._make_study_name()
         try:
@@ -274,7 +274,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
             raise e
         return resp.get("trials", [])
 
-    def list_studies(self) -> List[Text]:
+    def list_studies(self) -> List[Dict[Text, Any]]:
         """List all studies under the current project and region.
 
         Returns:

@@ -224,21 +224,19 @@ class OptimizerClientTest(tf.test.TestCase):
         self._mock_discovery.projects().locations().studies().trials(
             ).suggest = mock_suggest
 
-        expected_response = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        expected_trials = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         mock_suggest_lro = mock.MagicMock()
         mock_suggest_lro.return_value.execute.return_value = {
             "name": "op_name",
             "done": True,
-            "response": expected_response,
+            "response": {"trials": expected_trials},
         }
         self._mock_discovery.projects().locations().operations(
             ).get = mock_suggest_lro
@@ -248,28 +246,26 @@ class OptimizerClientTest(tf.test.TestCase):
             parent=self._trial_parent,
             body={"client_id": "tuner_0", "suggestion_count": 1},
         )
-        self.assertEqual(suggestions, expected_response)
+        self.assertEqual(suggestions, expected_trials)
 
     def test_get_suggestions_with_count(self):
         mock_suggest = mock.MagicMock()
         self._mock_discovery.projects().locations().studies().trials(
             ).suggest = mock_suggest
 
-        expected_response = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        expected_trials = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         mock_suggest_lro = mock.MagicMock()
         mock_suggest_lro.return_value.execute.return_value = {
             "name": "op_name",
             "done": True,
-            "response": expected_response,
+            "response": {"trials": expected_trials},
         }
         self._mock_discovery.projects().locations().operations(
             ).get = mock_suggest_lro
@@ -279,7 +275,7 @@ class OptimizerClientTest(tf.test.TestCase):
             parent=self._trial_parent,
             body={"client_id": "tuner_0", "suggestion_count": 5},
         )
-        self.assertEqual(suggestions, expected_response)
+        self.assertEqual(suggestions, expected_trials)
 
     def test_get_suggestions_with_429(self):
         """Verify that get_suggestion gracefully handles 429 errors."""
@@ -293,7 +289,7 @@ class OptimizerClientTest(tf.test.TestCase):
             ).suggest = mock_suggest
 
         suggestions = self._client.get_suggestions("tuner_0")
-        self.assertEqual(suggestions, {})
+        self.assertEqual(suggestions, [])
 
     def test_report_intermediate_objective_value(self):
         mock_add_measurement = mock.MagicMock()
