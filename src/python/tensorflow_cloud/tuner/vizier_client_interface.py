@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """An abstract class for the client used in both OSS Vizier and Cloud AI Platform Optimizer Service."""
+
 import abc
 from typing import List, Mapping, Text, Union, Dict, Any
 
@@ -22,7 +23,7 @@ class VizierClientInterface(abc.ABC):
 
   @abc.abstractmethod
   def get_suggestions(self, client_id: Text,
-                      suggestion_count: int) -> List[Dict[Text, Any]]:
+                      suggestion_count: int) -> Dict[Text, Any]:
     """Gets a list of suggested Trials.
 
     Args:
@@ -35,11 +36,10 @@ class VizierClientInterface(abc.ABC):
       suggestion_count: The number of suggestions to request.
 
     Returns:
-      A list of Trials (represented by JSON dicts). This may be an empty list
-      if:
-      1. A finite search space has been exhausted.
-      2. If max_num_trials = 1000 has been reached.
-      3. Or if there are no longer any trials that match a supplied Context.
+      A list of Trials, This may be an empty list in case that a finite
+          search space has been exhausted, if max_num_trials = 1000 has been
+          reached, or if there are no longer any trials that match a supplied
+          Context.
 
     Raises:
       SuggestionInactiveError: Indicates that a suggestion was requested from an
@@ -80,7 +80,7 @@ class VizierClientInterface(abc.ABC):
   def complete_trial(self,
                      trial_id: Text,
                      trial_infeasible: bool,
-                     infeasibility_reason: Text = None) -> Dict[Text, Any]:
+                     infeasibility_reason: Text = None):
     """Marks the trial as COMPLETED and sets the final measurement.
 
     Args:
@@ -90,19 +90,19 @@ class VizierClientInterface(abc.ABC):
         non-empty if trial_infeasible==True.
 
     Returns:
-      The Completed Vizier trial, represented as a JSON Dictionary.
+      The Completed Optimizer trials.
     """
 
   @abc.abstractmethod
-  def get_trial(self, trial_id: Text) -> Dict[Text, Any]:
+  def get_trial(self, trial_id: Text) -> Dict[Text, Text]:
     """Return the Optimizer trial for the given trial_id."""
 
   @abc.abstractmethod
-  def list_trials(self) -> List[Dict[Text, Any]]:
+  def list_trials(self) -> List[Text]:
     """List trials."""
 
   @abc.abstractmethod
-  def list_studies(self) -> List[Dict[Text, Any]]:
+  def list_studies(self) -> List[Text]:
     """List all studies under the current project and region.
 
     Returns:
