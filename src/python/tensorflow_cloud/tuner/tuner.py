@@ -183,14 +183,14 @@ class CloudOracle(oracle_module.Oracle):
         # Get suggestions
         suggestions = self.service.get_suggestions(tuner_id)
 
-        if "trials" not in suggestions:
+        if not suggestions:
             return trial_module.Trial(
                 hyperparameters={}, status=trial_module.TrialStatus.STOPPED
             )
 
         # Fetches the suggested trial.
         # Optimizer Trial instance
-        optimizer_trial = suggestions["trials"][0]
+        optimizer_trial = suggestions[0]
         trial_id = utils.get_trial_id(optimizer_trial)
 
         # KerasTuner Trial instance

@@ -193,16 +193,14 @@ class CloudTunerTest(tf.test.TestCase):
     def test_create_trial_initially(self):
         self._tuner_with_hparams()
         self.mock_client.list_trials.return_value = []
-        self.mock_client.get_suggestions.return_value = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        self.mock_client.get_suggestions.return_value = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         trial = self.tuner.oracle.create_trial("tuner_0")
         self.mock_client.list_trials.assert_called_once()
         self.mock_client.get_suggestions.assert_called_with("tuner_0")
@@ -213,16 +211,14 @@ class CloudTunerTest(tf.test.TestCase):
         self.mock_client.list_trials.return_value = [
             {"name": "a", "state": "ACTIVE"}
         ] * 50
-        self.mock_client.get_suggestions.return_value = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        self.mock_client.get_suggestions.return_value = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         trial = self.tuner.oracle.create_trial("tuner_0")
         self.mock_client.list_trials.assert_called_once()
         self.mock_client.get_suggestions.assert_called_with("tuner_0")
