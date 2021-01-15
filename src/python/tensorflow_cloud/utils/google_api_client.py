@@ -32,7 +32,7 @@ _LOCAL_CONFIG_PATH = os.path.expanduser(
 _PRIVACY_NOTICE = """
 This application reports technical and operational details of your usage of
 Cloud Services in accordance with Google privacy policy, for more information
-please refer to https://cloud.google.com/terms/cloud-privacy-notice. If you wish
+please refer to https://policies.google.com/privacy. If you wish
 to opt-out, you may do so by running
 tensorflow_cloud.utils.google_api_client.optout_metrics_reporting().
 """
