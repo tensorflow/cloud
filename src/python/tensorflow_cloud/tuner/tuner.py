@@ -662,7 +662,8 @@ class DistributingCloudTuner(tuner_module.Tuner):
             worker_count=worker_count,
             worker_config=worker_config,
             entry_point_args=None,
-            job_labels=None)
+            job_labels=None,
+            service_account=None)
 
     def _get_remote_training_metrics(
         self,

@@ -44,6 +44,7 @@ def run(
     entry_point_args=None,
     stream_logs=False,
     job_labels=None,
+    service_account=None,
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -116,7 +117,12 @@ def run(
         job_labels: Dict of str: str. Labels to organize jobs. You can specify
             up to 64 key-value pairs in lowercase letters and numbers, where
             the first character must be lowercase letter. For more details see
-            https://cloud.google.com/ai-platform/training/docs/resource-labels.
+            [resource-labels](
+            https://cloud.google.com/ai-platform/training/docs/resource-labels)
+        service_account: The email address of a user-managed service account
+            to be used for training instead of the service account that AI
+            Platform Training uses by default. see [custom-service-account](
+            https://cloud.google.com/ai-platform/training/docs/custom-service-account)
         **kwargs: Additional keyword arguments.
 
     Returns:
@@ -184,6 +190,7 @@ def run(
         docker_config.image_build_bucket,
         called_from_notebook,
         job_labels=job_labels or {},
+        service_account=service_account,
         docker_parent_image=docker_config.parent_image,
     )
 
@@ -245,6 +252,7 @@ def run(
         entry_point_args,
         stream_logs,
         job_labels=job_labels,
+        service_account=service_account,
     )
 
     # Call `exit` to prevent training the Keras model in the local env.

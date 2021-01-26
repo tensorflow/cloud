@@ -185,6 +185,39 @@ class TestGcp(absltest.TestCase):
                             "val{}".format(i) for i in range(65)}
             )
 
+    def testValidateServiceAccount_NotEndWithCorrectDomain_RaisesValueError(
+        self):
+        with self.assertRaisesRegex(ValueError, r"Invalid service_account"):
+            # must end with .iam.gserviceaccount.com
+            gcp.validate_service_account(
+                "test_sa_name@test-project.wrong_domain.com")
+
+    def testValidateServiceAccount_ShortProjectId_RaisesValueError(self):
+        with self.assertRaisesRegex(ValueError, r"Invalid service_account"):
+            # Project id must be greater than 6 characters
+            short_project_id = "a" * 5
+            gcp.validate_service_account(
+                f"test_sa_name@{short_project_id}.iam.gserviceaccount.com")
+
+    def testValidateServiceAccount_LongProjectId_RaisesValueError(self):
+        with self.assertRaisesRegex(ValueError, r"Invalid service_account"):
+            # Project id must be less than 30 characters
+            long_project_id = "a" * 31
+            gcp.validate_service_account(
+                f"test_sa_name@{long_project_id}.iam.gserviceaccount.com")
+
+    def testValidateServiceAccount_ProjectIdWithDot_RaisesValueError(self):
+        with self.assertRaisesRegex(ValueError, r"Invalid service_account"):
+            # Project id can not contain .
+            gcp.validate_service_account(
+                "test_sa_name@test.projectid.iam.gserviceaccount.com")
+
+    def testValidateServiceAccount_ProjectIdWithUnderScore_RaisesValueError(
+        self):
+        with self.assertRaisesRegex(ValueError, r"Invalid service_account"):
+            # Project id can not contain _
+            gcp.validate_service_account(
+                "test_sa_name@test_projectid.iam.gserviceaccount.com")
 
 if __name__ == "__main__":
     absltest.main()

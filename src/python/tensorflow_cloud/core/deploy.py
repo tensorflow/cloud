@@ -33,6 +33,7 @@ def deploy_job(
     entry_point_args,
     enable_stream_logs,
     job_labels=None,
+    service_account=None,
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -50,8 +51,12 @@ def deploy_job(
         enable_stream_logs: Boolean flag which when enabled streams logs
             back from the cloud job.
         job_labels: Dict of str: str. Labels to organize jobs. See
-            https://cloud.google.com/ai-platform/training/docs/resource-labels.
-
+            [resource labels](
+            https://cloud.google.com/ai-platform/training/docs/resource-labels)
+        service_account: The email address of a user-managed service account
+            to be used for training instead of the service account that AI
+            Platform Training uses by default. See [custom service account](
+            https://cloud.google.com/ai-platform/training/docs/custom-service-account)
     Returns:
         ID of the invoked remote Cloud AI Platform job.
 
@@ -76,6 +81,7 @@ def deploy_job(
         worker_config,
         entry_point_args,
         job_labels=job_labels or {},
+        service_account=service_account
     )
     try:
         unused_response = (
@@ -102,6 +108,7 @@ def _create_request_dict(
     worker_config,
     entry_point_args,
     job_labels,
+    service_account
 ):
     """Creates request dictionary for the CAIP training service."""
     training_input = {}
@@ -162,6 +169,8 @@ def _create_request_dict(
     request_dict["trainingInput"] = training_input
     if job_labels:
         request_dict["labels"] = job_labels
+    if service_account:
+        training_input["serviceAccount"] = service_account
     return request_dict
 
 

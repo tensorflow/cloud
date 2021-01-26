@@ -706,7 +706,8 @@ class CloudTunerTest(tf.test.TestCase):
             worker_count=worker_count,
             worker_config=worker_config,
             entry_point_args=None,
-            job_labels=None)
+            job_labels=None,
+            service_account=None)
 
     @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     @mock.patch.object(deploy, "_create_request_dict", autospec=True)
@@ -742,7 +743,8 @@ class CloudTunerTest(tf.test.TestCase):
             worker_count=worker_count,
             worker_config=replica_config,
             entry_point_args=None,
-            job_labels=None)
+            job_labels=None,
+            service_account=None)
 
 if __name__ == "__main__":
     tf.test.main()
