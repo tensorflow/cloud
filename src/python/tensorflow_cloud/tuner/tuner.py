@@ -340,6 +340,14 @@ class CloudOracle(oracle_module.Oracle):
             best_trials.append(kerastuner_trial)
         return best_trials
 
+    def reload(self):
+        # Overriding super to avoid reloading oracle configuration from file.
+        pass
+
+    def save(self):
+        # Overriding super to avoid saving oracle configuration to file.
+        pass
+
     def _get_objective(self):
         """Returns the Objective(s) as a list."""
         return self.objective if isinstance(self.objective,
