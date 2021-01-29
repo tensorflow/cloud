@@ -171,6 +171,11 @@ def _create_request_dict(
         request_dict["labels"] = job_labels
     if service_account:
         training_input["serviceAccount"] = service_account
+
+    # AI Platform Training uses the deprecated master task type instead of Chief
+    # by default, setting Chief so that distributed training can work properly.
+    # https://cloud.google.com/ai-platform/training/docs/distributed-training-details#chief-versus-master  # pylint: disable=line-too-long
+    training_input["useChiefInTfConfig"] = True
     return request_dict
 
 

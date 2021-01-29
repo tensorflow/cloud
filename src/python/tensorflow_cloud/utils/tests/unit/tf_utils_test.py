@@ -14,6 +14,8 @@
 # limitations under the License.
 """Unit test for tf_utils module."""
 
+import json
+import os
 import mock
 import tensorflow as tf
 from tensorboard.backend.event_processing import directory_watcher
@@ -65,6 +67,46 @@ class TFUtilsTest(tf.test.TestCase):
         mock_eventfileloader.assert_not_called()
         mock_directorywatcher.assert_called_with(
             self._dir_path, mock_eventfileloader, mock_issummaryeventsfile)
+
+    def test_is_chief_with_no_tf_config_raisese_error(self):
+        os.environ.pop("TF_CONFIG",)
+        with self.assertRaisesRegex(ValueError, r"TF_CONFIG is not defined."):
+            tf_utils.is_chief()
+
+    def test_is_chief_with_worker_index_zero_returns_false(self):
+        os.environ["TF_CONFIG"] = json.dumps({
+            "task": {
+                "cloud": "[ID_STRING_2]",
+                "index": 0,
+                "trial": "1",
+                "type": "worker"}})
+        self.assertFalse(tf_utils.is_chief())
+
+    def test_is_chief_with_chief_index_nonzero_returns_true(self):
+        os.environ["TF_CONFIG"] = json.dumps({
+            "task": {
+                "cloud": "[ID_STRING_2]",
+                "index": 1,
+                "trial": "1",
+                "type": "chief"}})
+        self.assertTrue(tf_utils.is_chief())
+
+    def test_is_mwms_with_none_returns_false(self):
+        self.assertFalse(tf_utils.is_mwms(None))
+
+    def test_is_mwms_with_MWMS_returns_true(self):
+        self.assertTrue(tf_utils.is_mwms(
+            tf.distribute.MultiWorkerMirroredStrategy()))
+
+    def test_is_mwms_with_MWMS_NCCL_returns_true(self):
+        communication_options = tf.distribute.experimental.CommunicationOptions(
+            implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)  # pylint: disable=line-too-long
+        strategy = tf.distribute.MultiWorkerMirroredStrategy(
+            communication_options=communication_options)
+        self.assertTrue(tf_utils.is_mwms(strategy))
+
+    def test_is_mwms_with_mirroredstrategy_returns_False(self):
+        self.assertFalse(tf_utils.is_mwms(tf.distribute.MirroredStrategy()))
 
 if __name__ == "__main__":
     tf.test.main()

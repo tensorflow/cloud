@@ -13,6 +13,8 @@
 # limitations under the License.
 """TensorFlow utilities."""
 
+import json
+import os
 from typing import Text
 import tensorflow  as tf
 from tensorboard.backend.event_processing import directory_watcher
@@ -49,3 +51,35 @@ def get_tensorboard_log_watcher_from_path(
         event_file_loader.EventFileLoader,
         io_wrapper.IsSummaryEventsFile,
     )
+
+
+def is_mwms(strategy):
+    """Checks if strategy is a subclass of MultiWorkerMirroredStrategy.
+
+    Args:
+        strategy: object to be classified, can be None.
+    Returns:
+        True if strategy is an instance or a subclass of
+        Tensorflow.distribute.MultiWorkerMirroredStrategy and False otherwise.
+    """
+    if strategy is not None and issubclass(
+        tf.distribute.experimental.MultiWorkerMirroredStrategy,
+        strategy.__class__):
+        return True
+    return False
+
+
+def is_chief():
+    """Checks if the current worker is Chief.
+
+    Returns:
+      True if the current worker is chief.
+
+    Raises:
+      ValueError if TF_CONFIG env variable is not defined.
+    """
+    if "TF_CONFIG" not in os.environ:
+        raise ValueError("TF_CONFIG is not defined.")
+
+    config_task = json.loads(os.environ["TF_CONFIG"])["task"]
+    return config_task.get("type", "") == "chief"

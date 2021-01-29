@@ -242,9 +242,9 @@ class CloudOracle(oracle_module.Oracle):
                 {"metric": ob.name, "value": float(metrics.get(ob.name))}
             )
 
-        self.service.report_intermediate_objective_value(
-            step, elapsed_secs, metric_list, trial_id
-        )
+        if self.should_report:
+            self.service.report_intermediate_objective_value(
+                step, elapsed_secs, metric_list, trial_id)
 
         kerastuner_trial = self.trials[trial_id]
 
@@ -283,6 +283,9 @@ class CloudOracle(oracle_module.Oracle):
                 'Unexpected status passed. Expected "COMPLETED" or '
                 '"INVALID", found {}'.format(status)
             )
+
+        if not self.should_report:
+            return
 
         optimizer_trial = self.service.complete_trial(
             trial_id, trial_infeasible, infeasibility_reason
@@ -369,6 +372,7 @@ class CloudTuner(tuner_module.Tuner):
         study_config: Optional[Dict[Text, Any]] = None,
         max_trials: int = None,
         study_id: Optional[Text] = None,
+        distribution_strategy=None,
         **kwargs):
         """Constructor.
 
@@ -388,6 +392,12 @@ class CloudTuner(tuner_module.Tuner):
                 been exhausted.
             study_id: An identifier of the study. The full study name will be
                 projects/{project_id}/locations/{region}/studies/{study_id}.
+            distribution_strategy: Optional. A TensorFlow `tf.distribute`
+                DistributionStrategy instance. If specified, each trial will run
+                under this scope. For example,
+                `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])` will run
+                each trial on two GPUs. Currently only single-worker strategies
+                are supported.
             **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
                 Please see the docstring for `Tuner`.
         """
@@ -401,8 +411,18 @@ class CloudTuner(tuner_module.Tuner):
             study_id=study_id,
         )
         super(CloudTuner, self,).__init__(
-            oracle=oracle, hypermodel=hypermodel, **kwargs
+            oracle=oracle, hypermodel=hypermodel,
+            distribution_strategy=distribution_strategy, **kwargs
         )
+
+        # Support multi-worker distribution strategies w/ distributed tuning.
+        # Only the chief worker in each cluster should report results.
+        self.oracle.should_report = True
+        self.oracle.multi_worker = False
+
+        if tf_utils.is_mwms(distribution_strategy):
+            self.oracle.multi_worker = True
+            self.oracle.should_report = tf_utils.is_chief()
 
 
 class DistributingCloudTuner(tuner_module.Tuner):

@@ -55,6 +55,7 @@ class TestDeploy(absltest.TestCase):
                 "region": self.region,
                 "args": self.entry_point_args,
                 "serviceAccount": self.service_account,
+                "useChiefInTfConfig": True,
                 "masterType": "n1-standard-16",
                 "workerType": "n1-standard-8",
                 "workerCount": str(self.worker_count),
