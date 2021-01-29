@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Docker related utilities."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import logging
 import os
@@ -28,14 +25,13 @@ import warnings
 from . import gcp
 from . import machine_config
 import docker
+from google.cloud import storage
+from google.cloud.exceptions import NotFound
 from googleapiclient import discovery
 from googleapiclient import errors
 import requests
 from ..utils import google_api_client
 from ..utils import tf_utils
-
-from google.cloud import storage
-from google.cloud.exceptions import NotFound
 
 
 logger = logging.getLogger(__name__)
@@ -451,6 +447,9 @@ class CloudContainerBuilder(ContainerBuilder):
 
         try:
             # Call to queue request to build and push Docker image.
+            print("Submitting Docker build and push request to Cloud Build.")
+            print("Please access your Cloud Build job information here:")
+            print("https://console.cloud.google.com/cloud-build/builds")
             create_response = (
                 build_service.projects()
                 .builds()
@@ -483,6 +482,7 @@ class CloudContainerBuilder(ContainerBuilder):
 
                 attempts += 1
                 # Wait for 30 seconds before we check on status again.
+                print("Waiting for Cloud Build, checking status in 30 seconds.")
                 time.sleep(delay_between_status_checks)
             if status != "SUCCESS":
                 raise RuntimeError(

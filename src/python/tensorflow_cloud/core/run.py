@@ -13,12 +13,9 @@
 # limitations under the License.
 """Module that contains the `run` API for scaling Keras/TensorFlow jobs."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
+import uuid
 
 from . import containerize
 from . import deploy
@@ -31,6 +28,77 @@ from . import validate
 def remote():
   """True when code is run in a remote cloud environment by TF Cloud."""
   return bool(os.environ.get("TF_KERAS_RUNNING_REMOTELY"))
+
+
+def run_cloudtuner(num_jobs=1, **kwargs):
+    """A wrapper for tfc.run that allows for running concurrent CloudTuner jobs.
+
+    This method takes the same parameters as tfc.run() and it allows duplicating
+    a job multiple times to enable running parallel tuning jobs using
+    CloudTuner. All jobs are identical except they will have a unique
+    KERASTUNER_TUNER_ID environment variable set in the cluster to enable tuning
+    job concurrency. This feature is only supported in Notebooks and Colab.
+
+    Args:
+        num_jobs: Number of concurrent jobs to be submitted to AI Platform
+        training. Note that these are clones of the same job that are executed
+        independently. Setting this value to 1 is identical to just calling
+        `tfc.run()`.
+        **kwargs: keyword arguments for `tfc.run()`.
+
+    Returns:
+        A dictionary with two keys.'job_ids' - a list of training job ids
+        and 'docker_image'- Docker image generated for the training job.
+    """
+    # If code is triggered in a cloud environment, do nothing.
+    if remote():
+        return
+
+    if num_jobs < 1:
+        raise ValueError("num_jobs must be greater than 0.")
+
+    run_results = run(**kwargs)
+
+    # Setting prameters for rerun, notes paramters have already been validated
+    # in tfc.run()
+    docker_img_uri = run_results["docker_image"]
+    chief_config = kwargs.pop("chief_config", "auto")
+    worker_count = kwargs.pop("worker_count", 0)
+    worker_config = kwargs.pop("worker_config", "auto")
+    entry_point_args = kwargs.pop("entry_point_args", None)
+    stream_logs = kwargs.pop("stream_logs", False)
+    job_labels = kwargs.pop("job_labels", None)
+    service_account = kwargs.pop("service_account", None)
+
+    job_ids = [run_results["job_id"]]
+    for _ in range(1, num_jobs):
+        # Setting a unique default Tuner_ID for each Job,
+        # This is to ensure all workers within a cluster (job) ask for the same
+        # Tuner parameters, while across multiple jobs they recive different
+        # HP Tuning parameters.
+        default_tuner_id = f"TUNER_ID_{uuid.uuid4().hex}"
+        exnteded_entry_point_args = [default_tuner_id]
+        if entry_point_args:
+            exnteded_entry_point_args.extend(entry_point_args)
+
+        # Deploy Docker image on the cloud.
+        job_ids.extend([
+            deploy.deploy_job(
+                docker_img_uri,
+                chief_config,
+                worker_count,
+                worker_config,
+                exnteded_entry_point_args,
+                stream_logs,
+                job_labels=job_labels,
+                service_account=service_account,
+            )
+        ])
+
+    return {
+        "job_ids": job_ids,
+        "docker_image": docker_img_uri,
+    }
 
 
 def run(
@@ -126,13 +194,8 @@ def run(
         **kwargs: Additional keyword arguments.
 
     Returns:
-        Dict.
-        ```
-        {
-          'job_id': training job id,
-          'docker_image': Docker image generated for the training job,
-        }
-        ```
+        A dictionary with two keys.'job_id' - the training job id and
+        'docker_image'- Docker image generated for the training job.
     """
     # If code is triggered in a cloud environment, do nothing.
     # This is required for the use case when `run` is invoked from within
@@ -178,6 +241,7 @@ def run(
     called_from_notebook = _called_from_notebook()
 
     # Run validations.
+    print("Validating environment and input parameters.")
     validate.validate(
         entry_point,
         requirements_txt,
@@ -193,6 +257,7 @@ def run(
         service_account=service_account,
         docker_parent_image=docker_config.parent_image,
     )
+    print("Validation was successful.")
 
     # Make the `entry_point` cloud and distribution ready.
     # A temporary script called `preprocessed_entry_point` is created.
@@ -214,6 +279,7 @@ def run(
 
     # Create Docker file, generate a tarball, build and push Docker
     # image using the tarball.
+    print("Building and pushing the Docker image. This may take a few minutes.")
     cb_args = (
         entry_point,
         preprocessed_entry_point,
@@ -243,13 +309,19 @@ def run(
         os.close(file_descriptor)
         os.remove(file_path)
 
+    # Setting a unique default Tuner_ID to support kerasTuner and CloudTuner.
+    default_tuner_id = f"TUNER_ID_{uuid.uuid4().hex}"
+    exnteded_entry_point_args = [default_tuner_id]
+    if entry_point_args:
+        exnteded_entry_point_args.extend(entry_point_args)
+
     # Deploy Docker image on the cloud.
     job_id = deploy.deploy_job(
         docker_img_uri,
         chief_config,
         worker_count,
         worker_config,
-        entry_point_args,
+        exnteded_entry_point_args,
         stream_logs,
         job_labels=job_labels,
         service_account=service_account,
