@@ -37,6 +37,9 @@ from ..utils import tf_utils
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Default Kaniko cache Time To Live
+_KANIKO_CACHE_TTL = "336h"
+
 
 def generate_image_uri():
     """Returns unique name+tag for a Docker image."""
@@ -531,29 +534,32 @@ class CloudContainerBuilder(ContainerBuilder):
         """
         request_dict = {}
         request_dict["projectId"] = self.project_id
-        request_dict["images"] = [[image_uri]]
+        # request_dict["images"] = [[image_uri]]
         request_dict["steps"] = []
         request_dict["timeout"] = "{}s".format(timeout_sec)
-        build_args = ["build", "-t", image_uri, "."]
+        build_args = [
+            f"--destination={image_uri}", "--cache=true",
+            f"--cache-ttl={_KANIKO_CACHE_TTL}", "--use-new-run=true"]
 
-        if self.docker_config:
-            cache_from = (self.docker_config.cache_from or
-                          self.docker_config.image)
+#         if self.docker_config:
+#             cache_from = (self.docker_config.cache_from or
+#                           self.docker_config.image)
 
-        if cache_from:
-            # Use the given Docker image as cache.
-            request_dict["steps"].append({
-                "name": "gcr.io/cloud-builders/docker",
-                "entrypoint": "bash",
-                "args": [
-                    "-c",
-                    "docker pull {} || exit 0".format(cache_from),
-                ],
-            })
-            build_args[3:3] = ["--cache-from", cache_from]
+#         if cache_from:
+#             # Use the given Docker image as cache.
+
+#             request_dict["steps"].append({
+#                 "name": "gcr.io/cloud-builders/docker",
+#                 "entrypoint": "bash",
+#                 "args": [
+#                     "-c",
+#                     "docker pull {} || exit 0".format(cache_from),
+#                 ],
+#             })
+#             build_args[3:3] = ["--cache-from", cache_from]
 
         request_dict["steps"].append({
-            "name": "gcr.io/cloud-builders/docker",
+            "name": "gcr.io/kaniko-project/executor:latest",
             "args": build_args,
         })
         request_dict["source"] = {
