@@ -2,6 +2,14 @@
 
 *   Add notes for next release here.
 
+# Release 0.1.12
+
+*   Support for launching concurrent tuning jobs.
+*   Code samples for running concurrent tuning jobs.
+*   Project setup instruction notebooks.
+*   Updated privacy policy notice for telemetry.
+*   Small bug fixes in `CloudTuner`.
+
 # Release 0.1.11
 
 *   Telemetry additions
