@@ -1,6 +1,9 @@
 # Current Version (Still in Development)
 
 *   Add notes for next release here.
+
+# Release 0.1.13
+
 *   Upgrad the default Cloud Build machine to `N1_HIGHCPU_8`
 
 # Release 0.1.12
