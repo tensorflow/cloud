@@ -4,7 +4,7 @@
 
 # Release 0.1.13
 
-*   Upgrad the default Cloud Build machine to `N1_HIGHCPU_8`
+*   Upgrade the default Cloud Build machine to `N1_HIGHCPU_8`
 
 # Release 0.1.12
 
