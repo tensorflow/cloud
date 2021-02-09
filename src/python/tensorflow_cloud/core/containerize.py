@@ -562,4 +562,7 @@ class CloudContainerBuilder(ContainerBuilder):
                 "object": storage_object_name,
             }
         }
+        request_dict["options"] = {
+            "machineType": "N1_HIGHCPU_8"
+        }
         return request_dict
