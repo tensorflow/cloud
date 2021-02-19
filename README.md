@@ -113,20 +113,20 @@ End to end instructions to help set up your environment for Tensorflow Cloud.
 You use one of the following notebooks to setup your project or follow the
 instructions below.
 
-<table>
+<table align="left">
     <td>
-        <a href="https://colab.research.google.com/github/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/examples/google-cloud-project-setup-instructions.ipynb">
-            <img src="https://cloud.google.com/ml-engine/images/colab-logo-32px.png" alt="Colab logo"> Run in Colab
+        <a href="https://colab.research.google.com/github/tensorflow/cloud/blob/master/examples/google_cloud_project_setup_instructions.ipynb">
+            <img width="50" src="https://cloud.google.com/ml-engine/images/colab-logo-32px.png" alt="Colab logo">Run in Colab
         </a>
     </td>
     <td>
-        <a href="https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/examples/google-cloud-project-setup-instructions.ipynb">
+        <a href="https://github.com/tensorflow/cloud/blob/master/examples/google_cloud_project_setup_instructions.ipynb">
             <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">View on GitHub
         </a>
      </td>
     <td>
         <a href="https://www.kaggle.com/nitric/google-cloud-project-setup-instructions">
-            <img width="90" src="https://www.kaggle.com/static/images/site-logo.png" alt="Kaggle logo">View on Kaggle
+            <img width="90" src="https://www.kaggle.com/static/images/site-logo.png" alt="Kaggle logo">Run in Kaggle
         </a>
      </td>
 </table>
