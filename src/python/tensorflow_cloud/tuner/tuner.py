@@ -301,7 +301,7 @@ class CloudOracle(oracle_module.Oracle):
     def get_best_trials(self, num_trials: int = 1) -> List[trial_module.Trial]:
         """Returns the trials with the best objective values found so far.
 
-        Arguments:
+        Args:
             num_trials: positive int, number of trials to return.
         Returns:
             List of KerasTuner Trials.
@@ -509,7 +509,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         This method is called during `search` to evaluate a set of
         hyperparameters using AI Platform training.
-        Arguments:
+        Args:
             trial: A `Trial` instance that contains the information
               needed to run this trial. `Hyperparameters` can be accessed
               via `trial.hyperparameters`.
@@ -643,7 +643,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
     def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
         """Creates a request dictionary for the CAIP training service.
 
-        Arguments:
+        Args:
             job_id: Job name that will be used for AIP training
         Returns:
             An AI Platform Training job spec.
@@ -688,7 +688,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         All complete epochs metrics (including the last epoch if applicable) are
         returned as training_metrics.
 
-        Arguments:
+        Args:
             log_reader: An instance of tensorboard DirectoryWatcher that is
                 pointing to the tensorboard logs directory.
             partial_epoch_metrics: Any incomplete epoch metrics from previous
@@ -749,7 +749,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         TensorBoard callback to pass back the epoch related metrics from
         remote execution.
 
-        Arguments:
+        Args:
             callbacks: List of callbacks passed in to the search function.
             trial: A `Trial` instance.
         Raises:
