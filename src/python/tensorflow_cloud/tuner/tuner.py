@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Text, Union
 
 from kerastuner.engine import hypermodel as hypermodel_module
 from kerastuner.engine import hyperparameters as hp_module
+from kerastuner.engine import metrics_tracking
 from kerastuner.engine import oracle as oracle_module
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import tuner as tuner_module
@@ -222,7 +223,6 @@ class CloudOracle(oracle_module.Oracle):
         """Used by a worker to report the status of a trial."""
         # Constructs the measurement.
         # Adds the measurement of the objective functions to a trial.
-        super(CloudOracle, self).update_trial(trial_id, metrics, step)
         elapsed_secs = time.time() - self._start_time
         if elapsed_secs < 0 or step < 0:
             raise ValueError(
@@ -234,10 +234,17 @@ class CloudOracle(oracle_module.Oracle):
         metric_list = []
         for ob in self._get_objective():
             if ob.name not in metrics:
+                ob_name = ob.name.replace("val_", "")
+                if ob_name in metrics:
+                    metric_list.append(
+                        {"metric": ob_name,
+                         "value": float(metrics.get(ob_name))}
+                    )
                 tf.get_logger().info(
                     'Objective "{}" is not found in metrics.'.format(ob.name)
                 )
                 continue
+
             metric_list.append(
                 {"metric": ob.name, "value": float(metrics.get(ob.name))}
             )
@@ -246,7 +253,16 @@ class CloudOracle(oracle_module.Oracle):
             step, elapsed_secs, metric_list, trial_id
         )
 
+        # Ensure metrics of trials are updated locally.
         kerastuner_trial = self.trials[trial_id]
+        for metric_name, metric_value in metrics.items():
+            if not kerastuner_trial.metrics.exists(metric_name):
+                direction = metrics_tracking.infer_metric_direction(
+                    metric_name)
+                kerastuner_trial.metrics.register(
+                    metric_name, direction=direction)
+            kerastuner_trial.metrics.update(
+                metric_name, metric_value, step=step)
 
         # Checks whether a trial should stop or not.
         tf.get_logger().info("UpdateTrial: polls the stop decision.")
@@ -501,7 +517,10 @@ class DistributingCloudTuner(tuner_module.Tuner):
         )
         # If study_id is not provided, CloudOracle creates one. Setting the
         # study_id to what CloudOracle generates, to ensure they are the same.
-        self._study_id = oracle.study_id
+        if study_id:
+            self._study_id = study_id
+        else:
+            self._study_id = oracle.study_id
         self.directory = directory
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
@@ -573,16 +592,17 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         # Create an instance of tensorboard DirectoryWatcher to retrieve the
         # logs for this trial run
-        log_path = os.path.join(
+        train_log_path = os.path.join(
             self._get_tensorboard_log_dir(trial.trial_id), "train")
 
         # Tensorboard log watcher expects the path to exist
-        tf.io.gfile.makedirs(log_path)
+        tf.io.gfile.makedirs(train_log_path)
 
         tf.get_logger().info(
             f"Retrieving training logs for trial {trial.trial_id} from"
-            f" {log_path}")
-        log_reader = tf_utils.get_tensorboard_log_watcher_from_path(log_path)
+            f" {train_log_path}")
+        train_log_reader = tf_utils.get_tensorboard_log_watcher_from_path(
+            train_log_path)
 
         training_metrics = _TrainingMetrics([], {})
         epoch = 0
@@ -594,7 +614,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
             # Retrieve available metrics if any
             training_metrics = self._get_remote_training_metrics(
-                log_reader, training_metrics.partial_epoch_metrics)
+                train_log_reader, training_metrics.partial_epoch_metrics)
 
             for epoch_metrics in training_metrics.completed_epoch_metrics:
                 # TODO(b/169197272) Validate metrics contain oracle objective
@@ -621,7 +641,8 @@ class DistributingCloudTuner(tuner_module.Tuner):
 
         # Retrieve and report any remaining metrics
         training_metrics = self._get_remote_training_metrics(
-            log_reader, training_metrics.partial_epoch_metrics)
+            log_reader=train_log_reader,
+            partial_epoch_metrics=training_metrics.partial_epoch_metrics)
 
         for epoch_metrics in training_metrics.completed_epoch_metrics:
             # TODO(b/169197272) Validate metrics contain oracle objective
@@ -639,6 +660,31 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 trial_id=trial.trial_id,
                 metrics=training_metrics.partial_epoch_metrics,
                 step=epoch)
+
+        # Submit validation metrics if eval_files is provided at the end of
+        # the trial.
+        if copied_fit_kwargs.get("eval_files"):
+            # Create an instance of tensorboard DirectoryWatcher to retrieve the
+            # logs for validation run.
+            val_log_path = os.path.join(
+                self._get_tensorboard_log_dir(trial.trial_id), "validation")
+            # Tensorboard log watcher expects the path to exist
+            tf.io.gfile.makedirs(val_log_path)
+            tf.get_logger().info(
+                f"Retrieving validation logs for trial {trial.trial_id} from"
+                f" {val_log_path}")
+            val_log_reader = tf_utils.get_tensorboard_log_watcher_from_path(
+                val_log_path)
+            validation_metrics = _TrainingMetrics([], {})
+            validation_metrics = self._get_remote_training_metrics(
+                log_reader=val_log_reader,
+                partial_epoch_metrics=validation_metrics.partial_epoch_metrics,
+                is_validation=True)
+            for metric in validation_metrics.completed_epoch_metrics:
+                if metric:
+                    self.oracle.update_trial(
+                        trial_id=trial.trial_id,
+                        metrics=metric)
 
     def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
         """Creates a request dictionary for the CAIP training service.
@@ -676,7 +722,8 @@ class DistributingCloudTuner(tuner_module.Tuner):
     def _get_remote_training_metrics(
         self,
         log_reader,
-        partial_epoch_metrics: Dict[Text, float]
+        partial_epoch_metrics: Dict[Text, float],
+        is_validation: Optional[bool] = False,
         ) -> _TrainingMetrics:
         """Retrieves delta epoch metrics from tensorboard logs since last run.
 
@@ -693,6 +740,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 pointing to the tensorboard logs directory.
             partial_epoch_metrics: Any incomplete epoch metrics from previous
                 runs that should be used as a starting point.
+            is_validation: If True, get validation metrics.
         Returns:
             An instance of _TrainingMetrics a Namedtuple with
             - 'completed_epoch_metrics'- a list of epoch metrics for completed
@@ -709,16 +757,23 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 # epoch related metrics with a "epoch_" prefix. Please refer to
                 # https://github.com/tensorflow/tensorflow/blob/fcc4b966f1265f466e82617020af93670141b009/tensorflow/python/keras/callbacks.py#L2179 # pylint: disable=line-too-long
                 if value.tag.startswith("epoch_"):
-                    metric = value.tag.replace("epoch_", "")
-                    # If we have already seen this metric, this is a new epoch
-                    if metric in partial_epoch_metrics:
+                    if is_validation:
+                        metric = value.tag.replace("epoch_", "val_")
+                        # Validation metrics are calculated on trial end.
+                        partial_epoch_metrics[metric] = tf.make_ndarray(
+                            event.summary.value[0].tensor)
                         completed_epoch_metrics.append(partial_epoch_metrics)
-                        partial_epoch_metrics = {}
-                    # Note this method captures all metrics even if they are not
-                    # part of the oracle objectives. We rely on oracle to ignore
-                    # the unrelated Objectives.
-                    partial_epoch_metrics[metric] = tf.make_ndarray(
-                        event.summary.value[0].tensor)
+                    else:
+                        metric = value.tag.replace("epoch_", "")
+                        # If this metric has been seen, this is a new epoch.
+                        if metric in partial_epoch_metrics:
+                            completed_epoch_metrics.append(partial_epoch_metrics)
+                            partial_epoch_metrics = {}
+                        # Note this method captures all metrics even if they
+                        # are not part of the oracle objectives. We rely on
+                        # oracle to ignore the unrelated Objectives.
+                        partial_epoch_metrics[metric] = tf.make_ndarray(
+                            event.summary.value[0].tensor)
         return _TrainingMetrics(completed_epoch_metrics, partial_epoch_metrics)
 
     def load_model(self, trial):
