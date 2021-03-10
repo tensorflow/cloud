@@ -5,7 +5,7 @@ Is a feature of tfcloud that let you run tfcloud from your terminal using `tfc` 
 
 ### How to use it
 
-1. (Follow the configuration and installation instructions.)[https://github.com/tensorflow/cloud#tensorflow-cloud-run-api-for-gcp-trainingtuning]
+1. [Follow the configuration and installation instructions.](https://github.com/tensorflow/cloud#tensorflow-cloud-run-api-for-gcp-trainingtuning)
 2. Create a file with all that you need to train your model or a jupyter notebook. for example `train.py`:
 
 ``` python
@@ -52,4 +52,4 @@ tfc run train.py
 
 ### Contribution guidelines
 
-We use typer to build the CLI interface for tfcloud, if you want to contributed to this feature is important to follow typer ideology of write type annotations in the code. (Typer documentation.)[https://typer.tiangolo.com/]
+We use typer to build the CLI interface for tfcloud, if you want to contributed to this feature is important to follow typer ideology of write type annotations in the code. [Typer documentation.](https://typer.tiangolo.com/)
