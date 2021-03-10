@@ -25,9 +25,9 @@ import os
 import pickle
 from typing import Text, Dict, Optional, Sequence, Any, Generator
 from absl import logging
+import google.auth
 from googleapiclient import discovery
 import tensorflow as tf
-import google.auth
 
 from tensorflow_cloud.tuner import cloud_fit_utils
 from tensorflow_cloud.utils import google_api_client
@@ -170,14 +170,28 @@ def _serialize_assets(remote_dir: Text,
         )
         logging.info("validation_data was serialized successfully.")
 
+    callbacks = []
     if "callbacks" in fit_kwargs:
-        callbacks = pickle.dumps(fit_kwargs.pop("callbacks"))
+        callbacks = fit_kwargs.pop("callbacks")
 
-        # Add all serializable callbacks to assets.
-        to_export.callbacks = callbacks
-        callbacks_fn = lambda: to_export.callbacks
-        to_export.callbacks_fn = tf.function(callbacks_fn, input_signature=())
-        logging.info("callbacks were serialized successfully.")
+    # The remote component does not save the model after training. To ensure the
+    # model is saved after training completes we add a ModelCheckpoint callback,
+    # if one is not provided by the user
+    has_model_checkpoint = False
+    for callback in callbacks:
+        if issubclass(tf.keras.callbacks.ModelCheckpoint, callback.__class__):
+            has_model_checkpoint = True
+
+    if not has_model_checkpoint:
+        callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(remote_dir, "checkpoint"),
+            save_freq="epoch"))
+
+    # Add all serializable callbacks to assets.
+    to_export.callbacks = pickle.dumps(callbacks)
+    callbacks_fn = lambda: to_export.callbacks
+    to_export.callbacks_fn = tf.function(callbacks_fn, input_signature=())
+    logging.info("callbacks were serialized successfully.")
 
     # All remaining items can be directly serialized as a dict.
     to_export.fit_kwargs = fit_kwargs

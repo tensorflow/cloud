@@ -17,6 +17,7 @@
 import os
 from typing import Text
 import uuid
+from absl import logging
 import numpy as np
 import tensorflow as tf
 from tensorflow_cloud.tuner import cloud_fit_client as client
@@ -122,16 +123,16 @@ class CloudFitIntegrationTest(tf.test.TestCase):
             ),
             epochs=2,
         )
+        logging.info("test_in_memory_data submitted with job id: %s", job_id)
 
-        # TODO(b/169297404) Replace AIP job status logic with utils wrapper
         # Wait for AIP Training job to finish successfully
         self.assertTrue(
-            google_api_client.wait_for_api_training_job_completion(
+            google_api_client.wait_for_aip_training_job_completion(
                 job_id, self._project_id))
 
         # load model from remote dir
         trained_model = tf.keras.models.load_model(os.path.join(
-            remote_dir, "output"))
+            remote_dir, "checkpoint"))
         eval_results = trained_model.evaluate(x, y)
 
         # Accuracy should be better than zero

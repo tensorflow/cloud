@@ -2,6 +2,11 @@
 
 *   Add notes for next release here.
 
+# Release 0.1.11
+
+*   Telemetry additions
+*   Address test failures/flakiness
+
 # Release 0.1.10
 
 *   Py 3.5 support removed.

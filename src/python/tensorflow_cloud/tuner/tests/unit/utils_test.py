@@ -161,6 +161,16 @@ STUDY_CONFIG_FIXED_CATEGORICAL = {
         }
     ],
 }
+STUDY_CONFIG_FIXED_BOOLEAN = {
+    "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
+    "parameters": [
+        {
+            "categorical_value_spec": {"values": ["True"]},
+            "parameter": "condition",
+            "type": "CATEGORICAL",
+        }
+    ],
+}
 OPTIMIZER_TRIAL = {
     "name": "projects/project/locations/region/studies/study/trials/trial_1",
     "state": "ACTIVE",
@@ -273,7 +283,8 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(
         ("beta", 0.1, STUDY_CONFIG_FIXED_FLOAT),
-        ("type", "WIDE_AND_DEEP", STUDY_CONFIG_FIXED_CATEGORICAL))
+        ("type", "WIDE_AND_DEEP", STUDY_CONFIG_FIXED_CATEGORICAL),
+        ("condition", True, STUDY_CONFIG_FIXED_BOOLEAN))
     def test_convert_study_config_fixed(self, name, value, expected_config):
         hps = hp_module.HyperParameters()
         hps.Fixed(name, value)
@@ -387,6 +398,15 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
         hparams = utils.convert_hyperparams_to_hparams(hps)
         expected_hparams = {
             hparams_api.HParam(name, hparams_api.Discrete([value])): value,
+        }
+        self.assertEqual(repr(hparams), repr(expected_hparams))
+
+    def test_convert_hyperparams_to_hparams_fixed_bool(self):
+        hps = hp_module.HyperParameters()
+        hps.Fixed("condition", True)
+        hparams = utils.convert_hyperparams_to_hparams(hps)
+        expected_hparams = {
+            hparams_api.HParam("condition", hparams_api.Discrete([True])): True,
         }
         self.assertEqual(repr(hparams), repr(expected_hparams))
 

@@ -202,7 +202,7 @@ class RunOnNotebookTest(tf.test.TestCase):
 
         for test_name, ret_val in track_status.items():
             self.assertTrue(
-                google_api_client.wait_for_api_training_job_completion(
+                google_api_client.wait_for_aip_training_job_completion(
                     ret_val["job_id"], _PROJECT_ID),
                 "Job {} generated from the test: {} has failed".format(
                     ret_val["job_id"], test_name))

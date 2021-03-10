@@ -60,10 +60,9 @@ class CloudTunerTest(tf.test.TestCase):
         self._region = "us-central1"
         self._remote_dir = "gs://remote_dir"
         self._project_id = "project-a"
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
-        self._trial_parent = "projects/{}/locations/{}/studies/{}".format(
-            self._project_id, self._region, self._study_id
-        )
+        self._trial_parent = (
+            f"projects/{self._project_id}/locations/{self._region}/studies/"
+            f"{self._study_id}")
         self._container_uri = "test_container_uri",
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
@@ -89,8 +88,7 @@ class CloudTunerTest(tf.test.TestCase):
             trial_id="1",
             status=trial_module.TrialStatus.RUNNING,
         )
-        # TODO(b/170687807) Switch from using "{}".format() to f-string
-        self._job_id = "{}_{}".format(self._study_id, self._test_trial.trial_id)
+        self._job_id = f"{self._study_id}_{self._test_trial.trial_id}"
         self.mock_optimizer_client_module = mock.patch.object(
             tuner, "optimizer_client", autospec=True
         ).start()
@@ -159,7 +157,7 @@ class CloudTunerTest(tf.test.TestCase):
                              self._study_id,
                              self._study_config))
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_remote_tuner_initialization_with_study_config(self, mock_super):
         self._remote_tuner(None, None, self._study_config)
         (self.mock_optimizer_client_module.create_or_load_study
@@ -195,16 +193,14 @@ class CloudTunerTest(tf.test.TestCase):
     def test_create_trial_initially(self):
         self._tuner_with_hparams()
         self.mock_client.list_trials.return_value = []
-        self.mock_client.get_suggestions.return_value = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        self.mock_client.get_suggestions.return_value = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         trial = self.tuner.oracle.create_trial("tuner_0")
         self.mock_client.list_trials.assert_called_once()
         self.mock_client.get_suggestions.assert_called_with("tuner_0")
@@ -215,16 +211,14 @@ class CloudTunerTest(tf.test.TestCase):
         self.mock_client.list_trials.return_value = [
             {"name": "a", "state": "ACTIVE"}
         ] * 50
-        self.mock_client.get_suggestions.return_value = {
-            "trials": [
-                {
-                    "name": "1",
-                    "state": "ACTIVE",
-                    "parameters":
-                        [{"parameter": "learning_rate", "floatValue": 0.001}],
-                }
-            ]
-        }
+        self.mock_client.get_suggestions.return_value = [
+            {
+                "name": "1",
+                "state": "ACTIVE",
+                "parameters":
+                    [{"parameter": "learning_rate", "floatValue": 0.001}],
+            }
+        ]
         trial = self.tuner.oracle.create_trial("tuner_0")
         self.mock_client.list_trials.assert_called_once()
         self.mock_client.get_suggestions.assert_called_with("tuner_0")
@@ -253,7 +247,7 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(trial.hyperparameters.values, {})
         self.assertEqual(trial.status, trial_module.TrialStatus.STOPPED)
 
-    @mock.patch.object(oracle_module.Oracle, "update_trial", auto_spec=True)
+    @mock.patch.object(oracle_module.Oracle, "update_trial", autospec=True)
     def test_update_trial(self, mock_super_update_trial):
         self._tuner_with_hparams()
 
@@ -279,7 +273,7 @@ class CloudTunerTest(tf.test.TestCase):
         self.mock_client.should_trial_stop.assert_called_once_with("1")
         self.assertEqual(status, trial_module.TrialStatus.STOPPED)
         mock_super_update_trial.assert_called_once_with(
-            "1", {"val_acc": 0.8}, 3
+            self.tuner.oracle, "1", {"val_acc": 0.8}, 3
         )
 
     def test_end_trial_success(self):
@@ -450,9 +444,9 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual([self.tuner.oracle.objective],
                          self.tuner.oracle._get_objective())
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
-    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(tf.summary, "create_file_writer", autospec=True)
+    @mock.patch.object(hparams_api, "hparams", autospec=True)
     def test_add_logging_user_specified(
         self, mock_hparams, mock_create_file_writer, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
@@ -476,9 +470,9 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(
             repr(mock_hparams.call_args[0][0]), repr(expected_hparams))
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
-    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(tf.summary, "create_file_writer", autospec=True)
+    @mock.patch.object(hparams_api, "hparams", autospec=True)
     def test_add_logging_not_specified(
         self, mock_hparams, mock_create_file_writer, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
@@ -494,9 +488,9 @@ class CloudTunerTest(tf.test.TestCase):
         mock_create_file_writer.assert_not_called()
         mock_hparams.assert_not_called()
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(tf.summary, "create_file_writer", auto_spec=True)
-    @mock.patch.object(hparams_api, "hparams", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(tf.summary, "create_file_writer", autospec=True)
+    @mock.patch.object(hparams_api, "hparams", autospec=True)
     def test_add_logging_mismatched_dir(
         self, mock_hparams, mock_create_file_writer, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
@@ -512,7 +506,7 @@ class CloudTunerTest(tf.test.TestCase):
         mock_create_file_writer.assert_not_called()
         mock_hparams.assert_not_called()
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_add_model_checkpoint_callback(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(None, None, self._study_config)
         callbacks = []
@@ -523,15 +517,16 @@ class CloudTunerTest(tf.test.TestCase):
             callbacks[0].filepath,
             os.path.join(remote_tuner.directory, trial_id, "checkpoint"))
 
-    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
+    # TODO(b/175906531): Set autospec=True once correct args are passed.
+    @mock.patch.object(cloud_fit_client, "cloud_fit", autospec=False)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
-                       auto_spec=True)
+                       "wait_for_aip_training_job_completion", autospec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
+                       autospec=True)
     @mock.patch.object(tf_utils, "get_tensorboard_log_watcher_from_path",
-                       auto_spec=True)
-    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
+                       autospec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", autospec=True)
     def test_remote_run_trial_with_successful_job(
         self, mock_tf_io, mock_log_watcher, mock_is_running, mock_super_tuner,
         mock_job_status, mock_cloud_fit):
@@ -573,13 +568,14 @@ class CloudTunerTest(tf.test.TestCase):
             2, remote_tuner._get_remote_training_metrics.call_count)
         mock_tf_io.assert_called_with(log_path)
 
-    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
+    # TODO(b/175906531): Set autospec=True once correct args are passed.
+    @mock.patch.object(cloud_fit_client, "cloud_fit", autospec=False)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
-                       auto_spec=True)
-    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
+                       "wait_for_aip_training_job_completion", autospec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
+                       autospec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", autospec=True)
     def test_remote_run_trial_with_failed_job(
         self, mock_tf_io, mock_is_running, mock_super_tuner, mock_job_status,
         mock_cloud_fit):
@@ -597,14 +593,15 @@ class CloudTunerTest(tf.test.TestCase):
                 callbacks=["test_call_back"], fit_kwarg=1)
 
     @mock.patch.object(google_api_client, "stop_aip_training_job",
-                       auto_spec=True)
-    @mock.patch.object(cloud_fit_client, "cloud_fit", auto_spec=True)
+                       autospec=True)
+    # TODO(b/175906531): Set autospec=True once correct args are passed.
+    @mock.patch.object(cloud_fit_client, "cloud_fit", autospec=False)
     @mock.patch.object(google_api_client,
-                       "wait_for_api_training_job_completion", auto_spec=True)
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(google_api_client, "is_api_training_job_running",
-                       auto_spec=True)
-    @mock.patch.object(tf.io.gfile, "makedirs", auto_spec=True)
+                       "wait_for_aip_training_job_completion", autospec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(google_api_client, "is_aip_training_job_running",
+                       autospec=True)
+    @mock.patch.object(tf.io.gfile, "makedirs", autospec=True)
     def test_remote_run_trial_with_oracle_canceling_job(
         self, mock_tf_io, mock_is_running, mock_super_tuner,
         mock_job_status, mock_cloud_fit, mock_stop_job):
@@ -632,7 +629,7 @@ class CloudTunerTest(tf.test.TestCase):
             2, remote_tuner._get_remote_training_metrics.call_count)
         mock_stop_job.assert_called_once_with(self._job_id, self._project_id)
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_get_remote_training_metrics(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
@@ -658,22 +655,22 @@ class CloudTunerTest(tf.test.TestCase):
         self.assertEqual(
             results.completed_epoch_metrics[0].get("loss"), tf.constant(0.1))
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_remote_load_model(self, mock_super_tuner):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
         with self.assertRaises(NotImplementedError):
             remote_tuner.load_model(self._test_trial)
 
-    @mock.patch.object(super_tuner.Tuner, "save_model", auto_spec=True)
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "save_model", autospec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_remote_save_model(self, mock_super_tuner, mock_super_save_model):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
         remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
         mock_super_save_model.assert_not_called()
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_init_with_non_gcs_directory_path(self, mock_super_tuner):
         with self.assertRaisesRegex(
             ValueError, "Directory must be a valid Google Cloud Storage path."):
@@ -681,9 +678,9 @@ class CloudTunerTest(tf.test.TestCase):
                 None, None, self._study_config, max_trials=10,
                 directory="local_path")
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(deploy, "_create_request_dict", auto_spec=True)
-    @mock.patch.object(validate, "_validate_cluster_config", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(deploy, "_create_request_dict", autospec=True)
+    @mock.patch.object(validate, "_validate_cluster_config", autospec=True)
     def test_get_job_spec_with_default_config(
         self, mock_validate, mock_create_request, mock_super_tuner):
         remote_tuner = self._remote_tuner(
@@ -711,9 +708,9 @@ class CloudTunerTest(tf.test.TestCase):
             entry_point_args=None,
             job_labels=None)
 
-    @mock.patch.object(super_tuner.Tuner, "__init__", auto_spec=True)
-    @mock.patch.object(deploy, "_create_request_dict", auto_spec=True)
-    @mock.patch.object(validate, "_validate_cluster_config", auto_spec=True)
+    @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
+    @mock.patch.object(deploy, "_create_request_dict", autospec=True)
+    @mock.patch.object(validate, "_validate_cluster_config", autospec=True)
     def test_get_job_spec_with_default_with_custom_config(
         self, mock_validate, mock_create_request, mock_super_tuner):
 

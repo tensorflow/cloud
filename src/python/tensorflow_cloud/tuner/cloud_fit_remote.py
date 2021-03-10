@@ -19,11 +19,9 @@ deserializer that is intended for remote execution of in memory models in AI
 Platform training.
 """
 
-import json
 import os
 import pickle
 from typing import Text
-import uuid
 from absl import app
 from absl import flags
 from absl import logging
@@ -81,8 +79,6 @@ def run(
     logging.info("Setting distribution strategy to %s",
                  distribution_strategy_text)
 
-    is_mwms = distribution_strategy_text == MULTI_WORKER_MIRRORED_STRATEGY_NAME
-
     distribution_strategy = SUPPORTED_DISTRIBUTION_STRATEGIES[
         distribution_strategy_text
     ]()
@@ -126,41 +122,9 @@ def run(
             os.path.join(remote_dir, "model")
         )
         model.fit(**fit_kwargs)
-
-    # We need to set a different directory on workers when using MWMS since we
-    # will run into errors due to concurrent writes to the same directory.
-    # This is a workaround for the issue described in b/148619319.
-    if not _is_current_worker_chief() and is_mwms:
-        tmp_worker_dir = os.path.join(
-            remote_dir, "output/tmp/workers_" + str(uuid.uuid4())
-        )
-        logging.info("Saving model from worker in temporary folder %s.",
-                     tmp_worker_dir)
-        model.save(tmp_worker_dir)
-
-        logging.info("Removing temporary folder %s.", tmp_worker_dir)
-        _delete_dir(tmp_worker_dir)
-
-    else:
-        model.save(os.path.join(remote_dir, "output"))
-
-
-def _is_current_worker_chief():
-    if os.environ.get("TF_CONFIG", False):
-        config_task = json.loads(os.environ["TF_CONFIG"])["task"]
-        return (
-            config_task.get("type", "") == "chief"
-            or config_task.get("index", -1) == 0
-        )
-    else:
-        raise ValueError("Could not access TF_CONFIG in environment")
-
-
-def _delete_dir(path: Text) -> None:
-    """Deletes a directory if exists."""
-
-    if tf.io.gfile.isdir(path):
-        tf.io.gfile.rmtree(path)
+        # Model needs to be saved via ModelCheckpoint callback due to issues
+        # with the save model in MWMS. See b/148619319 for details.
+        # TODO(b/176829535) Evaluate using save model once b/148619319 is done.
 
 
 if __name__ == "__main__":
