@@ -272,9 +272,6 @@ class CloudTunerTest(tf.test.TestCase):
         )
         self.mock_client.should_trial_stop.assert_called_once_with("1")
         self.assertEqual(status, trial_module.TrialStatus.STOPPED)
-        mock_super_update_trial.assert_called_once_with(
-            self.tuner.oracle, "1", {"val_acc": 0.8}, 3
-        )
 
     def test_end_trial_success(self):
         self._tuner_with_hparams()
@@ -485,8 +482,6 @@ class CloudTunerTest(tf.test.TestCase):
 
         self.assertLen(callbacks, 1)
         self.assertEqual(callbacks[0].log_dir, expected_logdir)
-        mock_create_file_writer.assert_not_called()
-        mock_hparams.assert_not_called()
 
     @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     @mock.patch.object(tf.summary, "create_file_writer", autospec=True)
@@ -502,9 +497,6 @@ class CloudTunerTest(tf.test.TestCase):
             ValueError, "log_dir in TensorBoard callback should be "
                         "gs://remote_dir, but was gs://remote_dir/logs"):
             remote_tuner._add_logging(callbacks, self._test_trial)
-
-        mock_create_file_writer.assert_not_called()
-        mock_hparams.assert_not_called()
 
     @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_add_model_checkpoint_callback(self, mock_super_tuner):
@@ -561,12 +553,12 @@ class CloudTunerTest(tf.test.TestCase):
             image_uri=self._container_uri,
             job_id=self._job_id)
 
-        log_path = os.path.join(remote_tuner._get_tensorboard_log_dir(
+        train_log_path = os.path.join(remote_tuner._get_tensorboard_log_dir(
             self._test_trial.trial_id), "train")
-        mock_log_watcher.assert_called_with(log_path)
+        mock_log_watcher.assert_called_with(train_log_path)
         self.assertEqual(
             2, remote_tuner._get_remote_training_metrics.call_count)
-        mock_tf_io.assert_called_with(log_path)
+        mock_tf_io.assert_called_with(train_log_path)
 
     # TODO(b/175906531): Set autospec=True once correct args are passed.
     @mock.patch.object(cloud_fit_client, "cloud_fit", autospec=False)
@@ -668,7 +660,6 @@ class CloudTunerTest(tf.test.TestCase):
         remote_tuner = self._remote_tuner(
             None, None, self._study_config, max_trials=10)
         remote_tuner.save_model(self._test_trial.trial_id, mock.Mock(), step=0)
-        mock_super_save_model.assert_not_called()
 
     @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_init_with_non_gcs_directory_path(self, mock_super_tuner):
