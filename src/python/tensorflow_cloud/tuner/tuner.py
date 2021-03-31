@@ -444,7 +444,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         max_trials: int = None,
         study_id: Optional[Text] = None,
         container_uri: Optional[Text] = None,
-        replica_config="auto",
+        replica_config: Optional[machine_config.MachineConfig] = None,
         replica_count: Optional[int] = 1,
         **kwargs):
         """Constructor.
@@ -469,10 +469,10 @@ class DistributingCloudTuner(tuner_module.Tuner):
             container_uri: Base image to use for AI Platform Training. This
                 image must follow cloud_fit image with a cloud_fit.remote() as
                 entry point. Refer to cloud_fit documentation for more details
-                at tensorflow_cloud/experimental/cloud_fit/README.md
+                at tensorflow_cloud/tuner/cloud_fit_readme.md.
             replica_config: Optional `MachineConfig` that represents the
                 configuration for the general workers in a distribution cluster.
-                Defaults to 'auto'. 'auto' maps to a standard CPU config such as
+                Defaults is None and mapped to a standard CPU config such as
                 `tensorflow_cloud.core.COMMON_MACHINE_CONFIGS.CPU`.
             replica_count: Optional integer that represents the total number of
                 workers in a distribution cluster including a chief worker. Has
@@ -489,7 +489,9 @@ class DistributingCloudTuner(tuner_module.Tuner):
         # here.
         self._replica_count = replica_count
         self._replica_config = replica_config
-        if replica_config == "auto":
+        if replica_config:
+            self._replica_config = replica_config
+        else:
             self._replica_config = machine_config.COMMON_MACHINE_CONFIGS["CPU"]
 
         # Setting AI Platform Training runtime configurations. User can create
