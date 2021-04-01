@@ -88,9 +88,10 @@ def create_model():
 
 # Define loss function
 with strategy.scope():
-    # Set reduction to `none` so we can do the reduction afterwards an
+    # Set reduction to `none` so we can do the reduction afterwards and
     # divide by global batch size.
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=True,
         reduction=tf.keras.losses.Reduction.NONE
     )
 
@@ -144,12 +145,12 @@ with strategy.scope():
 
 with strategy.scope():
 
-    # `experimental_run_v2` replicates the provided computation and runs it
+    # `run` replicates the provided computation and runs it
     # with the distributed input.
     @tf.function
     def distributed_train_step(dataset_inputs):
         """Defines a custom distributed training step."""
-        per_replica_losses = strategy.experimental_run_v2(
+        per_replica_losses = strategy.run(
             train_step, args=(dataset_inputs,)
         )
         return strategy.reduce(
@@ -159,7 +160,7 @@ with strategy.scope():
     @tf.function
     def distributed_test_step(dataset_inputs):
         """Defines a custom distributed test step."""
-        return strategy.experimental_run_v2(test_step, args=(dataset_inputs,))
+        return strategy.run(test_step, args=(dataset_inputs,))
 
     for epoch in range(EPOCHS):
         # TRAIN LOOP

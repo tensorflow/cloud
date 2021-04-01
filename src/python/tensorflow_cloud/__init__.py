@@ -21,6 +21,7 @@ from .core.machine_config import COMMON_MACHINE_CONFIGS
 from .core.machine_config import MachineConfig
 from .core.run import remote
 from .core.run import run
+from .core.run import run_cloudtuner
 
 # Oracle and Tuner APIs for hyperparameter tuning.
 from .tuner.tuner import CloudOracle

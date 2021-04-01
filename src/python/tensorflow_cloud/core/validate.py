@@ -32,6 +32,7 @@ def validate(
     docker_image_build_bucket,
     called_from_notebook,
     job_labels=None,
+    service_account=None,
     docker_parent_image=None,
 ):
     """Validates the inputs.
@@ -61,7 +62,12 @@ def validate(
         called_from_notebook: Boolean. True if the API is run in a
             notebook environment.
         job_labels: Dict of str: str. Labels to organize jobs. See
-            https://cloud.google.com/ai-platform/training/docs/resource-labels.
+            [resource-labels](
+            https://cloud.google.com/ai-platform/training/docs/resource-labels).
+        service_account: The email address of a user-managed service account
+            to be used for training instead of the service account that AI
+            Platform Training uses by default. see [custom-service-account](
+            https://cloud.google.com/ai-platform/training/docs/custom-service-account)
         docker_parent_image: Optional parent Docker image to use.
             Defaults to None.
 
@@ -80,6 +86,7 @@ def validate(
         docker_image_build_bucket,
         called_from_notebook,
     )
+    _validate_service_account(service_account)
 
 
 def _validate_files(entry_point, requirements_txt):
@@ -177,6 +184,11 @@ def _validate_cluster_config(
 def _validate_job_labels(job_labels):
     """Validates job labels."""
     gcp.validate_job_labels(job_labels)
+
+
+def _validate_service_account(service_account):
+    """Validates service_account."""
+    gcp.validate_service_account(service_account)
 
 
 def _validate_other_args(

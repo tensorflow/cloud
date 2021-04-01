@@ -183,17 +183,17 @@ class RunOnScriptTest(tf.test.TestCase):
 
     def test_run_on_script(self):
         track_status = {
-            # TODO(b/172668718) Enable tests after b/172668718 is resolved.
-            # "auto_mirrored_strategy": self.auto_mirrored_strategy(),
+            "auto_mirrored_strategy": self.auto_mirrored_strategy(),
             "auto_tpu_strategy": self.auto_tpu_strategy(),
-            # "auto_one_device_strategy": self.auto_one_device_strategy(),
-            "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),
-            # "none_dist_strat": self.none_dist_strat(),
-            # "docker_config_cloud_build": self.docker_config_cloud_build(),
+            "auto_one_device_strategy": self.auto_one_device_strategy(),
+            # TODO(b/178123173) Enable tests after b/178123173 is resolved.
+            # "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),
+            "none_dist_strat": self.none_dist_strat(),
+            "docker_config_cloud_build": self.docker_config_cloud_build(),
             "docker_config_parent_img": self.docker_config_parent_img(),
-            # "docker_config_image": self.docker_config_image(),
-            # "docker_config_cache_from": self.docker_config_cache_from(),
-            # "job_labels": self.job_labels(),
+            "docker_config_image": self.docker_config_image(),
+            "docker_config_cache_from": self.docker_config_cache_from(),
+            "job_labels": self.job_labels(),
             "cloud_build_base_image_backward_compatibility":
                 self.cloud_build_base_image_backward_compatibility(),
         }

@@ -26,6 +26,8 @@ def make_required_install_packages():
         "tensorboard>=2.3.0",
         "tensorflow>=1.15.0,<3.0",
         "tensorflow_datasets<3.1.0"
+        "tensorflow_datasets<3.1.0",
+        "tensorflow_transform",
     ]
 
 

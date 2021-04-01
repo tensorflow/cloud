@@ -409,7 +409,8 @@ def _get_valid_machine_configurations():
 def validate_job_labels(job_labels):
     """Validates job labels conform guidelines.
 
-    Ref. https://cloud.google.com/ai-platform/training/docs/resource-labels
+    Ref. [resource labels](
+    https://cloud.google.com/ai-platform/training/docs/resource-labels)
 
     Args:
         job_labels: String job label to validate.
@@ -479,3 +480,25 @@ def validate_job_labels(job_labels):
                 "numeric characters, underscores and dashes."
                 "Received: {}.".format(v)
             )
+
+
+def validate_service_account(service_account):
+    """Validates service_account conform guidelines.
+
+    Ref.[user managed service accounts](
+    https://cloud.google.com/iam/docs/service-accounts#user-managed)
+
+    Args:
+        service_account: String service account to validate.
+    Raises:
+        ValueError if the given service_account is not conformant.
+    """
+
+    if service_account and not re.match(
+        r"^.*@([a-z0-9\-]){6,30}\.iam\.gserviceaccount\.com",
+        service_account):
+        raise ValueError(
+            "Invalid service_account: service_account should follow "
+            "service-account-name@project-id.iam.gserviceaccount.com "
+            "Received: {}.".format(service_account)
+        )

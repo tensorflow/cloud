@@ -128,6 +128,14 @@ def get_preprocessed_entry_point(
         'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
     ]
 
+    # Setting default Tuner_ID if one is provided in args
+    script_lines.extend([
+        "import sys\n",
+        "for flag in sys.argv[1:]:\n",
+        '  if flag.startswith("TUNER_ID"):\n',
+        '    os.environ["KERASTUNER_TUNER_ID"]=flag\n',
+    ])
+
     # Auto wrap in distribution strategy.
     if distribution_strategy == "auto":
         if worker_count > 0:
