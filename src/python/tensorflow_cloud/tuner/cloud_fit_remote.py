@@ -95,6 +95,14 @@ def _input_fn(file_pattern: List[Text],
         reader=_gzip_reader_fn,
         label_key=_transformed_name(label_key))
 
+    # If the input dataset is file-based but the number of files is less than
+    # the number of workers, an error will be raised. Turning off auto shard
+    # policy here so that Dataset will sharded by data instead of by file.
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = (
+        tf.data.experimental.AutoShardPolicy.DATA)
+    dataset = dataset.with_options(options)
+
     return dataset
 
 
