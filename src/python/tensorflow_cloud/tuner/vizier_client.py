@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A thin client for the Cloud AI Platform Optimizer Service."""
+"""A thin client for the Cloud AI Platform Vizier Service."""
 import datetime
 import http
 import json
@@ -32,7 +32,7 @@ class SuggestionInactiveError(Exception):
     """Indicates that GetSuggestion was called on an inactive study."""
 
 
-class _OptimizerClient(vizier_client_interface.VizierClientInterface):
+class _VizierClient(vizier_client_interface.VizierClientInterface):
     """A wrapper class that allows for easy interaction with a Study."""
 
     def __init__(self,
@@ -40,15 +40,15 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
                  project_id: Text,
                  region: Text,
                  study_id: Text = None):
-        """Create an OptimizerClient object.
+        """Create an VizierClient object.
 
         Use this constructor when you know the study_id, and when the Study
         already exists.  Otherwise, you'll probably want to use
         create_or_load_study() instead of constructing the
-        OptimizerClient class directly.
+        VizierClient class directly.
 
         Args:
-            service_client: An API client of CAIP Optimizer service.
+            service_client: An API client of Vizier service.
             project_id: A GCP project id.
             region: A GCP region. e.g. 'us-central1'.
             study_id: An identifier of the study. The full study name will be
@@ -61,7 +61,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
         if not study_id:
             raise ValueError(
                 "Use create_or_load_study() instead of constructing the"
-                "OptimizerClient class directly"
+                "VizierClient class directly"
             )
         self.study_id = study_id
 
@@ -114,7 +114,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
         except errors.HttpError as e:
             if e.resp.status == 429:
                 # Status 429 'RESOURCE_EXAUSTED' is raised when trials more than
-                # the maximum limit (1000) of the Optimizer service for a study
+                # the maximum limit (1000) of the Vizier service for a study
                 # are requested, or the number of finite search space.
                 # For distributed tuning, a tuner worker may request the 1001th
                 # trial, while the other tuner worker has not completed training
@@ -219,10 +219,10 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
                 only be non-empty if trial_infeasible==True.
 
         Returns:
-            The Completed Optimizer trial, represented as a JSON Dictionary.
+            The Completed Vizier trial, represented as a JSON Dictionary.
         """
         try:
-            optimizer_trial = (
+            vizier_trial = (
                 self.service_client.projects()
                 .locations()
                 .studies()
@@ -239,10 +239,10 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
         except errors.HttpError as e:
             tf.get_logger().info("CompleteTrial failed.")
             raise e
-        return optimizer_trial
+        return vizier_trial
 
     def get_trial(self, trial_id: Text) -> Dict[Text, Any]:
-        """Return the Optimizer trial for the given trial_id."""
+        """Return the Vizier trial for the given trial_id."""
         try:
             trial = (
                 self.service_client.projects()
@@ -349,7 +349,7 @@ class _OptimizerClient(vizier_client_interface.VizierClientInterface):
         return operation
 
     def _polling_delay(self, num_attempts, time_scale):
-        """Computes a delay to the next attempt to poll the Optimizer service.
+        """Computes a delay to the next attempt to poll the Vizier service.
 
         This does bounded exponential backoff, starting with $time_scale.
         If $time_scale == 0, it starts with a small time interval, less than
@@ -388,10 +388,10 @@ def create_or_load_study(
     region: Text,
     study_id: Text,
     study_config: Optional[Dict[Text, Any]] = None,
-) -> _OptimizerClient:
-    """Factory method for creating or loading a CAIP Optimizer client.
+) -> _VizierClient:
+    """Factory method for creating or loading a Vizier client.
 
-    Given an Optimizer study_config, this will either create or open the
+    Given an Vizier study_config, this will either create or open the
     specified study. It will create it if it doesn't already exist, and open
     it if someone has already created it.
 
@@ -409,12 +409,12 @@ def create_or_load_study(
             unique ID is given. The full study name will be
             projects/{project_id}/locations/{region}/studies/{study_id}.
             And the full trial name will be {study name}/trials/{trial_id}.
-        study_config: Study configuration for CAIP Optimizer service. If not
+        study_config: Study configuration for Vizier service. If not
             supplied, it will be assumed that the study with the given study_id
             already exists, and will try to retrieve that study.
 
     Returns:
-        An _OptimizerClient object with the specified study created or loaded.
+        An _VizierClient object with the specified study created or loaded.
 
     Raises:
         RuntimeError: Indicates that study_config is supplied but CreateStudy
@@ -424,7 +424,7 @@ def create_or_load_study(
             with the given study_id does not exist.
     """
     # Build the API client
-    # Note that Optimizer service is exposed as a regional endpoint. As such,
+    # Note that Vizier service is exposed as a regional endpoint. As such,
     # an API client needs to be created separately from the default.
     with open(constants.OPTIMIZER_API_DOCUMENT_FILE) as f:
         service_client = discovery.build_from_document(
@@ -467,7 +467,7 @@ def create_or_load_study(
                 study_id=study_id,
             )
 
-    return _OptimizerClient(service_client, project_id, region, study_id)
+    return _VizierClient(service_client, project_id, region, study_id)
 
 
 def _get_study(
@@ -482,7 +482,7 @@ def _get_study(
     study, up to constants.MAX_NUM_TRIES_FOR_STUDIES tries.
 
     Args:
-        service_client: An API client of CAIP Optimizer service.
+        service_client: An API client of Vizier service.
         study_parent: Prefix of the study name. The full study name will be
             {study_parent}/studies/{study_id}.
         study_id: An identifier of the study.

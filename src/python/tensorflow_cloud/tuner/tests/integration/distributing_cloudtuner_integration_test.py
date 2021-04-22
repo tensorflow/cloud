@@ -21,7 +21,7 @@ import re
 import kerastuner
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow_cloud.tuner import optimizer_client
+from tensorflow_cloud.tuner import vizier_client
 from tensorflow_cloud.tuner.tuner import DistributingCloudTuner
 
 # If input dataset is created outside tuner.search(),
@@ -113,7 +113,7 @@ class _DistributingCloudTunerIntegrationTestBase(tf.test.TestCase):
 
         # Delete the study used in the test, if present
         if self._study_id:
-            service = optimizer_client.create_or_load_study(
+            service = vizier_client.create_or_load_study(
                 _PROJECT_ID, _REGION, self._study_id, None)
             service.delete_study()
 
