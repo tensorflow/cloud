@@ -1,0 +1,30 @@
+upper_tabs:
+# Tabs left of dropdown menu
+- include: /_upper_tabs_left.yaml
+- include: /api_docs/_upper_tabs_api.yaml
+# Dropdown menu
+- name: Resources
+  path: /resources
+  is_default: true
+  menu:
+  - include: /resources/_menu_toc.yaml
+  lower_tabs:
+    # Subsite tabs
+    other:
+    - name: Learn
+      contents:
+      - title: Overview and key concepts
+        path: /cloud/overview
+      - heading: "Tutorials"
+      - title: Connecting with Google Cloud
+        path: /cloud/tutorials/google_cloud_project_setup_instructions
+      - title: Keras training at scale
+        path: /cloud/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud
+      - title: Hyperparameter tuning on Google Cloud
+        path: /cloud/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/hp_tuning_cifar10_using_google_cloud
+      - heading: "Guides"
+      - title: The Cloud `run` API guide
+        path: /cloud/guides/cloud_run_guide
+      - title: The Cloud `tuner` API guide
+        path: /cloud/guides/cloud_tuner_guide
+- include: /_upper_tabs_right.yaml
