@@ -6,50 +6,8 @@ environment to distributed training/tuning on Cloud.
 
 ## TensorFlow Cloud `run` API for GCP training/tuning
 
-### Installation
-
-#### Requirements
-
--   Python >= 3.6
--   [A Google Cloud project](https://cloud.google.com/ai-platform/docs/getting-started-keras#set_up_your_project)
--   An
-    [authenticated GCP account](https://cloud.google.com/ai-platform/docs/getting-started-keras#authenticate_your_gcp_account)
--   [Google AI platform](https://cloud.google.com/ai-platform/) APIs enabled for
-    your GCP account. We use the AI platform for deploying docker images on GCP.
--   Either a functioning version of
-    [docker](https://docs.docker.com/engine/install/) if you want to use a local
-    docker process for your build, or
-    [create a cloud storage bucket](https://cloud.google.com/ai-platform/docs/getting-started-keras#create_a_bucket)
-    to use with [Google Cloud build](https://cloud.google.com/cloud-build) for
-    docker image build and publishing.
-
--   [Authenticate to your Docker Container Registry](https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-helper)
-
--   (optional) [nbconvert](https://nbconvert.readthedocs.io/en/latest/) if you
-    are using a notebook file as `entry_point` as shown in
-    [usage guide #4](#usage-guide).
-
-For detailed end to end setup instructions, please see
-[Setup instructions](#setup-instructions).
-
-#### Install latest release
-
-```shell
-pip install -U tensorflow-cloud
-```
-
-#### Install from source
-
-```shell
-git clone https://github.com/tensorflow/cloud.git
-cd cloud
-pip install src/python/.
-```
-
-### High level overview
-
-TensorFlow Cloud package provides the `run` API for training your models on GCP.
-To start, let's walk through a simple workflow using this API.
+TensorFlow Cloud provides the `run` API for training your models on GCP. To
+start, let's walk through a simple workflow using this API.
 
 1.  Let's begin with a Keras model training code such as the following, saved as
     `mnist_example.py`.
@@ -86,9 +44,7 @@ To start, let's walk through a simple workflow using this API.
 
     Running `scale_mnist.py` will automatically apply TensorFlow
     [one device strategy](https://www.tensorflow.org/api_docs/python/tf/distribute/OneDeviceStrategy)
-    and train your model at scale on Google Cloud Platform. Please see the
-    [usage guide](#usage-guide) section for detailed instructions and additional
-    API parameters.
+    and train your model at scale on Google Cloud Platform.
 
 1.  You will see an output similar to the following on your console. This
     information can be used to track the training job status.
@@ -101,29 +57,10 @@ To start, let's walk through a simple workflow using this API.
     https://console.cloud.google.com/mlengine/jobs/tf_cloud_train_519ec89c_a876_49a9_b578_4fe300f8865e?project=prod-123
     ```
 
-### Setup instructions
+## Setup instructions
 
-End to end instructions to help set up your environment for Tensorflow Cloud.
-You use one of the following notebooks to setup your project or follow the
-instructions below.
-
-<table align="left">
-    <td>
-        <a href="https://colab.research.google.com/github/tensorflow/cloud/blob/master/examples/google_cloud_project_setup_instructions.ipynb">
-            <img width="50" src="https://cloud.google.com/ml-engine/images/colab-logo-32px.png" alt="Colab logo">Run in Colab
-        </a>
-    </td>
-    <td>
-        <a href="https://github.com/tensorflow/cloud/blob/master/examples/google_cloud_project_setup_instructions.ipynb">
-            <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">View on GitHub
-        </a>
-     </td>
-    <td>
-        <a href="https://www.kaggle.com/nitric/google-cloud-project-setup-instructions">
-            <img width="90" src="https://www.kaggle.com/static/images/site-logo.png" alt="Kaggle logo">Run in Kaggle
-        </a>
-     </td>
-</table>
+Follow these instructions in your local environment, or in the
+[project setup notebook](../cloud/tutorials/google_cloud_project_setup_instructions.ipynb).
 
 1.  Create a new local directory
 
@@ -220,32 +157,24 @@ instructions below.
     pip install tensorflow-cloud
     ```
 
-### Usage guide
+## Usage guide
 
-As described in the [high level overview](#high-level-overview), the `run` API
-allows you to train your models at scale on GCP. The
+The `run` API allows you to train your models at scale on GCP.
+
+The
 [`run`](https://github.com/tensorflow/cloud/blob/master/src/python/core/run.py#L31)
 API can be used in four different ways. This is defined by where you are running
-the API (Terminal vs IPython notebook), and your `entry_point` parameter.
-`entry_point` is an optional Python script or notebook file path to the file
-that contains your TensorFlow Keras training code. This is the most important
-parameter in the API.
+the API (Python script vs Python notebook), and your `entry_point` parameter:
 
-```python
-run(entry_point=None,
-    requirements_txt=None,
-    distribution_strategy='auto',
-    docker_config='auto',
-    chief_config='auto',
-    worker_config='auto',
-    worker_count=0,
-    entry_point_args=None,
-    stream_logs=False,
-    job_labels=None,
-    **kwargs)
-```
+*   Python file as `entry_point`.
+*   Notebook file as `entry_point`.
+*   `run` within a Python script that contains the `tf.keras` model.
+*   `run` within a notebook script that contains the `tf.keras` model.
 
-#### Using a python file as `entry_point`.
+The `entry_point` is a (path to a) Python script or notebook file, or `None`. If
+`None`, the entire current File is sent to Google Cloud.
+
+### Using a Python file as `entry_point`.
 
 If you have your `tf.keras` model in a python file (`mnist_example.py`), then
 you can write the following simple script (`scale_mnist.py`) to scale your model
@@ -261,7 +190,7 @@ be packaged in the docker image created, along with the `entry_point` file. It's
 recommended to create a new directory to house each cloud project which includes
 necessary files and nothing else, to optimize image build times.
 
-#### Using a notebook file as `entry_point`.
+### Using a notebook file as `entry_point`.
 
 If you have your `tf.keras` model in a notebook file (`mnist_example.ipynb`),
 then you can write the following simple script (`scale_mnist.py`) to scale your
@@ -278,7 +207,7 @@ the python script `entry_point` above, we recommended creating a new directory
 to house each cloud project which includes necessary files and nothing else, to
 optimize image build times.
 
-#### Using `run` within a python script that contains the `tf.keras` model.
+### Using `run` within a Python script that contains the `tf.keras` model.
 
 You can use the `run` API from within your python file that contains the
 `tf.keras` model (`mnist_scale.py`). In this use case, `entry_point` should be
@@ -339,7 +268,7 @@ will be packaged in the docker image created, along with the python file. It's
 recommended to create a new directory to house each cloud project which includes
 necessary files and nothing else, to optimize image build times.
 
-#### Using `run` within a notebook script that contains the `tf.keras` model.
+### Using `run` within a notebook script that contains the `tf.keras` model.
 
 ![Image of colab](https://github.com/tensorflow/cloud/blob/master/images/colab.png)
 
@@ -347,12 +276,12 @@ In this use case, `entry_point` should be `None` and
 `docker_config.image_build_bucket` must be specified, to ensure the build can be
 stored and published.
 
-### Cluster and distribution strategy configuration
+## Cluster and distribution strategy configuration
 
 By default, `run` API takes care of wrapping your model code in a TensorFlow
 distribution strategy based on the cluster configuration you have provided.
 
-***No distribution***
+### No distribution
 
 CPU chief config and no additional workers
 
@@ -361,7 +290,7 @@ tfc.run(entry_point='mnist_example.py',
         chief_config=tfc.COMMON_MACHINE_CONFIGS['CPU'])
 ```
 
-***OneDeviceStrategy***
+### `OneDeviceStrategy`
 
 1 GPU on chief (defaults to `AcceleratorType.NVIDIA_TESLA_T4`) and no additional
 workers.
@@ -370,16 +299,16 @@ workers.
 tfc.run(entry_point='mnist_example.py')
 ```
 
-***MirroredStrategy***
+### `MirroredStrategy`
 
-Chief config with multiple GPUS (`AcceleratorType.NVIDIA_TESLA_V100`).
+Chief config with multiple GPUs (`AcceleratorType.NVIDIA_TESLA_V100`).
 
 ```python
 tfc.run(entry_point='mnist_example.py',
         chief_config=tfc.COMMON_MACHINE_CONFIGS['V100_4X'])
 ```
 
-***MultiWorkerMirroredStrategy***
+### `MultiWorkerMirroredStrategy`
 
 Chief config with 1 GPU and 2 workers each with 8 GPUs
 (`AcceleratorType.NVIDIA_TESLA_V100`).
@@ -391,7 +320,7 @@ tfc.run(entry_point='mnist_example.py',
         worker_config=tfc.COMMON_MACHINE_CONFIGS['V100_8X'])
 ```
 
-***TPUStrategy***
+### `TPUStrategy`
 
 Chief config with 1 CPU and 1 worker with TPU.
 
@@ -406,12 +335,12 @@ Please note that TPUStrategy with TensorFlow Cloud works only with TF version
 2.1 as this is the latest version supported by
 [AI Platform cloud TPU](https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support)
 
-***Custom distribution strategy***
+### Custom distribution strategy
 
-If you would like to take care of specifying distribution strategy in your model
-code and do not want `run` API to create a strategy, then set
-`distribution_stategy` as `None`. This will be required for example when you are
-using `strategy.experimental_distribute_dataset`.
+If you would like to take care of specifying a distribution strategy in your
+model code and do not want `run` API to create a strategy, then set
+`distribution_stategy` as `None`. This will be required, for example, when you
+are using `strategy.experimental_distribute_dataset`.
 
 ```python
 tfc.run(entry_point='mnist_example.py',
@@ -419,9 +348,9 @@ tfc.run(entry_point='mnist_example.py',
         worker_count=2)
 ```
 
-#### What happens when you call run?
+## What happens when you call `run`?
 
-The API call will encompass the following:
+The API call will accomplish the following:
 
 1.  Making code entities such as a Keras script/notebook, **cloud and
     distribution ready**.
@@ -432,18 +361,15 @@ The API call will encompass the following:
 1.  **Stream logs** and monitor them on hosted TensorBoard, manage checkpoint
     storage.
 
-By default, we will use local docker daemon for building and publishing docker
-images to Google container registry. Images are published to
-`gcr.io/your-gcp-project-id`. If you specify `docker_config.image_build_bucket`,
-then we will use [Google Cloud build](https://cloud.google.com/cloud-build) to
-build and publish docker images.
+By default, the local Docker daemon for building and publishing Docker images to
+Google container registry. Images are published to `gcr.io/your-gcp-project-id`.
+If you specify `docker_config.image_build_bucket`, then we will use
+[Google Cloud build](https://cloud.google.com/cloud-build) to build and publish
+docker images.
 
-We use [Google AI platform](https://cloud.google.com/ai-platform/) for deploying
-docker images on GCP.
+[Google AI platform](https://cloud.google.com/ai-platform/) is used for for
+deploying Docker images on Google Cloud.
 
-Please note that, when `entry_point` argument is specified, all the files in the
-same directory tree as `entry_point` will be packaged in the docker image
-created, along with the `entry_point` file.
-
-Please see `run` API documentation for detailed information on the parameters
-and how you can modify the above processes to suit your needs.
+Note: When `entry_point` is a file path, all the files in the same directory
+tree as `entry_point` will be packaged in the Docker image created along with
+the `entry_point` file.
