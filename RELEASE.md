@@ -1,6 +1,13 @@
 # Current Version (Still in Development)
 
-*   Add notes for next release here.
+* 
+
+# Release 0.1.14
+
+*   Remove upper bound dependency on `tensorflow_datasets`.
+*   Fix dataset auto shard policy.
+*   Fix machine_config for DistributingCloudTuner.
+*   Additional updates in samples and documentation. 
 
 # Release 0.1.13
 
