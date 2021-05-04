@@ -1,7 +1,3 @@
-# Current Version (Still in Development)
-
-* 
-
 # Release 0.1.14
 
 *   Remove upper bound dependency on `tensorflow_datasets`.
