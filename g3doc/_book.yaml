@@ -27,4 +27,8 @@ upper_tabs:
         path: /cloud/guides/cloud_run_guide
       - title: The Cloud `tuner` API guide
         path: /cloud/guides/cloud_tuner_guide
+    - name: API
+      skip_translation: true
+      contents:
+      - include: /cloud/api_docs/python/tensorflow_cloud/_toc.yaml
 - include: /_upper_tabs_right.yaml
