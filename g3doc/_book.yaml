@@ -15,6 +15,8 @@ upper_tabs:
       contents:
       - title: Overview and key concepts
         path: /cloud/overview
+      - title: Installation
+        path: /cloud/installation
       - heading: "Tutorials"
       - title: Connecting with Google Cloud
         path: /cloud/tutorials/google_cloud_project_setup_instructions
