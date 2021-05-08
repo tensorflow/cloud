@@ -30,5 +30,5 @@ upper_tabs:
     - name: API
       skip_translation: true
       contents:
-      - include: /cloud/api_docs/python/tensorflow_cloud/_toc.yaml
+      - include: /cloud/api_docs/python/tfc/_toc.yaml
 - include: /_upper_tabs_right.yaml

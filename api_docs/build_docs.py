@@ -62,7 +62,7 @@ FLAGS = flags.FLAGS
 def main(_):
   doc_generator = generate_lib.DocGenerator(
       root_title='TensorFlow Cloud',
-      py_modules=[('tensorflow_cloud', tensorflow_cloud)],
+      py_modules=[('tfc', tensorflow_cloud)],
       code_url_prefix=FLAGS.code_url_prefix,
       search_hints=FLAGS.search_hints,
       site_path=FLAGS.site_path,
