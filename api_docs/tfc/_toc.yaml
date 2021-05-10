@@ -1,0 +1,21 @@
+toc:
+- title: tfc
+  section:
+  - title: Overview
+    path: /cloud/api_docs/python/tfc
+  - title: AcceleratorType
+    path: /cloud/api_docs/python/tfc/AcceleratorType
+  - title: CloudOracle
+    path: /cloud/api_docs/python/tfc/CloudOracle
+  - title: CloudTuner
+    path: /cloud/api_docs/python/tfc/CloudTuner
+  - title: DockerConfig
+    path: /cloud/api_docs/python/tfc/DockerConfig
+  - title: MachineConfig
+    path: /cloud/api_docs/python/tfc/MachineConfig
+  - title: remote
+    path: /cloud/api_docs/python/tfc/remote
+  - title: run
+    path: /cloud/api_docs/python/tfc/run
+  - title: run_cloudtuner
+    path: /cloud/api_docs/python/tfc/run_cloudtuner
