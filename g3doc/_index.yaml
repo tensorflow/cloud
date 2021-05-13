@@ -52,3 +52,17 @@ landing_page:
         {% dynamic if request.tld != 'cn' %}
         <a class="colab-button" target="_blank" href="https://colab.sandbox.google.com/github/tensorflow/cloud/blob/master/g3doc/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud.ipynb">Run in a <span>Notebook</span></a>
         {% dynamic endif %}
+  - classname: devsite-landing-row-cards
+    items:
+    - heading: "TensorFlow Cloud on GitHub"
+      path: https://github.com/tensorflow/cloud
+      image_path: /resources/images/github-card-16x9.png
+      buttons:
+      - label: "View on GitHub"
+        path: https://github.com/tensorflow/cloud
+    - heading: "Train your TensorFlow model on Google Cloud"
+      path: https://blog.tensorflow.org/2020/08/train-your-tensorflow-model-on-google.html
+      image_path: /cloud/images/tf_cloud_code_sample.png
+      buttons:
+      - label: "TensorFlow Blog"
+        path: https://blog.tensorflow.org/2020/08/train-your-tensorflow-model-on-google.html

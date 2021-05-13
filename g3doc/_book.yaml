@@ -13,20 +13,24 @@ upper_tabs:
     other:
     - name: Learn
       contents:
-      - title: Overview and key concepts
-        path: /cloud/overview
+      - title: Overview and simple example
+        path: /cloud/tutorials/overview
       - heading: "Tutorials"
       - title: Connecting with Google Cloud
         path: /cloud/tutorials/google_cloud_project_setup_instructions
       - title: Keras training at scale
-        path: /cloud/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud
+        path: /cloud/tutorials/distributed_training_nasnet_with_tensorflow_cloud
       - title: Hyperparameter tuning on Google Cloud
-        path: /cloud/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/hp_tuning_cifar10_using_google_cloud
+        path: /cloud/tutorials/hp_tuning_cifar10_using_google_cloud
       - heading: "Guides"
-      - title: The Cloud `run` API guide
-        path: /cloud/guides/cloud_run_guide
-      - title: The Cloud `tuner` API guide
+      - title: Cloud `run` guide
+        path: /cloud/guides/run_guide
+      - title: Cloud `tuner` guide
         path: /cloud/guides/cloud_tuner_guide
+      - title: Debugging
+        path: /cloud/guides/debugging
+      - title: Installation
+        path: /cloud/guides/installation
     - name: API
       skip_translation: true
       contents:
