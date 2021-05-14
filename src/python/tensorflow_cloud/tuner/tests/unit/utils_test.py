@@ -293,22 +293,22 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
         )
         self._assert_study_config_equal(study_config, expected_config)
 
-    def test_convert_optimizer_trial_to_dict(self):
+    def test_convert_vizier_trial_to_dict(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        params = utils.convert_optimizer_trial_to_dict(OPTIMIZER_TRIAL)
+        params = utils.convert_vizier_trial_to_dict(OPTIMIZER_TRIAL)
         self.assertDictEqual(params, EXPECTED_TRIAL_HPS)
 
-    def test_convert_optimizer_trial_to_hps(self):
+    def test_convert_vizier_trial_to_hps(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        trial_hps = utils.convert_optimizer_trial_to_hps(hps, OPTIMIZER_TRIAL)
+        trial_hps = utils.convert_vizier_trial_to_hps(hps, OPTIMIZER_TRIAL)
         self.assertDictEqual(trial_hps.values, EXPECTED_TRIAL_HPS)
 
-    def test_convert_completed_optimizer_trial_to_keras_trial(self):
+    def test_convert_completed_vizier_trial_to_keras_trial(self):
         hps = hp_module.HyperParameters()
         hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-        trial = utils.convert_completed_optimizer_trial_to_keras_trial(
+        trial = utils.convert_completed_vizier_trial_to_keras_trial(
             COMPLETED_OPTIMIZER_TRIAL, hps)
         self.assertEqual(trial.trial_id, "trial_1")
         self.assertEqual(trial.score, 0.9)

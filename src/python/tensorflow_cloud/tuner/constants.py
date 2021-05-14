@@ -16,7 +16,7 @@
 
 import os
 
-# API definition of Cloud AI Platform Optimizer service
+# API definition of Cloud AI Platform Vizier service
 OPTIMIZER_API_DOCUMENT_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "api/ml_public_google_rest_v1.json")

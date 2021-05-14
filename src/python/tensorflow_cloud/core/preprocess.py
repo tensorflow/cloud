@@ -202,9 +202,9 @@ def get_preprocessed_entry_point(
         # to script_lines.
         for line in py_content:
             if not (
-                line.startswith("!") or
-                line.startswith("%") or
-                line.startswith("#")
+                line.strip().startswith("!") or
+                line.strip().startswith("%") or
+                line.strip().startswith("#")
             ):
                 script_lines.append(line)
 

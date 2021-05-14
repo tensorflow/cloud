@@ -24,7 +24,7 @@ import kerastuner
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow_cloud import CloudTuner
-from tensorflow_cloud.tuner import optimizer_client
+from tensorflow_cloud.tuner import vizier_client
 
 # If input dataset is created outside tuner.search(),
 # it requires eager execution even in TF 1.x.
@@ -144,7 +144,7 @@ class _CloudTunerIntegrationTestBase(tf.test.TestCase):
 
         # Delete the study used in the test, if present
         if self._study_id:
-            service = optimizer_client.create_or_load_study(
+            service = vizier_client.create_or_load_study(
                 _PROJECT_ID, _REGION, self._study_id, None)
             service.delete_study()
 

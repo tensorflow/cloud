@@ -34,8 +34,8 @@ from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
 from tensorflow_cloud.tuner import cloud_fit_client
-from tensorflow_cloud.tuner import optimizer_client
 from tensorflow_cloud.tuner import utils
+from tensorflow_cloud.tuner import vizier_client
 from tensorflow_cloud.utils import google_api_client
 from tensorflow_cloud.utils import tf_utils
 
@@ -54,7 +54,60 @@ _TrainingMetrics = collections.namedtuple("_TrainingMetrics", [
 
 
 class CloudOracle(oracle_module.Oracle):
-    """KerasTuner Oracle interface for CAIP Optimizer Service backend."""
+    """Keras Tuner Oracle that wraps the AI Platform Vizier backend.
+
+    This is an implementation of `KerasTuner` Oracle that uses Google Cloud's
+    Vizier Service.
+
+    Each Oracle class implements a particular hyperparameter tuning algorithm.
+    An Oracle is passed as an argument to a Tuner. The Oracle tells the Tuner
+    which hyperparameters should be tried next.
+
+    To learn more about Keras Tuner Oracles please refer to:
+    https://keras-team.github.io/keras-tuner/documentation/oracles/
+
+    AI Platform Vizier is a black-box optimization service that helps you tune
+    hyperparameters in complex machine learning (ML) models. When ML models have
+    many different hyperparameters, it can be difficult and time consuming to
+    tune them manually. AI Platform Vizier optimizes your model's output by
+    tuning the hyperparameters for you.
+    To learn more about AI Platfrom Vizier service see:
+        https://cloud.google.com/ai-platform/optimizer/docs/overview.
+
+        Examples:
+          >>> oracle = CloudOracle(
+                  project_id=project_id,
+                  region='us-central1',
+                  objective='accuracy',
+                  hyperparameters=hyperparameters,
+                  study_config=None,
+                  max_trials=4,
+                  study_id=None,
+              )
+
+        Args:
+            project_id: A GCP project id.
+            region: A GCP region. e.g. 'us-central1'.
+            objective: If a string, the direction of the optimization (min or
+                max) will be inferred.
+            hyperparameters: Mandatory and must include definitions for all
+                hyperparameters used during the search. Can be used to override
+                (or register in advance) hyperparameters in the search space.
+            study_config: Study configuration for Vizier service.
+            max_trials: Total number of trials (model configurations) to test at
+                most. If None, it continues the search until it reaches the
+                Vizier trial limit for each study. Users may stop the search
+                externally (e.g. by killing the job). Note that the Oracle may
+                interrupt the search before `max_trials` models have been
+                tested.
+            study_id: An identifier of the study. If not supplied,
+                system-determined unique ID is given.
+                The full study name will be
+                `projects/{project_id}/locations/{region}/studies/{study_id}`,
+                and the full trial name will be
+                `{study name}/trials/{trial_id}`.
+          )
+    """
 
     def __init__(
         self,
@@ -66,7 +119,28 @@ class CloudOracle(oracle_module.Oracle):
         max_trials: int = None,
         study_id: Optional[Text] = None,
     ):
-        """KerasTuner Oracle interface implemented with Optimizer backend.
+        """KerasTuner Oracle interface implemented with Vizier backend.
+
+        This is an implementation of kerasTuner Oracle that uses Google Cloud's
+        Vizier Service. CloudTuner uses this Oracle.
+
+        Each Oracle class implements a particular hyperparameter tuning
+        algorithm. An Oracle is passed as an argument to a Tuner. The Oracle
+        tells the Tuner which hyperparameters should be tried next.
+
+        To learn more about KerasTuner Oracles please refer to:
+        https://keras-team.github.io/keras-tuner/documentation/oracles/
+
+        Examples:
+          >>> oracle = CloudOracle(
+                  project_id=project_id,
+                  region='us-central1',
+                  objective='accuracy',
+                  hyperparameters=hyperparameters,
+                  study_config=None,
+                  max_trials=4,
+                  study_id=None,
+              )
 
         Args:
             project_id: A GCP project id.
@@ -76,10 +150,10 @@ class CloudOracle(oracle_module.Oracle):
             hyperparameters: Mandatory and must include definitions for all
                 hyperparameters used during the search. Can be used to override
                 (or register in advance) hyperparameters in the search space.
-            study_config: Study configuration for CAIP Optimizer service.
+            study_config: Study configuration for Vizier service.
             max_trials: Total number of trials (model configurations) to test at
                 most. If None, it continues the search until it reaches the
-                Optimizer trial limit for each study. Users may stop the search
+                Vizier trial limit for each study. Users may stop the search
                 externally (e.g. by killing the job). Note that the Oracle may
                 interrupt the search before `max_trials` models have been
                 tested.
@@ -136,7 +210,7 @@ class CloudOracle(oracle_module.Oracle):
             datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         )
 
-        self.service = optimizer_client.create_or_load_study(
+        self.service = vizier_client.create_or_load_study(
             self._project_id, self._region, self.study_id, self.study_config
         )
 
@@ -167,7 +241,7 @@ class CloudOracle(oracle_module.Oracle):
         # trial.status=STOPPED or if number of trials >= max_limit.
         trial_list = self.service.list_trials()
         # Note that KerasTunerTrialStatus - 'STOPPED' is equivalent to
-        # OptimizerTrialState - 'STOPPING'.
+        # VizierTrialState - 'STOPPING'.
         stopping_trials = [t for t in trial_list if t["state"] == "STOPPING"]
         if (self.max_trials and
             len(trial_list) >= self.max_trials) or stopping_trials:
@@ -190,14 +264,14 @@ class CloudOracle(oracle_module.Oracle):
             )
 
         # Fetches the suggested trial.
-        # Optimizer Trial instance
-        optimizer_trial = suggestions[0]
-        trial_id = utils.get_trial_id(optimizer_trial)
+        # Vizier Trial instance
+        vizier_trial = suggestions[0]
+        trial_id = utils.get_trial_id(vizier_trial)
 
         # KerasTuner Trial instance
         kerastuner_trial = trial_module.Trial(
-            hyperparameters=utils.convert_optimizer_trial_to_hps(
-                self.hyperparameters.copy(), optimizer_trial
+            hyperparameters=utils.convert_vizier_trial_to_hps(
+                self.hyperparameters.copy(), vizier_trial
             ),
             trial_id=trial_id,
             status=trial_module.TrialStatus.RUNNING,
@@ -300,12 +374,12 @@ class CloudOracle(oracle_module.Oracle):
                 '"INVALID", found {}'.format(status)
             )
 
-        optimizer_trial = self.service.complete_trial(
+        vizier_trial = self.service.complete_trial(
             trial_id, trial_infeasible, infeasibility_reason
         )
 
         if status == trial_module.TrialStatus.COMPLETED:
-            final_measurement = optimizer_trial["finalMeasurement"]
+            final_measurement = vizier_trial["finalMeasurement"]
             # If epochs = 1, set the best_step = 0.
             kerastuner_trial.best_step = int(
                 final_measurement.get("stepCount", 0))
@@ -334,24 +408,24 @@ class CloudOracle(oracle_module.Oracle):
         # List all trials associated with the same study
         trial_list = self.service.list_trials()
 
-        optimizer_trials = [t for t in trial_list if t["state"] == "COMPLETED"]
+        vizier_trials = [t for t in trial_list if t["state"] == "COMPLETED"]
 
-        if not optimizer_trials:
+        if not vizier_trials:
             return []
 
         sorted_trials = sorted(
-            optimizer_trials,
+            vizier_trials,
             key=lambda t: t["finalMeasurement"]["metrics"][0].get("value"),
             reverse=maximizing,
         )
-        best_optimizer_trials = sorted_trials[:num_trials]
+        best_vizier_trials = sorted_trials[:num_trials]
 
         best_trials = []
-        # Convert completed Optimizer trials to KerasTuner Trial instances.
-        for optimizer_trial in best_optimizer_trials:
+        # Convert completed Vizier trials to KerasTuner Trial instances.
+        for vizier_trial in best_vizier_trials:
             kerastuner_trial = (
-                utils.convert_completed_optimizer_trial_to_keras_trial(
-                    optimizer_trial,
+                utils.convert_completed_vizier_trial_to_keras_trial(
+                    vizier_trial,
                     self.hyperparameters.copy()))
             best_trials.append(kerastuner_trial)
         return best_trials
@@ -371,7 +445,43 @@ class CloudOracle(oracle_module.Oracle):
 
 
 class CloudTuner(tuner_module.Tuner):
-    """KerasTuner interface implementation backed by CAIP Optimizer Service."""
+    """KerasTuner interface implementation backed by Vizier Service.
+
+    CloudTuner is a implementation of KerasTuner that uses Google Cloud Vizier
+    Service as its Oracle. To learn more about KerasTuner and Oracles please
+    refer to:
+      https://keras-team.github.io/keras-tuner/
+      https://keras-team.github.io/keras-tuner/documentation/oracles/
+
+      Args:
+          hypermodel: Instance of HyperModel class (or callable that takes
+              hyperparameters and returns a Model instance).
+          project_id: A GCP project id.
+          region: A GCP region. e.g. 'us-central1'.
+          objective: Name of model metric to minimize or maximize, e.g.
+              "val_accuracy".
+          hyperparameters: Can be used to override (or register in advance)
+              hyperparameters in the search space.
+          study_config: Study configuration for Vizier service.
+          max_trials: Total number of trials (model configurations) to test at
+              most. Note that the oracle may interrupt the search before
+              `max_trials` models have been tested if the search space has
+              been exhausted.
+          study_id: An identifier of the study. The full study name will be
+              projects/{project_id}/locations/{region}/studies/{study_id}.
+          **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+              Please see the docstring for `Tuner`.
+
+      Example:
+        >>> tuner = CloudTuner(
+              build_model,
+              project_id="MY_PROJECT_ID",
+              region='us-central1',
+              objective='accuracy',
+              hyperparameters=HPS,
+              max_trials=5,
+              directory='tmp/MY_JOB')
+    """
 
     def __init__(
         self,
@@ -397,7 +507,7 @@ class CloudTuner(tuner_module.Tuner):
                 "val_accuracy".
             hyperparameters: Can be used to override (or register in advance)
                 hyperparameters in the search space.
-            study_config: Study configuration for CAIP Optimizer service.
+            study_config: Study configuration for Vizier service.
             max_trials: Total number of trials (model configurations) to test at
                 most. Note that the oracle may interrupt the search before
                 `max_trials` models have been tested if the search space has
@@ -459,7 +569,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
                 "val_accuracy".
             hyperparameters: Can be used to override (or register in advance)
                 hyperparameters in the search space.
-            study_config: Study configuration for CAIP Optimizer service.
+            study_config: Study configuration for Vizier service.
             max_trials: Total number of trials (model configurations) to test at
                 most. Note that the oracle may interrupt the search before
                 `max_trials` models have been tested if the search space has
@@ -537,7 +647,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
             *fit_args: Positional arguments passed by `search`.
             **fit_kwargs: Keyword arguments passed by `search`.
         Raises:
-            RuntimeError: If AIP training job fails.
+            RuntimeError: If AI Platform training job fails.
         """
 
         # Running the training remotely.
@@ -636,7 +746,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
         if not google_api_client.wait_for_aip_training_job_completion(
             job_id, self._project_id):
             raise RuntimeError(
-                "AIP Training job failed, see logs for details at "
+                "AI Platform Training job failed, see logs for details at "
                 "https://console.cloud.google.com/ai-platform/jobs/"
                 "{}/charts/cpu?project={}"
                 .format(job_id, self._project_id))
@@ -689,10 +799,10 @@ class DistributingCloudTuner(tuner_module.Tuner):
                         metrics=metric)
 
     def _get_job_spec_from_config(self, job_id: Text) -> Dict[Text, Any]:
-        """Creates a request dictionary for the CAIP training service.
+        """Creates a request dictionary for the AI Platform training service.
 
         Args:
-            job_id: Job name that will be used for AIP training
+            job_id: Job name that will be used for AI Platform training
         Returns:
             An AI Platform Training job spec.
         """

@@ -12,19 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for optimizer_client."""
+"""Tests for vizier_client."""
 
 from googleapiclient import errors
 import httplib2
 import mock
 import tensorflow as tf
-from tensorflow_cloud.tuner import optimizer_client
+from tensorflow_cloud.tuner import vizier_client
 
 
-class OptimizerClientTest(tf.test.TestCase):
+class VizierClientTest(tf.test.TestCase):
 
     def setUp(self):
-        super(OptimizerClientTest, self).setUp()
+        super(VizierClientTest, self).setUp()
         self.addCleanup(mock.patch.stopall)
 
         self._study_id = "study-a"
@@ -51,34 +51,34 @@ class OptimizerClientTest(tf.test.TestCase):
             ],
         }
 
-        self._client = optimizer_client._OptimizerClient(
+        self._client = vizier_client._VizierClient(
             service_client=self._mock_discovery,
             project_id=self._project_id,
             region=self._region,
             study_id=self._study_id,
         )
 
-    @mock.patch.object(optimizer_client, "discovery")
+    @mock.patch.object(vizier_client, "discovery")
     def test_create_or_load_study_newstudy(self, mock_discovery):
         mock_create_study = mock.MagicMock()
         mock_discovery.build_from_document.return_value.projects().locations(
             ).studies().create = mock_create_study
 
-        client = optimizer_client.create_or_load_study(
+        client = vizier_client.create_or_load_study(
             project_id=self._project_id,
             region=self._region,
             study_id=self._study_id,
             study_config=self._study_config,
         )
 
-        self.assertIsInstance(client, optimizer_client._OptimizerClient)
+        self.assertIsInstance(client, vizier_client._VizierClient)
 
         _, mock_kwargs = mock_discovery.build_from_document.call_args
         self.assertIn("service", mock_kwargs)
         self.assertIsInstance(mock_kwargs["service"], dict)
         self.assertEqual(
             mock_kwargs["service"]["rootUrl"],
-            # Regional endpoint must be specified for Optimizer client.
+            # Regional endpoint must be specified for Vizier client.
             "https://us-central1-ml.googleapis.com/",
         )
 
@@ -89,26 +89,26 @@ class OptimizerClientTest(tf.test.TestCase):
             studyId=self._study_id,
         )
 
-    @mock.patch.object(optimizer_client, "discovery")
+    @mock.patch.object(vizier_client, "discovery")
     def test_create_or_load_study_no_study_config(self, mock_discovery):
         mock_get_study = mock.MagicMock()
         mock_discovery.build_from_document.return_value.projects().locations(
             ).studies().get = mock_get_study
 
-        client = optimizer_client.create_or_load_study(
+        client = vizier_client.create_or_load_study(
             project_id=self._project_id,
             region=self._region,
             study_id=self._study_id,
         )
 
-        self.assertIsInstance(client, optimizer_client._OptimizerClient)
+        self.assertIsInstance(client, vizier_client._VizierClient)
 
         _, mock_kwargs = mock_discovery.build_from_document.call_args
         self.assertIn("service", mock_kwargs)
         self.assertIsInstance(mock_kwargs["service"], dict)
         self.assertEqual(
             mock_kwargs["service"]["rootUrl"],
-            # Regional endpoint must be specified for Optimizer client.
+            # Regional endpoint must be specified for Vizier client.
             "https://us-central1-ml.googleapis.com/",
         )
 
@@ -118,7 +118,7 @@ class OptimizerClientTest(tf.test.TestCase):
             )
         )
 
-    @mock.patch.object(optimizer_client, "discovery")
+    @mock.patch.object(vizier_client, "discovery")
     def test_create_or_load_study_no_study_config_with_404_raises_ValueError(
         self, mock_discovery):
         mock_request = mock.MagicMock()
@@ -134,7 +134,7 @@ class OptimizerClientTest(tf.test.TestCase):
             ValueError,
             "GetStudy failed. Study not found: {}.".format(self._study_id),
         ):
-            optimizer_client.create_or_load_study(
+            vizier_client.create_or_load_study(
                 project_id=self._project_id,
                 region=self._region,
                 study_id=self._study_id,
@@ -146,7 +146,7 @@ class OptimizerClientTest(tf.test.TestCase):
             )
         )
 
-    @mock.patch.object(optimizer_client, "discovery")
+    @mock.patch.object(vizier_client, "discovery")
     def test_create_or_load_study_with_409_raises_RuntimeError(self,
                                                                mock_discovery):
         """Verify that get_study gracefully handles 409 errors."""
@@ -170,7 +170,7 @@ class OptimizerClientTest(tf.test.TestCase):
             RuntimeError,
             'GetStudy failed. Max retries reached: <HttpError 400 "Ok">',
         ):
-            optimizer_client.create_or_load_study(
+            vizier_client.create_or_load_study(
                 project_id=self._project_id,
                 region=self._region,
                 study_id=self._study_id,
@@ -182,7 +182,7 @@ class OptimizerClientTest(tf.test.TestCase):
             )
         )
 
-    @mock.patch.object(optimizer_client, "discovery")
+    @mock.patch.object(vizier_client, "discovery")
     def test_create_or_load_study_with_409_success(self, mock_discovery):
         """Verify that get_study gracefully handles 409 errors."""
         mock_create_request = mock.MagicMock()
@@ -205,14 +205,14 @@ class OptimizerClientTest(tf.test.TestCase):
         mock_discovery.build_from_document.return_value.projects().locations(
             ).studies().get = mock_get_study
 
-        client = optimizer_client.create_or_load_study(
+        client = vizier_client.create_or_load_study(
             project_id=self._project_id,
             region=self._region,
             study_id=self._study_id,
             study_config=self._study_config,
         )
 
-        self.assertIsInstance(client, optimizer_client._OptimizerClient)
+        self.assertIsInstance(client, vizier_client._VizierClient)
         mock_get_study.assert_called_with(
             name="projects/{}/locations/{}/studies/{}".format(
                 self._project_id, self._region, self._study_id

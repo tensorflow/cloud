@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utilities for CAIP Optimizer and KerasTuner integration."""
+"""Utilities for Vizier and KerasTuner integration."""
 
 from typing import Any, Dict, List, Optional, Text, Union
 
@@ -23,7 +23,7 @@ from kerastuner.engine import trial as trial_module
 import numpy as np
 from tensorboard.plugins.hparams import api as hparams_api
 
-# CAIP Optimizer constants.
+# Vizier constants.
 _DISCRETE = "DISCRETE"
 _CATEGORICAL = "CATEGORICAL"
 _DOUBLE = "DOUBLE"
@@ -50,7 +50,7 @@ _SAMPLING_REVERSE_LOG = "reverse_log"
 def make_study_config(
     objective: Union[Text, oracle_module.Objective],
     hyperparams: hp_module.HyperParameters) -> Dict[Text, Any]:
-    """Generates Optimizer study_config from kerastuner configurations.
+    """Generates Vizier study_config from kerastuner configurations.
 
     Args:
         objective: String or `oracle_module.Objective`. If a string,
@@ -62,7 +62,7 @@ def make_study_config(
         A dict that holds the study configuration.
     """
     study_config = {}
-    # The default algorithm used by the CAIP Optimizer.
+    # The default algorithm used by the Vizier.
     study_config["algorithm"] = "ALGORITHM_UNSPECIFIED"
     # If no implementation_config is set, automated early stopping will not be
     # run.
@@ -78,7 +78,7 @@ def make_study_config(
         )
 
     # Converts hp_module.HyperParameters to parameters.
-    study_config["parameters"] = _convert_hyperparams_to_optimizer_params(
+    study_config["parameters"] = _convert_hyperparams_to_vizier_params(
         hyperparams)
 
     return study_config
@@ -86,7 +86,7 @@ def make_study_config(
 
 def convert_study_config_to_objective(
     study_config: Dict[Text, Any]) -> List[oracle_module.Objective]:
-    """Converts Optimizer study_config to a list of oracle_module.Objective."""
+    """Converts Vizier study_config to a list of oracle_module.Objective."""
     if not study_config.get("metrics"):
         raise ValueError('"metrics" not found in study_config {}'.format(
             study_config))
@@ -103,7 +103,7 @@ def convert_study_config_to_objective(
 
 def convert_study_config_to_hps(
     study_config: Dict[Text, Any]) -> hp_module.HyperParameters:
-    """Converts CAIP Optimizer study_config to HyperParameters."""
+    """Converts Vizier study_config to HyperParameters."""
     if not study_config.get("parameters"):
         raise ValueError("Parameters are not found in the study_config: ",
                          study_config)
@@ -256,7 +256,7 @@ def _is_parameter_valid(param: Dict[Text, Any]):
         raise ValueError("Unknown parameter type: {}.".format(param["type"]))
 
 
-def _convert_hyperparams_to_optimizer_params(
+def _convert_hyperparams_to_vizier_params(
     hyperparams: hp_module.HyperParameters) -> List[Any]:
     """Converts HyperParameters to a list of ParameterSpec in study_config."""
     param_type = []
@@ -424,8 +424,8 @@ def format_goal(metric_direction: Text) -> Text:
 
     Args:
         metric_direction: If oracle_module.Objective 'direction' is supplied,
-            returns 'goal' in CAIP Optimizer study_config. If 'goal' in CAIP
-            Optimizer 'study_config' is supplied, returns 'direction' in
+            returns 'goal' in Vizier study_config. If 'goal' in
+            Vizier 'study_config' is supplied, returns 'direction' in
             oracle_module.Objective.
 
     Returns:
@@ -443,7 +443,7 @@ def format_goal(metric_direction: Text) -> Text:
 
 
 def _get_scale_type(sampling):
-    """Returns scale_type in CAIP Optimizer study_config."""
+    """Returns scale_type in Vizier study_config."""
     if sampling == _SAMPLING_LINEAR:
         return {"scale_type": _LINEAR_SCALE}
     if sampling == _SAMPLING_LOG:
@@ -453,34 +453,34 @@ def _get_scale_type(sampling):
     return {"scale_type": _SCALE_TYPE_UNSPECIFIED}
 
 
-def get_trial_id(optimizer_trial: Dict[Text, Any]) -> Text:
-    r"""Gets trial_id from a CAIP Optimizer Trial.
+def get_trial_id(vizier_trial: Dict[Text, Any]) -> Text:
+    r"""Gets trial_id from a Vizier Trial.
 
     Args:
-        optimizer_trial: A CAIP Optimizer Trial instance.
+        vizier_trial: A Vizier Trial instance.
 
     Returns:
         trial_id. Note that a trial name follows the following format
         `projects/{project_id}/locations/{region}/studies/{study_id}/trials/\
             {trial_id}`
     """
-    return optimizer_trial["name"].split("/")[-1]
+    return vizier_trial["name"].split("/")[-1]
 
 
-def convert_optimizer_trial_to_dict(
-    optimizer_trial: Dict[Text, Any]
+def convert_vizier_trial_to_dict(
+    vizier_trial: Dict[Text, Any]
 ) -> Dict[Text, Any]:
-    """Converts Optimizer Trial parameters into a Python dict.
+    """Converts Vizier Trial parameters into a Python dict.
 
     Args:
-        optimizer_trial: A CAIP Optimizer Trial instance.
+        vizier_trial: A Vizier Trial instance.
 
     Returns:
-        A dict that maps the Optimizer Trial parameters' names to their
+        A dict that maps the Vizier Trial parameters' names to their
         respective values.
     """
     result = {}
-    for param in optimizer_trial["parameters"]:
+    for param in vizier_trial["parameters"]:
         if "floatValue" in param:
             result[param["parameter"]] = float(param["floatValue"])
         if "intValue" in param:
@@ -490,33 +490,33 @@ def convert_optimizer_trial_to_dict(
     return result
 
 
-def convert_optimizer_trial_to_hps(
+def convert_vizier_trial_to_hps(
     hps: hp_module.HyperParameters,
-    optimizer_trial: Dict[Text, Any]
+    vizier_trial: Dict[Text, Any]
 ) -> hp_module.HyperParameters:
-    """Converts Optimizer Trial parameters into KerasTuner HyperParameters.
+    """Converts Vizier Trial parameters into KerasTuner HyperParameters.
 
     Args:
         hps: Sample KerasTuner HyperParameters object for config initialization
-        optimizer_trial: A CAIP Optimizer Trial instance.
+        vizier_trial: A Vizier Trial instance.
 
     Returns:
-        A KerasTuner HyperParameters object that holds the Optimizer Trial
+        A KerasTuner HyperParameters object that holds the Vizier Trial
         parameters.
     """
     hps = hp_module.HyperParameters.from_config(hps.get_config())
-    hps.values = convert_optimizer_trial_to_dict(optimizer_trial)
+    hps.values = convert_vizier_trial_to_dict(vizier_trial)
     return hps
 
 
-def convert_completed_optimizer_trial_to_keras_trial(
-    optimizer_trial: Dict[Text, Any],
+def convert_completed_vizier_trial_to_keras_trial(
+    vizier_trial: Dict[Text, Any],
     hyperparameter_space: hp_module.HyperParameters,
 ) -> trial_module.Trial:
-    """Converts completed Optimizer Trial into KerasTuner Trial.
+    """Converts completed Vizier Trial into KerasTuner Trial.
 
     Args:
-        optimizer_trial: A CAIP Optimizer Trial Instance.
+        vizier_trial: A Vizier Trial Instance.
         hyperparameter_space: Mandatory and must include definitions for all
             hyperparameters used during the search.
 
@@ -524,18 +524,18 @@ def convert_completed_optimizer_trial_to_keras_trial(
         A KerasTuner Trial.
     """
     kerastuner_trial = trial_module.Trial(
-        hyperparameters=convert_optimizer_trial_to_hps(
-            hyperparameter_space, optimizer_trial
+        hyperparameters=convert_vizier_trial_to_hps(
+            hyperparameter_space, vizier_trial
         ),
-        trial_id=get_trial_id(optimizer_trial),
+        trial_id=get_trial_id(vizier_trial),
         status=trial_module.TrialStatus.COMPLETED,
     )
     # If trial had ended before having intermediate metric reporting,
     # set stepCount = 0.
-    final_measurement = optimizer_trial.get("finalMeasurement")
+    final_measurement = vizier_trial.get("finalMeasurement")
     if not final_measurement:
         raise ValueError('"finalMeasurement" not found in this trial {}'
-                         .format(optimizer_trial))
+                         .format(vizier_trial))
 
     kerastuner_trial.best_step = int(final_measurement.get("stepCount", 0))
     kerastuner_trial.score = final_measurement["metrics"][0].get("value")
@@ -543,7 +543,7 @@ def convert_completed_optimizer_trial_to_keras_trial(
 
 
 def _format_sampling(scale_type: Text) -> Optional[Text]:
-    """Format CAIP Optimizer scale_type for HyperParameter.sampling."""
+    """Format Vizier scale_type for HyperParameter.sampling."""
     if scale_type == _LINEAR_SCALE:
         return _SAMPLING_LINEAR
     if scale_type == _LOG_SCALE:

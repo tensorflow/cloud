@@ -31,7 +31,7 @@ from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
 from tensorflow_cloud.tuner import cloud_fit_client
 from tensorflow_cloud.tuner import tuner
-from tensorflow_cloud.tuner.tuner import optimizer_client
+from tensorflow_cloud.tuner.tuner import vizier_client
 from tensorflow_cloud.utils import google_api_client
 from tensorflow_cloud.utils import tf_utils
 
@@ -89,13 +89,13 @@ class CloudTunerTest(tf.test.TestCase):
             status=trial_module.TrialStatus.RUNNING,
         )
         self._job_id = f"{self._study_id}_{self._test_trial.trial_id}"
-        self.mock_optimizer_client_module = mock.patch.object(
-            tuner, "optimizer_client", autospec=True
+        self.mock_vizier_client_module = mock.patch.object(
+            tuner, "vizier_client", autospec=True
         ).start()
 
         self.mock_client = mock.create_autospec(
-            optimizer_client._OptimizerClient)
-        self.mock_optimizer_client_module.create_or_load_study.return_value = (
+            vizier_client._VizierClient)
+        self.mock_vizier_client_module.create_or_load_study.return_value = (
             self.mock_client
         )
 
@@ -143,7 +143,7 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_hparams(self):
         self._tuner_with_hparams()
-        (self.mock_optimizer_client_module.create_or_load_study
+        (self.mock_vizier_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
                              self._study_id,
@@ -151,7 +151,7 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_study_config(self):
         self.tuner = self._tuner(None, None, self._study_config)
-        (self.mock_optimizer_client_module.create_or_load_study
+        (self.mock_vizier_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
                              self._study_id,
@@ -160,7 +160,7 @@ class CloudTunerTest(tf.test.TestCase):
     @mock.patch.object(super_tuner.Tuner, "__init__", autospec=True)
     def test_remote_tuner_initialization_with_study_config(self, mock_super):
         self._remote_tuner(None, None, self._study_config)
-        (self.mock_optimizer_client_module.create_or_load_study
+        (self.mock_vizier_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
                              self._study_id,
@@ -184,7 +184,7 @@ class CloudTunerTest(tf.test.TestCase):
 
     def test_tuner_initialization_with_study_config_and_max_trials(self):
         self.tuner = self._tuner(None, None, self._study_config, max_trials=100)
-        (self.mock_optimizer_client_module.create_or_load_study
+        (self.mock_vizier_client_module.create_or_load_study
          .assert_called_with(self._project_id,
                              self._region,
                              self._study_id,

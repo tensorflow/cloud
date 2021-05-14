@@ -1,0 +1,68 @@
+# Copyright 2021 The TensorFlow Cloud Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+book_path: /cloud/_book.yaml
+project_path: /cloud/_project.yaml
+description: TensorFlow Cloud is a library to connect your local environment
+  to Google Cloud.
+landing_page:
+  custom_css_path: /site-assets/css/style.css
+  rows:
+  - heading: TensorFlow Cloud is a library to connect your local environment to Google Cloud.
+    items:
+    - classname: devsite-landing-row-50
+      description: >
+        The TensorFlow Cloud repository provides APIs that ease the transition from local model
+        building and debugging to distributed training and hyperparameter tuning on Google Cloud.
+        From inside a Colab or Kaggle Notebook or a local script file, you can send your model for tuning
+        or training on Cloud directly, without needing to use the Cloud Console.
+
+      code_block: |
+        <pre class = "prettyprint">
+        import tensorflow_cloud as tfc
+
+        TF_GPU_IMAGE= "tensorflow/tensorflow:latest-gpu"
+
+        run_parameters = [
+          distribution_strategy='auto',
+          requirements_txt='requirements.txt',
+          docker_config=tfc.DockerConfig(
+            parent_image=TF_GPU_IMAGE,
+            image_build_bucket=GCS_BUCKET
+          ),
+          chief_config=tfc.COMMON_MACHINE_CONFIGS['K80_1X'],
+          worker_config=tfc.COMMON_MACHINE_CONFIGS['K80_1X'],
+          worker_count=3,
+          job_labels={'job': "my_job"}
+        ]
+
+        run(**run_parameters) # Runs your training on Google Cloud!
+        </pre>
+        {% dynamic if request.tld != 'cn' %}
+        <a class="colab-button" target="_blank" href="https://colab.sandbox.google.com/github/tensorflow/cloud/blob/master/g3doc/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud.ipynb">Run in a <span>Notebook</span></a>
+        {% dynamic endif %}
+  - classname: devsite-landing-row-cards
+    items:
+    - heading: "TensorFlow Cloud on GitHub"
+      path: https://github.com/tensorflow/cloud
+      image_path: /resources/images/github-card-16x9.png
+      buttons:
+      - label: "View on GitHub"
+        path: https://github.com/tensorflow/cloud
+    - heading: "Train your TensorFlow model on Google Cloud"
+      path: https://blog.tensorflow.org/2020/08/train-your-tensorflow-model-on-google.html
+      image_path: /cloud/images/tf_cloud_code_sample.png
+      buttons:
+      - label: "TensorFlow Blog"
+        path: https://blog.tensorflow.org/2020/08/train-your-tensorflow-model-on-google.html

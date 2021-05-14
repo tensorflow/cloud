@@ -1,0 +1,19 @@
+# go/google3metadata
+# proto-file: devtools/metadata/metadata.proto
+# proto-message: MetaData
+
+name: "tensorflow_cloud"
+presubmit: {
+  review_notify: "tf-docs-infra+reviews"
+}
+
+# DevSite config files
+presubmit: {
+  path_regexp: ".*\\.yaml"
+  review_notify: "tf-docs-infra+config-reviews"
+}
+
+presubmit: {
+  # Standard docs checks for tensorflow.org and friends.
+  include_presubmit: "//depot/google3/third_party/py/tensorflow_docs/google/tensorflow.org.METADATA"
+}
