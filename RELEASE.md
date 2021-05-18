@@ -1,6 +1,6 @@
-# Current Version (Still in Development)
+# Release 0.1.15
 
-*   Add notes for next release here.
+*   Update API documentation.
 
 # Release 0.1.14
 
