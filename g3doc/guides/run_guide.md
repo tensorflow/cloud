@@ -1,11 +1,10 @@
 # Usage guide
 
-The `run` API allows you to train your models at scale on GCP.
+The `tfc.run` API allows you to train your models at scale on GCP.
 
-The
-[`run`](https://github.com/tensorflow/cloud/blob/master/src/python/core/run.py#L31)
-API can be used in four different ways. This is defined by where you are running
-the API (Python script vs Python notebook), and your `entry_point` parameter:
+The `tfc.run` API can be used in four different ways. This is defined by where
+you are running the API (Python script vs Python notebook), and your
+`entry_point` parameter:
 
 *   Python file as `entry_point`.
 *   Notebook file as `entry_point`.

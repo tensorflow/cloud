@@ -13,7 +13,7 @@ upper_tabs:
     other:
     - name: Learn
       contents:
-      - title: Overview and simple example
+      - title: Overview
         path: /cloud/tutorials/overview
       - heading: "Tutorials"
       - title: Connecting with Google Cloud

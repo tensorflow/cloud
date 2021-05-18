@@ -54,6 +54,11 @@ landing_page:
         {% dynamic endif %}
   - classname: devsite-landing-row-cards
     items:
+    - heading: "What is TensorFlow Cloud?"
+      youtube_id: d7lAO_cLxDQ
+      buttons:
+      - label: Watch the video from Google I/O 2021
+        path: https://www.youtube.com/watch?v=d7lAO_cLxDQ
     - heading: "TensorFlow Cloud on GitHub"
       path: https://github.com/tensorflow/cloud
       image_path: /resources/images/github-card-16x9.png
