@@ -17,3 +17,19 @@ presubmit: {
   # Standard docs checks for tensorflow.org and friends.
   include_presubmit: "//depot/google3/third_party/py/tensorflow_docs/google/tensorflow.org.METADATA"
 }
+
+presubmit: {
+  # Generally we save notebooks without output to avoid repo bloat.
+  # and make reviews easier. THen we execute notebooks to test them
+  # when building the site... That's not possible in this case. So these
+  # notebooks require at least one output cell.
+  path_expression: "....ipynb"
+
+  check_contents: {
+    failure_message:
+      "TensorFlow cloud notebooks are not runnable in the tensorflow.org import"
+      "pipeline. so these notebooks must be saved with at least one"
+      "cell output, typically the `print(tfc.__version__)`"
+    required_regexp: "\"output_type\":"
+  }
+}
