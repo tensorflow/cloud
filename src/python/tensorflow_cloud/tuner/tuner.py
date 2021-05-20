@@ -71,42 +71,22 @@ class CloudOracle(oracle_module.Oracle):
     many different hyperparameters, it can be difficult and time consuming to
     tune them manually. AI Platform Vizier optimizes your model's output by
     tuning the hyperparameters for you.
-    To learn more about AI Platfrom Vizier service see:
+    To learn more about AI Platform Vizier service see:
         https://cloud.google.com/ai-platform/optimizer/docs/overview.
 
-        Examples:
-          >>> oracle = CloudOracle(
-                  project_id=project_id,
-                  region='us-central1',
-                  objective='accuracy',
-                  hyperparameters=hyperparameters,
-                  study_config=None,
-                  max_trials=4,
-                  study_id=None,
-              )
+    Examples:
 
-        Args:
-            project_id: A GCP project id.
-            region: A GCP region. e.g. 'us-central1'.
-            objective: If a string, the direction of the optimization (min or
-                max) will be inferred.
-            hyperparameters: Mandatory and must include definitions for all
-                hyperparameters used during the search. Can be used to override
-                (or register in advance) hyperparameters in the search space.
-            study_config: Study configuration for Vizier service.
-            max_trials: Total number of trials (model configurations) to test at
-                most. If None, it continues the search until it reaches the
-                Vizier trial limit for each study. Users may stop the search
-                externally (e.g. by killing the job). Note that the Oracle may
-                interrupt the search before `max_trials` models have been
-                tested.
-            study_id: An identifier of the study. If not supplied,
-                system-determined unique ID is given.
-                The full study name will be
-                `projects/{project_id}/locations/{region}/studies/{study_id}`,
-                and the full trial name will be
-                `{study name}/trials/{trial_id}`.
-          )
+    ```
+    oracle = CloudOracle(
+        project_id=project_id,
+        region='us-central1',
+        objective='accuracy',
+        hyperparameters=hyperparameters,
+        study_config=None,
+        max_trials=4,
+        study_id=None,
+    )
+    ```
     """
 
     def __init__(
@@ -132,15 +112,18 @@ class CloudOracle(oracle_module.Oracle):
         https://keras-team.github.io/keras-tuner/documentation/oracles/
 
         Examples:
-          >>> oracle = CloudOracle(
-                  project_id=project_id,
-                  region='us-central1',
-                  objective='accuracy',
-                  hyperparameters=hyperparameters,
-                  study_config=None,
-                  max_trials=4,
-                  study_id=None,
-              )
+
+        ```
+        oracle = CloudOracle(
+            project_id=project_id,
+            region='us-central1',
+            objective='accuracy',
+            hyperparameters=hyperparameters,
+            study_config=None,
+            max_trials=4,
+            study_id=None,
+        )
+        ```
 
         Args:
             project_id: A GCP project id.
@@ -450,37 +433,22 @@ class CloudTuner(tuner_module.Tuner):
     CloudTuner is a implementation of KerasTuner that uses Google Cloud Vizier
     Service as its Oracle. To learn more about KerasTuner and Oracles please
     refer to:
-      https://keras-team.github.io/keras-tuner/
-      https://keras-team.github.io/keras-tuner/documentation/oracles/
 
-      Args:
-          hypermodel: Instance of HyperModel class (or callable that takes
-              hyperparameters and returns a Model instance).
-          project_id: A GCP project id.
-          region: A GCP region. e.g. 'us-central1'.
-          objective: Name of model metric to minimize or maximize, e.g.
-              "val_accuracy".
-          hyperparameters: Can be used to override (or register in advance)
-              hyperparameters in the search space.
-          study_config: Study configuration for Vizier service.
-          max_trials: Total number of trials (model configurations) to test at
-              most. Note that the oracle may interrupt the search before
-              `max_trials` models have been tested if the search space has
-              been exhausted.
-          study_id: An identifier of the study. The full study name will be
-              projects/{project_id}/locations/{region}/studies/{study_id}.
-          **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
-              Please see the docstring for `Tuner`.
+    *  https://keras-team.github.io/keras-tuner/
+    *  https://keras-team.github.io/keras-tuner/documentation/oracles/
 
-      Example:
-        >>> tuner = CloudTuner(
-              build_model,
-              project_id="MY_PROJECT_ID",
-              region='us-central1',
-              objective='accuracy',
-              hyperparameters=HPS,
-              max_trials=5,
-              directory='tmp/MY_JOB')
+    Example:
+
+    ```
+    tuner = CloudTuner(
+        build_model,
+        project_id="MY_PROJECT_ID",
+        region='us-central1',
+        objective='accuracy',
+        hyperparameters=HPS,
+        max_trials=5,
+        directory='tmp/MY_JOB')
+    ```
     """
 
     def __init__(
