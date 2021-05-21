@@ -50,7 +50,7 @@ landing_page:
         run(**run_parameters) # Runs your training on Google Cloud!
         </pre>
         {% dynamic if request.tld != 'cn' %}
-        <a class="colab-button" target="_blank" href="https://colab.sandbox.google.com/github/tensorflow/cloud/blob/master/g3doc/tutorials/third_party/tensorflow_cloud/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud.ipynb">Run in a <span>Notebook</span></a>
+        <a class="colab-button" target="_blank" href="https://colab.research.google.com/github/tensorflow/cloud/blob/master/g3doc/tutorials/distributed_training_nasnet_with_tensorflow_cloud.ipynb">Run in a <span>Notebook</span></a>
         {% dynamic endif %}
   - classname: devsite-landing-row-cards
     items:
