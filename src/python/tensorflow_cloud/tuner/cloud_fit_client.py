@@ -45,12 +45,12 @@ DEFAULT_DISTRIBUTION_STRATEGY = MULTI_WORKER_MIRRORED_STRATEGY_NAME
 def cloud_fit(
     model: tf.keras.Model,
     remote_dir: Text,
-    region: Text = None,
-    project_id: Text = None,
-    image_uri: Text = None,
+    region: Optional[Text] = None,
+    project_id: Optional[Text] = None,
+    image_uri: Optional[Text] = None,
     distribution_strategy: Text = DEFAULT_DISTRIBUTION_STRATEGY,
-    job_spec: Dict[str, Any] = None,
-    job_id: Text = None,
+    job_spec: Optional[Dict[str, Any]] = None,
+    job_id: Optional[Text] = None,
     **fit_kwargs
 ) -> Text:
     """Executes in-memory Model and Dataset remotely on AI Platform.
@@ -209,7 +209,7 @@ def _serialize_assets(remote_dir: Text,
 def _default_job_spec(
     region: Text,
     image_uri: Text,
-    entry_point_args: Sequence[Text] = None,
+    entry_point_args: Optional[Sequence[Text]] = None,
 ) -> Dict[str, Any]:
     """Creates a basic job_spec for cloud AI Training.
 

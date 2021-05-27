@@ -380,7 +380,7 @@ def convert_hyperparams_to_hparams(
 def format_objective(
     objective: Union[Text, oracle_module.Objective,
                      List[Union[Text, oracle_module.Objective]]],
-    direction: Text = None) -> List[oracle_module.Objective]:
+    direction: Optional[Text] = None) -> List[oracle_module.Objective]:
     """Formats objective to a list of oracle_module.Objective.
 
     Args:

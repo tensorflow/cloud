@@ -39,7 +39,7 @@ class _VizierClient(vizier_client_interface.VizierClientInterface):
                  service_client: discovery.Resource,
                  project_id: Text,
                  region: Text,
-                 study_id: Text = None):
+                 study_id: Optional[Text] = None):
         """Create an VizierClient object.
 
         Use this constructor when you know the study_id, and when the Study
@@ -206,10 +206,11 @@ class _VizierClient(vizier_client_interface.VizierClientInterface):
             return True
         return False
 
-    def complete_trial(self,
-                       trial_id: Text,
-                       trial_infeasible: bool,
-                       infeasibility_reason: Text = None)  -> Dict[Text, Any]:
+    def complete_trial(
+        self,
+        trial_id: Text,
+        trial_infeasible: bool,
+        infeasibility_reason: Optional[Text] = None)  -> Dict[Text, Any]:
         """Marks the trial as COMPLETED and sets the final measurement.
 
         Args:
@@ -289,7 +290,7 @@ class _VizierClient(vizier_client_interface.VizierClientInterface):
             raise
         return resp.get("studies", [])
 
-    def delete_study(self, study_name: Text = None) -> None:
+    def delete_study(self, study_name: Optional[Text] = None) -> None:
         """Deletes the study.
 
         Args:

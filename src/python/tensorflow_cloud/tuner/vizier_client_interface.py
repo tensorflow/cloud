@@ -14,7 +14,7 @@
 # limitations under the License.
 """An abstract class for the client used in both OSS Vizier and Cloud AI Platform Optimizer Service."""
 import abc
-from typing import List, Mapping, Text, Union, Dict, Any
+from typing import Any, Dict, List, Mapping, Optional, Text, Union
 
 
 class VizierClientInterface(abc.ABC):
@@ -77,10 +77,11 @@ class VizierClientInterface(abc.ABC):
     """
 
   @abc.abstractmethod
-  def complete_trial(self,
-                     trial_id: Text,
-                     trial_infeasible: bool,
-                     infeasibility_reason: Text = None) -> Dict[Text, Any]:
+  def complete_trial(
+      self,
+      trial_id: Text,
+      trial_infeasible: bool,
+      infeasibility_reason: Optional[Text] = None) -> Dict[Text, Any]:
     """Marks the trial as COMPLETED and sets the final measurement.
 
     Args:
@@ -110,7 +111,7 @@ class VizierClientInterface(abc.ABC):
     """
 
   @abc.abstractmethod
-  def delete_study(self, study_name: Text = None) -> None:
+  def delete_study(self, study_name: Optional[Text] = None) -> None:
     """Deletes the study.
 
     Args:
