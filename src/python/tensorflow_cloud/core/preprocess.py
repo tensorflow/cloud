@@ -128,6 +128,18 @@ def get_preprocessed_entry_point(
         'os.environ["TF_KERAS_RUNNING_REMOTELY"]="1"\n',
     ]
 
+    # Capture job trace log when SIGSEGV occures
+
+    if worker_count > 0 and machine_config.is_tpu_config(worker_config):
+      # faulthandler is not supported in TPU v1.x images
+      logger.info("Faulthandler is not supported with TF < v2.2 images.")
+
+    else:
+      script_lines.extend([
+          "import faulthandler\n",
+          "faulthandler.enable()\n",
+      ])
+
     # Setting default Tuner_ID if one is provided in args
     script_lines.extend([
         "import sys\n",
