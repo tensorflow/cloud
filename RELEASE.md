@@ -1,6 +1,10 @@
-# Current Version (Still in Development)
+# Release 0.1.16
 
-*   Add notes for next release here.
+*   Add support to dump Python stack when Segmentation fault occurs during remote environment.
+
+# Release 0.1.15
+
+*   Update API documentation.
 
 # Release 0.1.14
 
