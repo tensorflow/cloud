@@ -2,6 +2,14 @@
 
 *   Add notes for next release here.
 
+# Release 0.1.16
+
+*   Dump Python stack when Segmentation fault occurs during remote environment.
+
+# Release 0.1.15
+
+*   Update API documentation.
+
 # Release 0.1.14
 
 *   Remove upper bound dependency on `tensorflow_datasets`.

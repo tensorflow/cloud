@@ -216,7 +216,8 @@ def get_preprocessed_entry_point(
             if not (
                 line.strip().startswith("!") or
                 line.strip().startswith("%") or
-                line.strip().startswith("#")
+                line.strip().startswith("#") or
+                line.strip().startswith("get_ipython().system(")
             ):
                 script_lines.append(line)
 
