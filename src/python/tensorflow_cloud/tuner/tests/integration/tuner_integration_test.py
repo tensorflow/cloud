@@ -20,7 +20,7 @@ import multiprocessing
 import os
 import re
 import time
-import kerastuner
+import keras_tuner
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow_cloud import CloudTuner
@@ -41,7 +41,7 @@ _REGION = os.environ["REGION"]
 _STUDY_ID_BASE = os.environ["BUILD_ID"]
 
 # The search space for hyperparameters
-_HPS = kerastuner.engine.hyperparameters.HyperParameters()
+_HPS = keras_tuner.HyperParameters()
 _HPS.Float("learning_rate", min_value=1e-4, max_value=1e-2, sampling="log")
 _HPS.Int("num_layers", 2, 10)
 

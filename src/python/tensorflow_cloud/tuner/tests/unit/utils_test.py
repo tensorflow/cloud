@@ -16,9 +16,9 @@
 
 import copy
 from absl.testing import parameterized
-from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.engine import oracle as oracle_module
-from kerastuner.engine import trial as trial_module
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow_cloud.tuner.tuner import utils

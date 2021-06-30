@@ -18,7 +18,7 @@ import contextlib
 import io
 import os
 import re
-import kerastuner
+import keras_tuner
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow_cloud.tuner import vizier_client
@@ -45,7 +45,7 @@ _DOCKER_IMAGE = os.environ["DOCKER_IMAGE"]
 _REMOTE_DIR = os.path.join("gs://", os.environ["TEST_BUCKET"], _STUDY_ID_BASE)
 
 # The search space for hyperparameters
-_HPS = kerastuner.engine.hyperparameters.HyperParameters()
+_HPS = keras_tuner.HyperParameters()
 _HPS.Float("learning_rate", min_value=1e-4, max_value=1e-2, sampling="log")
 _HPS.Int("num_layers", 2, 10)
 

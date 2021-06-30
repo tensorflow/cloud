@@ -21,12 +21,12 @@ import os
 import time
 from typing import Any, Callable, Dict, List, Mapping, Optional, Text, Union
 
-from kerastuner.engine import hypermodel as hypermodel_module
-from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.engine import metrics_tracking
-from kerastuner.engine import oracle as oracle_module
-from kerastuner.engine import trial as trial_module
-from kerastuner.engine import tuner as tuner_module
+from keras_tuner.engine import hypermodel as hypermodel_module
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import metrics_tracking
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.engine import tuner as tuner_module
 import tensorflow as tf
 
 from tensorboard.plugins.hparams import api as hparams_api
@@ -252,7 +252,7 @@ class CloudOracle(oracle_module.Oracle):
         trial_id = utils.get_trial_id(vizier_trial)
 
         # KerasTuner Trial instance
-        kerastuner_trial = trial_module.Trial(
+        keras_tuner_trial = trial_module.Trial(
             hyperparameters=utils.convert_vizier_trial_to_hps(
                 self.hyperparameters.copy(), vizier_trial
             ),
@@ -262,16 +262,16 @@ class CloudOracle(oracle_module.Oracle):
 
         tf.get_logger().info(
             "Hyperparameters requested by tuner ({}): {} ".format(
-                tuner_id, kerastuner_trial.hyperparameters.values
+                tuner_id, keras_tuner_trial.hyperparameters.values
             )
         )
 
         self._start_time = time.time()
-        self.trials[trial_id] = kerastuner_trial
-        self.ongoing_trials[tuner_id] = kerastuner_trial
-        self._save_trial(kerastuner_trial)
+        self.trials[trial_id] = keras_tuner_trial
+        self.ongoing_trials[tuner_id] = keras_tuner_trial
+        self._save_trial(keras_tuner_trial)
         self.save()
-        return kerastuner_trial
+        return keras_tuner_trial
 
     def update_trial(self,
                      trial_id: Text,
@@ -311,14 +311,14 @@ class CloudOracle(oracle_module.Oracle):
         )
 
         # Ensure metrics of trials are updated locally.
-        kerastuner_trial = self.trials[trial_id]
+        keras_tuner_trial = self.trials[trial_id]
         for metric_name, metric_value in metrics.items():
-            if not kerastuner_trial.metrics.exists(metric_name):
+            if not keras_tuner_trial.metrics.exists(metric_name):
                 direction = metrics_tracking.infer_metric_direction(
                     metric_name)
-                kerastuner_trial.metrics.register(
+                keras_tuner_trial.metrics.register(
                     metric_name, direction=direction)
-            kerastuner_trial.metrics.update(
+            keras_tuner_trial.metrics.update(
                 metric_name, metric_value, step=step)
 
         # Checks whether a trial should stop or not.
@@ -326,25 +326,25 @@ class CloudOracle(oracle_module.Oracle):
         should_stop = self.service.should_trial_stop(trial_id)
 
         if should_stop:
-            kerastuner_trial.status = trial_module.TrialStatus.STOPPED
-        return kerastuner_trial.status
+            keras_tuner_trial.status = trial_module.TrialStatus.STOPPED
+        return keras_tuner_trial.status
 
     def end_trial(self, trial_id: Text, status: Text = "COMPLETED"):
         """Record the measured objective for a set of parameter values."""
-        kerastuner_trial = None
+        keras_tuner_trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
             if ongoing_trial.trial_id == trial_id:
                 tf.get_logger().info(
                     "End trial requested by tuner ({})".format(tuner_id)
                 )
-                kerastuner_trial = self.ongoing_trials.pop(tuner_id)
+                keras_tuner_trial = self.ongoing_trials.pop(tuner_id)
                 break
 
-        if not kerastuner_trial:
+        if not keras_tuner_trial:
             raise ValueError(
                 "Ongoing trial with id: {} not found.".format(trial_id))
 
-        kerastuner_trial.status = status
+        keras_tuner_trial.status = status
         if status == trial_module.TrialStatus.COMPLETED:
             trial_infeasible = False
             infeasibility_reason = None
@@ -364,11 +364,11 @@ class CloudOracle(oracle_module.Oracle):
         if status == trial_module.TrialStatus.COMPLETED:
             final_measurement = vizier_trial["finalMeasurement"]
             # If epochs = 1, set the best_step = 0.
-            kerastuner_trial.best_step = int(
+            keras_tuner_trial.best_step = int(
                 final_measurement.get("stepCount", 0))
-            kerastuner_trial.score = final_measurement["metrics"][0].get(
+            keras_tuner_trial.score = final_measurement["metrics"][0].get(
                 "value")
-        self._save_trial(kerastuner_trial)
+        self._save_trial(keras_tuner_trial)
         self.save()
 
     def get_best_trials(self, num_trials: int = 1) -> List[trial_module.Trial]:
@@ -406,11 +406,11 @@ class CloudOracle(oracle_module.Oracle):
         best_trials = []
         # Convert completed Vizier trials to KerasTuner Trial instances.
         for vizier_trial in best_vizier_trials:
-            kerastuner_trial = (
+            keras_tuner_trial = (
                 utils.convert_completed_vizier_trial_to_keras_trial(
                     vizier_trial,
                     self.hyperparameters.copy()))
-            best_trials.append(kerastuner_trial)
+            best_trials.append(keras_tuner_trial)
         return best_trials
 
     def reload(self):

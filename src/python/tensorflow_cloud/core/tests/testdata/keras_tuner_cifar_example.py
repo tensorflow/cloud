@@ -15,7 +15,7 @@
 
 import argparse
 
-from kerastuner import tuners
+import keras_tuner
 import tensorflow as tf
 
 
@@ -79,7 +79,7 @@ def build_model(hp):
     return model
 
 
-tuner = tuners.RandomSearch(
+tuner = keras_tuner.RandomSearch(
     build_model,
     objective="val_sparse_categorical_accuracy",
     max_trials=5,

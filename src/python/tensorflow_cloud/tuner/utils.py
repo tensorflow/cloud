@@ -16,10 +16,10 @@
 
 from typing import Any, Dict, List, Optional, Text, Union
 
-from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.engine import metrics_tracking
-from kerastuner.engine import oracle as oracle_module
-from kerastuner.engine import trial as trial_module
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import metrics_tracking
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 import numpy as np
 from tensorboard.plugins.hparams import api as hparams_api
 
@@ -50,7 +50,7 @@ _SAMPLING_REVERSE_LOG = "reverse_log"
 def make_study_config(
     objective: Union[Text, oracle_module.Objective],
     hyperparams: hp_module.HyperParameters) -> Dict[Text, Any]:
-    """Generates Vizier study_config from kerastuner configurations.
+    """Generates Vizier study_config from keras_tuner configurations.
 
     Args:
         objective: String or `oracle_module.Objective`. If a string,
@@ -523,7 +523,7 @@ def convert_completed_vizier_trial_to_keras_trial(
     Returns:
         A KerasTuner Trial.
     """
-    kerastuner_trial = trial_module.Trial(
+    keras_tuner_trial = trial_module.Trial(
         hyperparameters=convert_vizier_trial_to_hps(
             hyperparameter_space, vizier_trial
         ),
@@ -537,9 +537,9 @@ def convert_completed_vizier_trial_to_keras_trial(
         raise ValueError('"finalMeasurement" not found in this trial {}'
                          .format(vizier_trial))
 
-    kerastuner_trial.best_step = int(final_measurement.get("stepCount", 0))
-    kerastuner_trial.score = final_measurement["metrics"][0].get("value")
-    return kerastuner_trial
+    keras_tuner_trial.best_step = int(final_measurement.get("stepCount", 0))
+    keras_tuner_trial.score = final_measurement["metrics"][0].get("value")
+    return keras_tuner_trial
 
 
 def _format_sampling(scale_type: Text) -> Optional[Text]:

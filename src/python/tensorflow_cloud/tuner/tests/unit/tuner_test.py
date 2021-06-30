@@ -16,11 +16,11 @@
 
 import os
 import time
-from kerastuner.engine import hypermodel as hypermodel_module
-from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.engine import oracle as oracle_module
-from kerastuner.engine import trial as trial_module
-from kerastuner.engine import tuner as super_tuner
+from keras_tuner.engine import hypermodel as hypermodel_module
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.engine import tuner as super_tuner
 
 import mock
 
