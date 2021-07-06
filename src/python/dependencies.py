@@ -37,4 +37,5 @@ def make_required_test_packages():
         "mock",
         "numpy",
         "nbconvert",
+        "tf-models-official",
     ]
