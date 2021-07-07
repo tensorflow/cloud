@@ -184,7 +184,8 @@ class RunOnScriptTest(tf.test.TestCase):
     def test_run_on_script(self):
         track_status = {
             "auto_mirrored_strategy": self.auto_mirrored_strategy(),
-            "auto_tpu_strategy": self.auto_tpu_strategy(),
+            # TODO(b/178123173) Enable tests after b/193022465 is resolved.
+            # "auto_tpu_strategy": self.auto_tpu_strategy(),
             "auto_one_device_strategy": self.auto_one_device_strategy(),
             # TODO(b/178123173) Enable tests after b/178123173 is resolved.
             # "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),

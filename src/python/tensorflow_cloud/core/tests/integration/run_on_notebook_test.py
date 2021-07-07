@@ -190,7 +190,8 @@ class RunOnNotebookTest(tf.test.TestCase):
     def test_run_on_notebook(self):
         track_status = {
             "auto_mirrored_strategy": self.auto_mirrored_strategy(),
-            "auto_tpu_strategy": self.auto_tpu_strategy(),
+            # TODO(b/178123173) Enable tests after b/193022465 is resolved.
+            # "auto_tpu_strategy": self.auto_tpu_strategy(),
             "auto_one_device_strategy": self.auto_one_device_strategy(),
             "auto_multi_worker_strategy": self.auto_multi_worker_strategy(),
             "docker_config_cloud_build": self.docker_config_cloud_build(),
