@@ -264,8 +264,8 @@ def run(
     # This contains the `entry_point` wrapped in a distribution strategy.
     preprocessed_entry_point = None
     if (distribution_strategy == "auto"
-        or entry_point.endswith("ipynb")
-        or entry_point is None):
+        or entry_point is None
+        or entry_point.endswith("ipynb")):
         preprocessed_entry_point, \
           pep_file_descriptor = preprocess.get_preprocessed_entry_point(
               entry_point,
