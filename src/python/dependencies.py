@@ -24,11 +24,11 @@ def make_required_install_packages():
         "google-cloud-storage",
         "keras-tuner",
         "tensorboard>=2.3.0",
-        "tensorflow>=1.15.0,<3.0",
+        "tensorflow>=1.15.0,<2.6.0",
         "tensorflow_datasets",
         "tensorflow_transform",
         "tf-models-official",
-        "importlib_resources ; python_version<'3.7'"
+        "importlib_resources ; python_version<'3.7'",
     ]
 
 
@@ -39,6 +39,4 @@ def make_required_test_packages():
         "mock",
         "numpy",
         "nbconvert",
-        "tf-models-official",
-        "importlib_resources ; python_version<'3.7'"
     ]
