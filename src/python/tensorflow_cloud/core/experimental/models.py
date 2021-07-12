@@ -15,12 +15,14 @@
 """Module that contains the `run_models` wrapper for training models from TF Model Garden."""
 
 import os
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
+from .. import machine_config
 from .. import run
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
+from official.core import train_lib
 from official.vision.image_classification.efficientnet import efficientnet_model
 from official.vision.image_classification.resnet import resnet_model
 
@@ -224,3 +226,70 @@ def data_pipeline(original_ds, image_size, width_ratio, batch_size, num_classes,
     ds = ds.batch(batch_size, drop_remainder=True)
     ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
     return ds
+
+
+def run_experiment_cloud(run_experiment_kwargs: Dict[str, Any],
+                         run_kwargs: Optional[Dict[str, Any]] = None,
+                         ) -> Optional[Dict[str, str]]:
+    """A wrapper for run API and tf-models-official run_experiment.
+
+    This method takes a dictionary of the parameters for run and a dictionary
+    of the parameters for run_experiment to run the experiment directly on GCP.
+
+    Args:
+        run_experiment_kwargs: keyword arguments for `train_lib.run_experiment`.
+        The docs can be found at
+        https://github.com/tensorflow/models/blob/master/official/core/train_lib.py
+        The distribution_strategy param is ignored because the distirbution
+        strategy is selected based on run_kwargs.
+        run_kwargs: keyword arguments for `tfc.run`. The docs can be found at
+        https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/run.py
+        The params entry_point and distribution_strategy are ignored.
+    Returns:
+        A dictionary with two keys.
+            1. 'job_id': the training job id.
+            2. 'docker_image': Docker image generated for the training job.
+    """
+    if run_kwargs is None:
+        run_kwargs = dict()
+
+    if run.remote():
+        default_machine_config = machine_config.COMMON_MACHINE_CONFIGS['T4_1X']
+        if 'chief_config' in run_kwargs:
+            chief_config = run_kwargs['chief_config']
+        else:
+            chief_config = default_machine_config
+        if 'worker_count' in run_kwargs:
+            worker_count = run_kwargs['worker_count']
+        else:
+            worker_count = 0
+        if 'worker_config' in run_kwargs:
+            worker_config = run_kwargs['worker_config']
+        else:
+            worker_config = default_machine_config
+        distribution_strategy = get_distribution_strategy(chief_config,
+                                                          worker_count,
+                                                          worker_config)
+        run_experiment_kwargs.update(
+            dict(distribution_strategy=distribution_strategy))
+        train_lib.run_experiment(**run_experiment_kwargs)
+
+    run_kwargs.update(dict(entry_point=None,
+                           distribution_strategy=None))
+    return run.run(**run_kwargs)
+
+
+def get_distribution_strategy(chief_config, worker_count, worker_config):
+    """Gets a tf distribution strategy based on the cloud run config."""
+    if worker_count > 0:
+        if machine_config.is_tpu_config(worker_config):
+            resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+            tf.config.experimental_connect_to_cluster(resolver)
+            tf.tpu.experimental.initialize_tpu_system(resolver)
+            return tf.distribute.TPUStrategy(resolver)
+        else:
+            return tf.distribute.MultiWorkerMirroredStrategy()
+    elif chief_config.accelerator_count > 1:
+        return tf.distribute.MirroredStrategy()
+    else:
+        return tf.distribute.OneDeviceStrategy(device='/gpu:0')
