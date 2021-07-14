@@ -143,19 +143,20 @@ class ModelsTest(absltest.TestCase):
                       'requirements_txt': 'requirements_txt',
                       'worker_count': 5,}
         result = models.run_models('dataset_name', 'model_name', 'gcs_bucket',
-                                   'train', **run_kwargs)
+                                   'train_split', 'validation_split',
+                                   **run_kwargs)
         self.remote.assert_called()
         self.run.assert_called_with(**run_kwargs)
         self.classifier_trainer.assert_not_called()
         return_keys = ['job_id', 'docker_image', 'tensorboard_logs',
-                       'model_checkpoint', 'save_model']
+                       'model_checkpoint', 'saved_model']
         self.assertListEqual(list(result.keys()), return_keys)
 
     def test_run_models_remote(self):
         self.setup_run()
         self.setup_run_models()
         result = models.run_models('dataset_name', 'model_name', 'gcs_bucket',
-                                   'train')
+                                   'train_split', 'validation_split')
         self.remote.assert_called()
         self.run.assert_not_called()
         self.classifier_trainer.assert_called()

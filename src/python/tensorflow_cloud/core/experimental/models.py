@@ -31,7 +31,7 @@ def run_models(dataset_name: str,
                model_name: str,
                gcs_bucket: str,
                train_split: str,
-               validation_split: Optional[str] = None,
+               validation_split: str,
                one_hot: Optional[bool] = True,
                epochs: Optional[int] = 100,
                batch_size: Optional[int] = 128,
@@ -76,7 +76,7 @@ def run_models(dataset_name: str,
             during callbacks.
             4. 'model_checkpoint': the path to the model checkpoints registered
             during callbacks.
-            5. 'save_model': the path to the saved model.
+            5. 'saved_model': the path to the saved model.
     """
     model_dirs = get_model_dirs(gcs_bucket, job_name)
 
@@ -101,7 +101,7 @@ def get_model_dirs(gcs_bucket, job_name):
     return {'tensorboard_logs': os.path.join(gcs_base_path, 'logs'),
             'model_checkpoint':
                 os.path.join(gcs_base_path, 'checkpoints'),
-            'save_model': os.path.join(gcs_base_path, 'saved_model')}
+            'saved_model': os.path.join(gcs_base_path, 'saved_model')}
 
 
 # TODO(uribejuan): Write function to make sure the input is valid
@@ -120,7 +120,7 @@ def classifier_trainer(dataset_name, model_name, batch_size, epochs,
     if model_name == 'resnet':
         image_size = 224
         width_ratio = 1
-    else:  # Assumes model_name is efficientnet version
+    else:  # Assumes model_name is an efficientnet version
         image_size = model.config.resolution
         width_ratio = model.config.width_coefficient
 
@@ -132,7 +132,7 @@ def classifier_trainer(dataset_name, model_name, batch_size, epochs,
     callbacks = [
         tf.keras.callbacks.TensorBoard(log_dir=model_dirs['tensorboard_logs']),
         tf.keras.callbacks.ModelCheckpoint(
-            model_dirs['model_checkpoint_dir'], save_best_only=True),
+            model_dirs['model_checkpoint'], save_best_only=True),
         tf.keras.callbacks.EarlyStopping(
             monitor='loss', min_delta=0.001, patience=3)
         ]
@@ -145,12 +145,11 @@ def classifier_trainer(dataset_name, model_name, batch_size, epochs,
 
     model.fit(
         train_ds,
-        validation_split=0.2,  # TODO(uribejuan): users can modify this split
         validation_data=validation_ds,
         epochs=epochs,
         callbacks=callbacks)
 
-    model.save(model_dirs['save_model_dir'])
+    model.save(model_dirs['saved_model'])
 
 
 def load_data_from_builder(builder, train_split, validation_split, image_size,
@@ -168,7 +167,7 @@ def load_data_from_builder(builder, train_split, validation_split, image_size,
     if validation_split is not None:
         validation_ds = builder.as_dataset(
             validation_split, shuffle_files=True, as_supervised=True)
-        validation_ds = data_pipeline(validation_split, image_size, width_ratio,
+        validation_ds = data_pipeline(validation_ds, image_size, width_ratio,
                                       batch_size, num_classes, one_hot,
                                       num_examples)
     else:
