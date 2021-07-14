@@ -14,11 +14,15 @@
 # limitations under the License.
 """Module that contains the `run_models` wrapper for training models from TF Model Garden."""
 
+
+import json
 import os
+import time
 from typing import Any, Dict, Optional
 
 from .. import machine_config
 from .. import run
+from absl import logging
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -249,6 +253,7 @@ def run_experiment_cloud(run_experiment_kwargs: Dict[str, Any],
             1. 'job_id': the training job id.
             2. 'docker_image': Docker image generated for the training job.
     """
+    logging.info('CALL TO RUN EXPERIMENT CLOUD')
     if run_kwargs is None:
         run_kwargs = dict()
 
@@ -266,12 +271,18 @@ def run_experiment_cloud(run_experiment_kwargs: Dict[str, Any],
             worker_config = run_kwargs['worker_config']
         else:
             worker_config = default_machine_config
+        logging.info('CHECKING DISTRIBUTION STRATEGY')
+        logging.info('Chief Config a count: %s', chief_config.accelerator_count)
+        logging.info('Worker Count: %s', worker_count)
+        logging.info('Worker Config: %s', worker_config.accelerator_count)
         distribution_strategy = get_distribution_strategy(chief_config,
                                                           worker_count,
                                                           worker_config)
+        logging.info('USING STRATEGY: %s', distribution_strategy)
         run_experiment_kwargs.update(
             dict(distribution_strategy=distribution_strategy))
-        train_lib.run_experiment(**run_experiment_kwargs)
+        model, _ = train_lib.run_experiment(**run_experiment_kwargs)
+        model.save(run_experiment_kwargs['model_dir'])
 
     run_kwargs.update(dict(entry_point=None,
                            distribution_strategy=None))
@@ -282,7 +293,11 @@ def get_distribution_strategy(chief_config, worker_count, worker_config):
     """Gets a tf distribution strategy based on the cloud run config."""
     if worker_count > 0:
         if machine_config.is_tpu_config(worker_config):
-            resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+            # resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+            #     tpu='local')
+            resolver = wait_for_tpu_cluster_resolver_ready()
+            print('Running on TPU ', resolver.cluster_spec()
+                  .as_dict()['worker'])
             tf.config.experimental_connect_to_cluster(resolver)
             tf.tpu.experimental.initialize_tpu_system(resolver)
             return tf.distribute.TPUStrategy(resolver)
@@ -292,3 +307,36 @@ def get_distribution_strategy(chief_config, worker_count, worker_config):
         return tf.distribute.MirroredStrategy()
     else:
         return tf.distribute.OneDeviceStrategy(device='/gpu:0')
+
+
+def wait_for_tpu_cluster_resolver_ready():
+    """Test resolver func."""
+    tpu_config_env = os.environ.get('TPU_CONFIG')
+    if not tpu_config_env:
+        logging.info('Missing TPU_CONFIG, use CPU/GPU for training.')
+        return None
+    tpu_node = json.loads(tpu_config_env)
+    logging.info('Waiting for TPU to be ready: %s.', tpu_node)
+    num_retries = 40
+    for i in range(num_retries):
+        try:
+            tpu_cluster_resolver = (
+                tf.distribute.cluster_resolver.TPUClusterResolver(
+                    tpu=[tpu_node['tpu_node_name']],
+                    zone=tpu_node['zone'],
+                    project=tpu_node['project'],
+                    job_name='worker'))
+            tpu_cluster_resolver_dict = tpu_cluster_resolver.cluster_spec(
+                ).as_dict()
+            if 'worker' in tpu_cluster_resolver_dict:
+                logging.info('Found TPU worker: %s', tpu_cluster_resolver_dict)
+                return tpu_cluster_resolver
+        except Exception as e:  # pylint: disable=broad-except
+            if i < num_retries - 1:
+                logging.info(
+                    'Still waiting for provisioning of TPU VM instance.')
+            else:
+                # Preserves the traceback.
+                raise RuntimeError('Failed to schedule TPU: {}'.format(e))
+        time.sleep(10)
+    raise RuntimeError('Failed to schedule TPU.')
