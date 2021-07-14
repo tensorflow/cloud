@@ -213,10 +213,19 @@ def get_preprocessed_entry_point(
         # Remove any iPython special commands and add the python code
         # to script_lines.
         for line in py_content:
+            if  line.strip().startswith("%"):
+              raise RuntimeError("Magic commands '%' are not supported.")
+
+            elif line.strip().startswith("!"):
+              commands_list = line.strip()[1:].split(" ")
+              script_lines.extend([
+                  "import sys\n",
+                  "import subprocess\n",
+                  f"print(subprocess.run({commands_list}",
+                  ",capture_output=True, text=True).stdout)\n"
+              ])
+
             if not (
-                line.strip().startswith("!") or
-                line.strip().startswith("%") or
-                line.strip().startswith("#") or
                 line.strip().startswith("get_ipython().system(")
             ):
                 script_lines.append(line)
