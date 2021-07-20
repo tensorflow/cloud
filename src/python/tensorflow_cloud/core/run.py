@@ -13,6 +13,7 @@
 # limitations under the License.
 """Module that contains the `run` API for scaling Keras/TensorFlow jobs."""
 
+import logging
 import os
 import sys
 import uuid
@@ -23,6 +24,9 @@ from . import docker_config as docker_config_module
 from . import machine_config
 from . import preprocess
 from . import validate
+from tensorflow_cloud.utils import google_api_client
+
+logger = logging.getLogger(__name__)
 
 
 def remote():
@@ -304,8 +308,8 @@ def run(
     if preprocessed_entry_point is not None:
         os.close(pep_file_descriptor)
         os.remove(preprocessed_entry_point)
-    for file_path, file_descriptor \
-        in container_builder.get_generated_files(return_descriptors=True):
+    for file_path, file_descriptor in container_builder.get_generated_files(
+        return_descriptors=True):
         os.close(file_descriptor)
         os.remove(file_path)
 
@@ -339,16 +343,11 @@ def run(
 
 def _called_from_notebook():
     """Detects if we are currently executing in a notebook environment."""
-    try:
-        import IPython  # pylint: disable=g-import-not-at-top
-    except ImportError:
-        return False
-
-    try:
-        shell = IPython.get_ipython().__class__.__name__
-        if "Shell" in shell:
-            return True
-        else:
-            return False
-    except NameError:
-        return False
+    client_env = google_api_client.get_client_environment_name()
+    if client_env in (
+        google_api_client.ClientEnvironment.KAGGLE_NOTEBOOK.name,
+        google_api_client.ClientEnvironment.COLAB.name):
+        return True
+    if client_env == google_api_client.ClientEnvironment.HOSTED_NOTEBOOK:
+        logger.warning("Vertex AI notebook environment is not supported.")
+    return False
