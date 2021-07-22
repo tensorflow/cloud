@@ -225,7 +225,7 @@ def get_preprocessed_entry_point(
                   ",capture_output=True, text=True).stdout)\n"
               ])
 
-            if not (
+            elif not (
                 line.strip().startswith("get_ipython().system(")
             ):
                 script_lines.append(line)
