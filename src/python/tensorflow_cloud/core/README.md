@@ -5,4 +5,4 @@ from debugging, training, and tuning your Keras and TensorFlow code in a local
 environment to distributed training and tuning on Google Cloud.
 
 See
-[TensorFlow Cloud `run` API for GCP training/tuning](https://github.com/tensorflow/cloud/blob/master/g3doc/guides/cloud_run_guide.md).
+[TensorFlow Cloud `run` API for GCP training/tuning](https://github.com/tensorflow/cloud/blob/master/g3doc/guides/run_guide.md).
