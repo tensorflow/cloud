@@ -271,7 +271,8 @@ def run_experiment_cloud(run_experiment_kwargs: Dict[str, Any],
                                                           worker_config)
         run_experiment_kwargs.update(
             dict(distribution_strategy=distribution_strategy))
-        train_lib.run_experiment(**run_experiment_kwargs)
+        model, _ = train_lib.run_experiment(**run_experiment_kwargs)
+        model.save(run_experiment_kwargs['model_dir'])
 
     run_kwargs.update(dict(entry_point=None,
                            distribution_strategy=None))
@@ -282,11 +283,14 @@ def get_distribution_strategy(chief_config, worker_count, worker_config):
     """Gets a tf distribution strategy based on the cloud run config."""
     if worker_count > 0:
         if machine_config.is_tpu_config(worker_config):
-            resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+            # TODO(b/194857231) Dependency conflict for using TPUs
+            resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+                tpu='local')
             tf.config.experimental_connect_to_cluster(resolver)
             tf.tpu.experimental.initialize_tpu_system(resolver)
             return tf.distribute.TPUStrategy(resolver)
         else:
+            # TODO(b/148619319) Saving model currently failing
             return tf.distribute.MultiWorkerMirroredStrategy()
     elif chief_config.accelerator_count > 1:
         return tf.distribute.MirroredStrategy()

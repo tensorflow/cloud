@@ -77,12 +77,27 @@ class ModelsTest(absltest.TestCase):
                                           mode='train_and_eval',
                                           params=config,
                                           model_dir='model_path')
-
+        self.model = mock.MagicMock()
         self.run_experiment = mock.patch.object(
             train_lib,
             'run_experiment',
             autospec=True,
+            return_value=(self.model, {})
         ).start()
+
+    def setup_tpu(self):
+        mock.patch.object(tf.tpu.experimental,
+                          'initialize_tpu_system',
+                          autospec=True).start()
+        mock.patch.object(tf.config,
+                          'experimental_connect_to_cluster',
+                          autospec=True).start()
+        mock.patch('tensorflow.distribute.cluster_resolver.TPUClusterResolver'
+                   ).start()
+        mock_tpu_strategy = mock.MagicMock(
+            spec=tf.distribute.TPUStrategy)
+        mock.patch('tensorflow.distribute.TPUStrategy',
+                   return_value=mock_tpu_strategy).start()
 
     def tearDown(self):
         mock.patch.stopall()
@@ -182,20 +197,8 @@ class ModelsTest(absltest.TestCase):
         self.remote.assert_called()
         self.run_experiment.assert_called()
         self.run.assert_called()
-
-    def setup_tpu(self):
-        mock.patch.object(tf.tpu.experimental,
-                          'initialize_tpu_system',
-                          autospec=True).start()
-        mock.patch.object(tf.config,
-                          'experimental_connect_to_cluster',
-                          autospec=True).start()
-        mock.patch('tensorflow.distribute.cluster_resolver.TPUClusterResolver'
-                   ).start()
-        mock_tpu_strategy = mock.MagicMock()
-        mock_tpu_strategy.__class__ = tf.distribute.TPUStrategy
-        mock.patch('tensorflow.distribute.TPUStrategy',
-                   return_value=mock_tpu_strategy).start()
+        self.model.save.assert_called_with(
+            self.run_experiment_kwargs['model_dir'])
 
     def test_get_distribution_strategy_tpu(self):
         tpu_srategy = tf.distribute.TPUStrategy
