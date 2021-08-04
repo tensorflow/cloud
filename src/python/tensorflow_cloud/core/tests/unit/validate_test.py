@@ -16,7 +16,6 @@
 import os
 
 from absl.testing import absltest
-import mock
 
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import validate
@@ -301,31 +300,6 @@ class TestValidate(absltest.TestCase):
                 docker_image_build_bucket=None,
                 called_from_notebook=False,
             )
-
-    @mock.patch("tensorflow_cloud.utils.tf_utils.get_version")  # pylint: disable=line-too-long
-    def test_invalid_tpu_accelerator_tf_version(self, mock_get_version):
-        mock_get_version.return_value = "2.2.0"
-        with self.assertRaisesRegex(
-            NotImplementedError,
-            r"TPUs are only supported for TF version <= 2.1.0",
-        ):
-            validate.validate(
-                entry_point=None,
-                distribution_strategy="auto",
-                requirements_txt=None,
-                chief_config=machine_config.COMMON_MACHINE_CONFIGS["CPU"],
-                worker_config=machine_config.MachineConfig(
-                    accelerator_type=machine_config.AcceleratorType.TPU_V2,
-                    accelerator_count=8,
-                ),
-                worker_count=1,
-                entry_point_args=None,
-                stream_logs=True,
-                docker_image_build_bucket=None,
-                called_from_notebook=False,
-                docker_parent_image=None,
-            )
-
 
 if __name__ == "__main__":
     absltest.main()

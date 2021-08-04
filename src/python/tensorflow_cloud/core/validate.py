@@ -17,7 +17,6 @@ import os
 
 from . import gcp
 from . import machine_config
-from ..utils import tf_utils
 
 
 def validate(
@@ -169,16 +168,6 @@ def _validate_cluster_config(
                 "Expected worker_count=1 for TPU `worker_config`. "
                 "Received {}.".format(worker_count)
             )
-        elif docker_parent_image is None:
-            # If the user has not provided a custom Docker image, then verify
-            # that the TF version is compatible with Cloud TPU support.
-            # https://cloud.google.com/ai-platform/training/docs/runtime-version-list#tpu-support  # pylint: disable=line-too-long
-            version = tf_utils.get_version()
-            if (version is not None and
-                version not in gcp.get_cloud_tpu_supported_tf_versions()):
-                raise NotImplementedError(
-                    "TPUs are only supported for TF version <= 2.1.0"
-                )
 
 
 def _validate_job_labels(job_labels):
