@@ -22,6 +22,8 @@ upper_tabs:
         path: /cloud/tutorials/distributed_training_nasnet_with_tensorflow_cloud
       - title: Hyperparameter tuning on Google Cloud
         path: /cloud/tutorials/hp_tuning_cifar10_using_google_cloud
+      - title: Running vision models from TF Model Garden on GCP with TF Cloud
+        path: /cloud/tutorials/experimental/running_vision_models_from_tf_model_garden_on_gcp_with_tf_cloud
       - heading: "Guides"
       - title: Cloud `run` guide
         path: /cloud/guides/run_guide
