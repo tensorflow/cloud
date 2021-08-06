@@ -285,7 +285,7 @@ class ContainerBuilder(object):
             self.entry_point = sys.argv[0]
 
         # Map entry_point directory to the dst directory.
-        if not self.called_from_notebook:
+        if not self.called_from_notebook or self.entry_point is not None:
             entry_point_dir, _ = os.path.split(self.entry_point)
             if not entry_point_dir:  # Current directory
                 entry_point_dir = "."

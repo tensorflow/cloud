@@ -27,6 +27,8 @@ def make_required_install_packages():
         "tensorflow>=1.15.0,<3.0",
         "tensorflow_datasets",
         "tensorflow_transform",
+        "tf-models-official",
+        "importlib_resources ; python_version<'3.7'"
     ]
 
 
@@ -38,4 +40,5 @@ def make_required_test_packages():
         "numpy",
         "nbconvert",
         "tf-models-official",
+        "importlib_resources ; python_version<'3.7'"
     ]

@@ -14,16 +14,27 @@
 # limitations under the License.
 """Tests for the models experimental module."""
 
+import os
+import pathlib
+import shutil
+import uuid
 from absl.testing import absltest
 import mock
 
 import tensorflow as tf
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import run
+from tensorflow_cloud.core.experimental import constants
 from tensorflow_cloud.core.experimental import models
-from official.core import config_definitions
-from official.core import train_lib
 from official.vision.image_classification.efficientnet import efficientnet_model
+
+# pylint: disable=g-import-not-at-top
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Backported for python<3.7
+    import importlib_resources as pkg_resources
+# pylint: enable=g-import-not-at-top
 
 
 class ModelsTest(absltest.TestCase):
@@ -71,33 +82,43 @@ class ModelsTest(absltest.TestCase):
             autospec=True,
         ).start()
 
-    def setup_run_experiment(self):
-        config = config_definitions.ExperimentConfig()
-        self.run_experiment_kwargs = dict(task=config.task,
-                                          mode='train_and_eval',
-                                          params=config,
-                                          model_dir='model_path')
-        self.model = mock.MagicMock()
-        self.run_experiment = mock.patch.object(
-            train_lib,
-            'run_experiment',
+    def setup_run_experiment_cloud(self, path):
+        self.file_id = 'test'
+
+        self.params_file = constants.PARAMS_FILE_NAME_FORMAT.format(
+            self.file_id)
+
+        self.save_params = mock.patch.object(
+            models,
+            'save_params',
             autospec=True,
-            return_value=(self.model, {})
+            return_value=self.params_file,
         ).start()
 
-    def setup_tpu(self):
-        mock.patch.object(tf.tpu.experimental,
-                          'initialize_tpu_system',
-                          autospec=True).start()
-        mock.patch.object(tf.config,
-                          'experimental_connect_to_cluster',
-                          autospec=True).start()
-        mock.patch('tensorflow.distribute.cluster_resolver.TPUClusterResolver'
-                   ).start()
-        mock_tpu_strategy = mock.MagicMock(
-            spec=tf.distribute.TPUStrategy)
-        mock.patch('tensorflow.distribute.TPUStrategy',
-                   return_value=mock_tpu_strategy).start()
+        self.path = mock.patch.object(
+            pkg_resources,
+            'path',
+            autospec=True,
+            return_value=pathlib.Path(path),
+        ).start()
+
+        self.remove = mock.patch.object(
+            os,
+            'remove',
+            autospec=True,
+        ).start()
+
+        self.uuid4 = mock.patch.object(
+            uuid,
+            'uuid4',
+            return_value=self.file_id,
+        ).start()
+
+        self.copyfile = mock.patch.object(
+            shutil,
+            'copyfile',
+            autospec=True,
+        ).start()
 
     def tearDown(self):
         mock.patch.stopall()
@@ -178,68 +199,42 @@ class ModelsTest(absltest.TestCase):
 
         self.assertIsNone(result)
 
-    def test_run_experiment_cloud_locally(self):
+    def test_run_experiment_cloud(self):
         self.setup_run(remote=False)
-        self.setup_run_experiment()
+        path_str = '/test'
+        self.setup_run_experiment_cloud(path_str)
+        run_experiment_kwargs = dict()
         models.run_experiment_cloud(
-            run_experiment_kwargs=self.run_experiment_kwargs)
-
-        self.remote.assert_called()
-        self.run_experiment.assert_not_called()
-        self.run.assert_called()
-
-    def test_run_experiment_cloud_remote(self):
-        self.setup_run()
-        self.setup_run_experiment()
-        models.run_experiment_cloud(
-            run_experiment_kwargs=self.run_experiment_kwargs)
-
-        self.remote.assert_called()
-        self.run_experiment.assert_called()
-        self.run.assert_called()
-        self.model.save.assert_called_with(
-            self.run_experiment_kwargs['model_dir'])
+            run_experiment_kwargs=run_experiment_kwargs)
+        entry_point = f'{self.file_id}.py'
+        self.copyfile.assert_called_with(path_str, entry_point)
+        self.run.assert_called_with(entry_point=entry_point,
+                                    distribution_strategy=None)
+        self.remove.assert_any_call(entry_point)
+        self.remove.assert_any_call(self.params_file)
 
     def test_get_distribution_strategy_tpu(self):
-        tpu_srategy = tf.distribute.TPUStrategy
-        self.setup_tpu()
-        chief_config = None
-        worker_count = 1
-        worker_config = machine_config.COMMON_MACHINE_CONFIGS['TPU']
-        strategy = models.get_distribution_strategy(chief_config,
-                                                    worker_count,
-                                                    worker_config)
-        self.assertIsInstance(strategy,
-                              tpu_srategy)
+        run_kwargs = dict(
+            worker_count=1,
+            worker_config=machine_config.COMMON_MACHINE_CONFIGS['TPU'],)
+        strategy = models.get_distribution_strategy_str(run_kwargs)
+        self.assertEqual('tpu', strategy)
 
     def test_get_distribution_strategy_multi_mirror(self):
-        chief_config = None
-        worker_count = 1
-        worker_config = None
-        strategy = models.get_distribution_strategy(chief_config,
-                                                    worker_count,
-                                                    worker_config)
-        self.assertIsInstance(strategy,
-                              tf.distribute.MultiWorkerMirroredStrategy)
+        run_kwargs = dict(worker_count=1)
+        strategy = models.get_distribution_strategy_str(run_kwargs)
+        self.assertEqual('multi_mirror', strategy)
 
     def test_get_distribution_strategy_mirror(self):
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_4X']
-        worker_count = 0
-        worker_config = None
-        strategy = models.get_distribution_strategy(chief_config,
-                                                    worker_count,
-                                                    worker_config)
-        self.assertIsInstance(strategy, tf.distribute.MirroredStrategy)
+        run_kwargs = dict(
+            chief_config=machine_config.COMMON_MACHINE_CONFIGS['K80_4X'])
+        strategy = models.get_distribution_strategy_str(run_kwargs)
+        self.assertEqual('mirror', strategy)
 
     def test_get_distribution_strategy_one_device(self):
-        chief_config = machine_config.COMMON_MACHINE_CONFIGS['K80_1X']
-        worker_count = 0
-        worker_config = None
-        strategy = models.get_distribution_strategy(chief_config,
-                                                    worker_count,
-                                                    worker_config)
-        self.assertIsInstance(strategy, tf.distribute.OneDeviceStrategy)
-
+        run_kwargs = dict()
+        strategy = models.get_distribution_strategy_str(run_kwargs)
+        self.assertEqual('one_device', strategy)
 
 if __name__ == '__main__':
   absltest.main()
