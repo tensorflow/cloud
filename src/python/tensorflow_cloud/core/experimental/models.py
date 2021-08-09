@@ -16,11 +16,9 @@
 
 import os
 import pickle
-import shutil
 from typing import Any, Dict, Optional
 import uuid
 
-from . import constants
 from .. import machine_config
 from .. import run
 import tensorflow as tf
@@ -36,6 +34,10 @@ except ImportError:
     # Backported for python<3.7
     import importlib_resources as pkg_resources
 # pylint: enable=g-import-not-at-top
+
+_PARAMS_FILE_NAME_FORMAT = '{}_params'
+_ENTRY_POINT_FORMAT = '{}.py'
+_ENTRY_POINT_TEMPLATE = 'models_entry_point.py'
 
 
 def run_models(dataset_name: str,
@@ -267,16 +269,34 @@ def run_experiment_cloud(run_experiment_kwargs: Dict[str, Any],
         dict(distribution_strategy=distribution_strategy))
     file_id = str(uuid.uuid4())
     params_file = save_params(run_experiment_kwargs, file_id)
+    entry_point = copy_entry_point(file_id, params_file)
 
-    with pkg_resources.path(__package__, 'models_entry_point.py') as path:
-        entry_point = f'{file_id}.py'
-        shutil.copyfile(str(path), entry_point)
-        run_kwargs.update(dict(entry_point=entry_point,
-                               distribution_strategy=None))
-        info = run.run(**run_kwargs)
+    run_kwargs.update(dict(entry_point=entry_point,
+                           distribution_strategy=None))
+    info = run.run(**run_kwargs)
     os.remove(entry_point)
     os.remove(params_file)
     return info
+
+
+def copy_entry_point(file_id, params_file):
+    """Copy models_entry_point and add params file name."""
+    lines = get_original_lines()
+    entry_point = _ENTRY_POINT_FORMAT.format(file_id)
+    with open(entry_point, 'w') as entry_file:
+        for line in lines:
+            if line.startswith('PARAMS_FILE_NAME = '):
+                entry_file.write(f"PARAMS_FILE_NAME = '{params_file}'\n")
+            else:
+                entry_file.write(line)
+    return entry_point
+
+
+def get_original_lines():
+    """Gets the file lines of models_entry_point.py as a list of strings."""
+    with pkg_resources.open_text(__package__, _ENTRY_POINT_TEMPLATE) as file:
+        lines = file.readlines()
+    return lines
 
 
 def get_distribution_strategy_str(run_kwargs):
@@ -297,7 +317,7 @@ def get_distribution_strategy_str(run_kwargs):
 
 def save_params(params, file_id):
     """Pickles the params object using the file_id as prefix."""
-    file_name = constants.PARAMS_FILE_NAME_FORMAT.format(file_id)
+    file_name = _PARAMS_FILE_NAME_FORMAT.format(file_id)
     with open(file_name, 'xb') as f:
         pickle.dump(params, f)
     return file_name

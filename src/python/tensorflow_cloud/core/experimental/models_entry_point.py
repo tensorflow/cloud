@@ -12,15 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Entry point file for run_experiment_cloud."""
+"""Entry point template file for run_experiment_cloud."""
 
-import os
 import pickle
 
 import tensorflow as tf
 
-from tensorflow_cloud.core.experimental import constants
 from official.core import train_lib
+
+# PARAMS_FILE_NAME provides the name of the file that cointains the
+# run_experiment_kwargs used to call run_experiment. In models.py, when copying
+# this file, the value of PARAMS_FILE_NAME is updated to contain the actual name
+# of the file.
+PARAMS_FILE_NAME = 'file_name'
 
 
 def load_params(file_name):
@@ -50,9 +54,7 @@ _DISTRIBUTION_STRATEGIES = dict(
 
 
 def main():
-    prefix, _ = os.path.splitext(os.path.basename(__file__))
-    file_name = constants.PARAMS_FILE_NAME_FORMAT.format(prefix)
-    run_experiment_kwargs = load_params(file_name)
+    run_experiment_kwargs = load_params(PARAMS_FILE_NAME)
     strategy_str = run_experiment_kwargs['distribution_strategy']
     strategy = _DISTRIBUTION_STRATEGIES[strategy_str]()
     run_experiment_kwargs.update(dict(

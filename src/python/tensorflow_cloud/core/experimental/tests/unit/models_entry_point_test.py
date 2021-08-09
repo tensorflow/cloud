@@ -18,7 +18,6 @@ from absl.testing import absltest
 import mock
 import tensorflow as tf
 
-from tensorflow_cloud.core.experimental import constants
 from tensorflow_cloud.core.experimental import models_entry_point
 from official.core import base_task
 from official.core import config_definitions
@@ -64,9 +63,8 @@ class ModelsTest(absltest.TestCase):
 
     def test_main(self):
         models_entry_point.main()
-        file_name = constants.PARAMS_FILE_NAME_FORMAT.format(
-            'models_entry_point')
-        self.load_params.assert_called_with(file_name)
+
+        self.load_params.assert_called_with(models_entry_point.PARAMS_FILE_NAME)
         self.run_experiment_kwargs.update(dict(
             distribution_strategy='one_device_strategy'))
         self.run_experiment.assert_called_with(**self.run_experiment_kwargs)

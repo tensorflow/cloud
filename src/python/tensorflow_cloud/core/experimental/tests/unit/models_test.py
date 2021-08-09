@@ -15,8 +15,6 @@
 """Tests for the models experimental module."""
 
 import os
-import pathlib
-import shutil
 import uuid
 from absl.testing import absltest
 import mock
@@ -24,17 +22,8 @@ import mock
 import tensorflow as tf
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import run
-from tensorflow_cloud.core.experimental import constants
 from tensorflow_cloud.core.experimental import models
 from official.vision.image_classification.efficientnet import efficientnet_model
-
-# pylint: disable=g-import-not-at-top
-try:
-    import importlib.resources as pkg_resources
-except ImportError:
-    # Backported for python<3.7
-    import importlib_resources as pkg_resources
-# pylint: enable=g-import-not-at-top
 
 
 class ModelsTest(absltest.TestCase):
@@ -82,11 +71,9 @@ class ModelsTest(absltest.TestCase):
             autospec=True,
         ).start()
 
-    def setup_run_experiment_cloud(self, path):
-        self.file_id = 'test'
-
-        self.params_file = constants.PARAMS_FILE_NAME_FORMAT.format(
-            self.file_id)
+    def setup_run_experiment_cloud(self, file_id):
+        self.params_file = models._PARAMS_FILE_NAME_FORMAT.format(
+            file_id)
 
         self.save_params = mock.patch.object(
             models,
@@ -95,11 +82,11 @@ class ModelsTest(absltest.TestCase):
             return_value=self.params_file,
         ).start()
 
-        self.path = mock.patch.object(
-            pkg_resources,
-            'path',
+        self.copy_entry_point = mock.patch.object(
+            models,
+            'copy_entry_point',
             autospec=True,
-            return_value=pathlib.Path(path),
+            return_value=models._ENTRY_POINT_FORMAT.format(file_id),
         ).start()
 
         self.remove = mock.patch.object(
@@ -111,13 +98,7 @@ class ModelsTest(absltest.TestCase):
         self.uuid4 = mock.patch.object(
             uuid,
             'uuid4',
-            return_value=self.file_id,
-        ).start()
-
-        self.copyfile = mock.patch.object(
-            shutil,
-            'copyfile',
-            autospec=True,
+            return_value=file_id,
         ).start()
 
     def tearDown(self):
@@ -201,17 +182,44 @@ class ModelsTest(absltest.TestCase):
 
     def test_run_experiment_cloud(self):
         self.setup_run(remote=False)
-        path_str = '/test'
-        self.setup_run_experiment_cloud(path_str)
+        file_id = 'test_id'
+        self.setup_run_experiment_cloud(file_id)
         run_experiment_kwargs = dict()
         models.run_experiment_cloud(
             run_experiment_kwargs=run_experiment_kwargs)
-        entry_point = f'{self.file_id}.py'
-        self.copyfile.assert_called_with(path_str, entry_point)
+        entry_point = models._ENTRY_POINT_FORMAT.format(file_id)
         self.run.assert_called_with(entry_point=entry_point,
                                     distribution_strategy=None)
         self.remove.assert_any_call(entry_point)
         self.remove.assert_any_call(self.params_file)
+
+    def setup_copy_entry_point(self):
+        self.get_original_lines = mock.patch.object(
+            models,
+            'get_original_lines',
+            autospec=True,
+            return_value=['PARAMS_FILE_NAME = not this', 'do not change'],
+        ).start()
+
+        self.open = mock.mock_open()
+        mock.patch(
+            'builtins.open',
+            self.open,
+        ).start()
+
+    def test_copy_entry_point(self):
+        self.setup_copy_entry_point()
+        file_id = 'file_id'
+        params_file = 'params_file'
+        models.copy_entry_point(file_id, params_file)
+
+        self.open.assert_called_once_with(
+            models._ENTRY_POINT_FORMAT.format(file_id),
+            'w')
+        entry_file = self.open()
+        entry_file.write.assert_any_call(
+            f"PARAMS_FILE_NAME = '{params_file}'\n")
+        entry_file.write.assert_any_call('do not change')
 
     def test_get_distribution_strategy_tpu(self):
         run_kwargs = dict(
