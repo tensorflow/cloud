@@ -57,10 +57,6 @@ flags.DEFINE_string('site_path', '/cloud/api_docs/python',
                     'Path prefix in the _toc.yaml')
 
 
-flags.DEFINE_bool('gen_report', False,
-                  ('Generate an API report containing the health of the'
-                   'docstrings of the public API.'))
-
 FLAGS = flags.FLAGS
 
 
@@ -71,7 +67,6 @@ def main(_):
       code_url_prefix=FLAGS.code_url_prefix,
       search_hints=FLAGS.search_hints,
       site_path=FLAGS.site_path,
-      gen_report=FLAGS.gen_report,
       callbacks=[public_api.explicit_package_contents_filter])
 
   doc_generator.build(output_dir=FLAGS.output_dir)
