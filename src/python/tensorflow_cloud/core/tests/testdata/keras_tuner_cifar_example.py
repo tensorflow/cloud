@@ -102,9 +102,9 @@ def scale(image, label):
     return image, label
 
 
-train_dataset = train_dataset.map(scale).cache()
+train_dataset = train_dataset.map(scale,num_parallel_calls=tf.data.AUTOTUNE).cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-test_dataset = test_dataset.map(scale).batch(BATCH_SIZE)
+test_dataset = test_dataset.map(scale,num_parallel_calls=tf.data.AUTOTUNE).batch(BATCH_SIZE)
 
 tuner.search(
     train_dataset,
