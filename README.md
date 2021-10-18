@@ -8,7 +8,7 @@ environment to distributed training/tuning on Cloud.
 
 -   [TensorFlow Cloud `run` API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/core/README.md)
 
--   [TensorFlow Cloud Tuner](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/README.md)
+-   [TensorFlow Cloud `fit` API](https://github.com/tensorflow/cloud/blob/master/src/python/tensorflow_cloud/tuner/cloud_fit_readme.md)
 
 ## TensorFlow Cloud `run` API for GCP training/tuning
 
