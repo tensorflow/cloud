@@ -23,6 +23,7 @@ def make_required_install_packages():
         "google-auth",
         "google-cloud-storage",
         "keras-tuner",
+        "keras==2.6.*",
         "tensorboard>=2.3.0",
         "tensorflow>=1.15.0,<3.0",
         "tensorflow_datasets",
