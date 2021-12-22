@@ -555,7 +555,7 @@ object already used in your code.
 
 We welcome community contributions, see [CONTRIBUTING.md](CONTRIBUTING.md) and,
 for style help,
-[Writing TensorFlow documentation](https://www.tensorflow.org/community/documentation)
+[Writing TensorFlow documentation](https://www.tensorflow.org/community/contribute/docs)
 guide.
 
 ## License
