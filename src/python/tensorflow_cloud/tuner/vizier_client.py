@@ -18,6 +18,7 @@ import http
 import time
 from typing import Any, Dict, List, Mapping, Optional, Text, Union
 
+from google.api_core.client_options import ClientOptions
 from googleapiclient import discovery
 from googleapiclient import errors
 import tensorflow as tf
@@ -426,9 +427,14 @@ def create_or_load_study(
     # Build the API client
     # Note that Vizier service is exposed as a regional endpoint. As such,
     # an API client needs to be created separately from the default.
+    ml_endpoint = f"https://{region}-ml.googleapis.com"
+    client_options = ClientOptions(
+        api_endpoint=ml_endpoint,
+    )
     service_client = discovery.build(
         serviceName="ml",
         version="v1",
+        client_options=client_options,
         requestBuilder=google_api_client.TFCloudHttpRequest,
     )
 
