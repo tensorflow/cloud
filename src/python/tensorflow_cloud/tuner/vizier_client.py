@@ -431,11 +431,15 @@ def create_or_load_study(
     client_options = ClientOptions(
         api_endpoint=ml_endpoint,
     )
+
+    # Disabling cache discovery to suppress noisy warning. More details at:
+    # https://github.com/googleapis/google-api-python-client/issues/299
     service_client = discovery.build(
         serviceName="ml",
         version="v1",
-        client_options=client_options,
         requestBuilder=google_api_client.TFCloudHttpRequest,
+        cache_discovery=False,
+        client_options=client_options,
     )
 
     # Creates or loads a study.
