@@ -46,10 +46,9 @@ STUDY_CONFIG_INT = {
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
+            "integer_value_spec": {"max_value": 4, "min_value": 1},
             "parameter": "units",
             "type": "INTEGER",
-            "integer_value_spec": {"min_value": 1, "max_value": 4},
-            "scale_type": "UNIT_LINEAR_SCALE",
         }
     ],
 }
@@ -57,9 +56,9 @@ STUDY_CONFIG_INT_STEP = {
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
+            "discrete_value_spec": {"values": [32, 64, 96, 128]},
             "parameter": "units",
             "type": "DISCRETE",
-            "discrete_value_spec": {"values": [32, 64, 96, 128]},
         }
     ],
 }
@@ -70,7 +69,6 @@ STUDY_CONFIG_FLOAT = {
             "double_value_spec": {"max_value": 0.5, "min_value": 0.1},
             "parameter": "learning_rate",
             "type": "DOUBLE",
-            "scale_type": "UNIT_LINEAR_SCALE",
         }
     ],
 }
@@ -121,16 +119,14 @@ STUDY_CONFIG_MULTI_FLOAT = {
     "metrics": [{"goal": "MAXIMIZE", "metric": "accuracy"}],
     "parameters": [
         {
+            "double_value_spec": {"max_value": 1.57, "min_value": 0.0},
             "parameter": "theta",
             "type": "DOUBLE",
-            "double_value_spec": {"min_value": 0.0, "max_value": 1.57},
-            "scale_type": "UNIT_LINEAR_SCALE",
         },
         {
+            "double_value_spec": {"max_value": 1.0, "min_value": 0.0},
             "parameter": "r",
             "type": "DOUBLE",
-            "double_value_spec": {"min_value": 0.0, "max_value": 1.0},
-            "scale_type": "UNIT_LINEAR_SCALE",
         },
     ],
 }
@@ -249,8 +245,8 @@ class CloudTunerUtilsTest(tf.test.TestCase, parameterized.TestCase):
         self._assert_hps_equal(actual_hps, hps)
 
     @parameterized.parameters(
-        (0.1, 0.5, None, "linear", STUDY_CONFIG_FLOAT),
-        (1, 2, 0.25, "linear", STUDY_CONFIG_FLOAT_STEP),
+        (0.1, 0.5, None, None, STUDY_CONFIG_FLOAT),
+        (1, 2, 0.25, None, STUDY_CONFIG_FLOAT_STEP),
         (0.1, 0.8, None, "linear", STUDY_CONFIG_FLOAT_LINEAR_SCALE),
         (1e-4, 1e-1, None, "log", STUDY_CONFIG_FLOAT_LOG_SCALE),
         (1e-4, 1e-1, None, "reverse_log", STUDY_CONFIG_FLOAT_REVERSE_LOG_SCALE))
