@@ -34,6 +34,7 @@ def make_required_install_packages():
 def make_required_test_packages():
     return [
         "absl-py",
+        "pytest<=7.0.1",
         "flake8",
         "mock",
         "numpy",
