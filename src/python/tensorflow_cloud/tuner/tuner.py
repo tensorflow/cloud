@@ -328,7 +328,8 @@ class CloudOracle(oracle_module.Oracle):
             keras_tuner_trial.status = trial_module.TrialStatus.STOPPED
         return keras_tuner_trial.status
 
-    def end_trial(self, trial_id: Text, status: Text = "COMPLETED"):
+    def end_trial(self, trial_id: Text, status: Text = "COMPLETED",
+                  message=None):
         """Record the measured objective for a set of parameter values."""
         keras_tuner_trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
