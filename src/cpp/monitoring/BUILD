@@ -22,6 +22,8 @@ load(
     "gcp_monitoring_proto_header_deps",
 )
 
+package(default_applicable_licenses = ["//third_party/tensorflow_cloud:license"])
+
 cc_library(
     name = "stackdriver_client",
     srcs = [
