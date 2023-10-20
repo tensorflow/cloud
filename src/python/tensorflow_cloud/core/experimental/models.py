@@ -293,7 +293,9 @@ def copy_entry_point(file_id, params_file):
 
 def get_original_lines():
   """Gets the file lines of models_entry_point.py as a list of strings."""
-  with pkg_resources.open_text(__package__, _ENTRY_POINT_TEMPLATE) as file:
+  with pkg_resources.files(__package__).joinpath(
+      _ENTRY_POINT_TEMPLATE
+  ).open('rt') as file:
     lines = file.readlines()
   return lines
 
