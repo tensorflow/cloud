@@ -243,22 +243,22 @@ def get_preprocessed_entry_point(
 
 
 def _get_colab_notebook_content():
-    """Returns the colab notebook python code contents."""
-    response = _message.blocking_request("get_ipynb",
-                                         request="",
-                                         timeout_sec=200)
-    if response is None:
-        raise RuntimeError("Unable to get the notebook contents.")
-    cells = response["ipynb"]["cells"]
-    py_content = []
-    for cell in cells:
-        if cell["cell_type"] == "code":
-            # Add newline char to the last line of a code cell.
-            cell["source"][-1] += "\n"
+  """Returns the colab notebook python code contents."""
+  if _message is None:
+    raise ValueError("Message is not imported.")
+  response = _message.blocking_request("get_ipynb", request="", timeout_sec=200)
+  if response is None:
+    raise RuntimeError("Unable to get the notebook contents.")
+  cells = response["ipynb"]["cells"]
+  py_content = []
+  for cell in cells:
+    if cell["cell_type"] == "code":
+      # Add newline char to the last line of a code cell.
+      cell["source"][-1] += "\n"
 
-            # Combine all code cells.
-            py_content.extend(cell["source"])
-    return py_content
+      # Combine all code cells.
+      py_content.extend(cell["source"])
+  return py_content
 
 
 def _get_kaggle_notebook_content():

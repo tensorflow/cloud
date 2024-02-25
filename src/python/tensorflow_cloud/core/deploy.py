@@ -194,30 +194,31 @@ def _print_logs_info(job_id, project_id):
 
 
 def _stream_logs(job_id):
-    """Streams job logs to stdout.
+  """Streams job logs to stdout.
 
-    Args:
-        job_id: The job id to stream logs from.
+  Args:
+      job_id: The job id to stream logs from.
 
-    Raises:
-        RuntimeError: if there are any errors from the streaming subprocess.
-    """
-    try:
-        print("Streaming job logs: ")
-        process = subprocess.Popen(
-            ["gcloud", "ai-platform", "jobs", "stream-logs", job_id],
-            stdout=subprocess.PIPE,
-        )
-        while True:
-            output = process.stdout.readline()
-            # Break out of the loop when poll returns an exit code.
-            if process.poll() is not None:
-                break
-            if output:
-                print(output.decode().replace("\x08", ""))
-    except (ValueError, OSError) as err:
-        print("There was an error streaming the job logs.")
-        raise err
+  Raises:
+      RuntimeError: if there are any errors from the streaming subprocess.
+  """
+  try:
+    print("Streaming job logs: ")
+    process = subprocess.Popen(
+        ["gcloud", "ai-platform", "jobs", "stream-logs", job_id],
+        stdout=subprocess.PIPE,
+    )
+    assert process.stdout is not None
+    while True:
+      output = process.stdout.readline()
+      # Break out of the loop when poll returns an exit code.
+      if process.poll() is not None:
+        break
+      if output:
+        print(output.decode().replace("\x08", ""))
+  except (ValueError, OSError) as err:
+    print("There was an error streaming the job logs.")
+    raise err
 
 
 def _generate_job_id():
