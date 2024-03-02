@@ -21,6 +21,7 @@ import uuid
 from . import containerize
 from . import deploy
 from . import docker_config as docker_config_module
+from . import gcp
 from . import machine_config
 from . import preprocess
 from . import validate
@@ -73,6 +74,7 @@ def run_cloudtuner(num_jobs=1, **kwargs):
     stream_logs = kwargs.pop("stream_logs", False)
     job_labels = kwargs.pop("job_labels", None)
     service_account = kwargs.pop("service_account", None)
+    region = kwargs.pop("region", gcp.get_region())
 
     job_ids = [run_results["job_id"]]
     for _ in range(1, num_jobs):
@@ -96,6 +98,7 @@ def run_cloudtuner(num_jobs=1, **kwargs):
                 stream_logs,
                 job_labels=job_labels,
                 service_account=service_account,
+                region=region,
             )
         ])
 
@@ -117,6 +120,7 @@ def run(
     stream_logs=False,
     job_labels=None,
     service_account=None,
+    region=None,
     **kwargs
 ):
     """Runs your Tensorflow code in Google Cloud Platform.
@@ -195,6 +199,7 @@ def run(
             to be used for training instead of the service account that AI
             Platform Training uses by default. see [custom-service-account](
             https://cloud.google.com/ai-platform/training/docs/custom-service-account)
+        region: Target region for running the AI Platform Training job.
         **kwargs: Additional keyword arguments.
 
     Returns:
@@ -329,6 +334,7 @@ def run(
         stream_logs,
         job_labels=job_labels,
         service_account=service_account,
+        region=region,
     )
 
     # Call `exit` to prevent training the Keras model in the local env.
