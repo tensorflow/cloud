@@ -66,3 +66,4 @@ setup(
     package_data={"tensorflow_cloud": ["tuner/api/*.json"]},
     packages=find_packages(where=relative_directory),
 )
+train_dataset = train_dataset.batch(BATCH_SIZE).map(scale)
