@@ -36,7 +36,7 @@ cc_library(
         "@com_google_absl//absl/time",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core/distributed_runtime/rpc:grpc_util",
-        "@com_github_grpc_grpc//:grpc++_public_hdrs",
+        "@com_github_grpc_grpc//:grpc++",
     ] + gcp_monitoring_grpc_deps() + gcp_monitoring_proto_header_deps(),
 )
 
