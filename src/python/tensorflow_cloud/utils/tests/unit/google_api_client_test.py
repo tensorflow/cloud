@@ -256,8 +256,8 @@ class GoogleApiClientTest(tf.test.TestCase):
 
         with open(self._local_config_path) as config_json:
             config_data = json.load(config_json)
-            self.assertDictContainsSubset(
-                config_data, {"notification_version": version.__version__})
+            actual = {"notification_version": version.__version__}
+            self.assertEqual(actual, {**actual, **config_data})
 
     @mock.patch.object(google_api_client,
                        "get_or_set_consent_status", autospec=True)
