@@ -167,7 +167,7 @@ you can skip the setup and authentication steps and start from step 8.
 
     ```shell
     export IMAGE_NAME=[name-for-docker-image]
-    export IMAGE_URI=gcr.io/$PROJECT_ID$/$IMAGE_NAME:latest
+    export IMAGE_URI=gcr.io/$PROJECT_ID/$IMAGE_NAME:latest
     docker build -t $IMAGE_URI -f Dockerfile . -q && docker push $IMAGE_URI
     ```
 
