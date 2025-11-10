@@ -34,6 +34,7 @@ def deploy_job(
     enable_stream_logs,
     job_labels=None,
     service_account=None,
+    region=None,
 ):
     """Deploys job with the given parameters to Google Cloud.
 
@@ -57,12 +58,15 @@ def deploy_job(
             to be used for training instead of the service account that AI
             Platform Training uses by default. See [custom service account](
             https://cloud.google.com/ai-platform/training/docs/custom-service-account)
+        region: Target region for running the AI Platform job.
     Returns:
         ID of the invoked remote Cloud AI Platform job.
 
     Raises:
         RuntimeError, if there was an error submitting the job.
     """
+    region = region or gcp.get_region()
+
     job_id = _generate_job_id()
     project_id = gcp.get_project_name()
     ml_apis = discovery.build(
@@ -74,7 +78,7 @@ def deploy_job(
 
     request_dict = _create_request_dict(
         job_id,
-        gcp.get_region(),
+        region,
         image_uri,
         chief_config,
         worker_count,
