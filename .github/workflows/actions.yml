@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8]  # TODO(b/196829466): Test Py 3.9 when issue is solved
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -24,7 +24,7 @@ jobs:
         pip install flake8 pytest mock
     - name: Install tensorflow cloud from setup
       run: |
-        pip install src/python/.
+        pip install --upgrade --use-deprecated=legacy-resolver src/python/.
         pip install nbconvert
     - name: Lint with flake8
       run: |
