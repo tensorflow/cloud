@@ -201,7 +201,7 @@ instructions below.
     BUCKET_NAME="your-bucket-name"
     REGION="us-central1"
     gcloud auth login
-    gsutil mb -l $REGION gs://$BUCKET_NAME
+    gcloud storage buckets create gs://$BUCKET_NAME --location=$REGION
     ```
 
     (optional for local docker setup) `shell sudo dockerd`

@@ -127,7 +127,7 @@ you can skip the setup and authentication steps and start from step 8.
     ```shell
     export BUCKET_NAME="your-bucket-name"
     export REGION="us-central1"
-    gsutil mb -l $REGION gs://$BUCKET_NAME
+    gcloud storage buckets create gs://$BUCKET_NAME --location=$REGION
     ```
 
 1.  Build and install latest release
@@ -178,4 +178,3 @@ you can skip the setup and authentication steps and start from step 8.
 ## License
 
 [Apache License 2.0](https://github.com/tensorflow/cloud/blob/master/LICENSE)
-
