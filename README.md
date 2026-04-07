@@ -1,4 +1,4 @@
-# ⛔️ DEPRECATED - note this repo is no longer maintained.
+# ⛔️ DEPRECATED - This repo is no longer maintained.
 # TensorFlow Cloud
 
 The TensorFlow Cloud repository provides APIs that will allow to easily go from
