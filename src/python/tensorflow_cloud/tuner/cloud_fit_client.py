@@ -109,8 +109,8 @@ def cloud_fit(
 
     else:
         job_spec = _default_job_spec(
-            region=region,
-            image_uri=image_uri,
+            region=region,  # pyrefly: ignore[bad-argument-type]
+            image_uri=image_uri,  # pyrefly: ignore[bad-argument-type]
             entry_point_args=[
                 "--remote_dir",
                 remote_dir,
@@ -231,7 +231,7 @@ def _default_job_spec(
     training_inputs["masterConfig"] = {"imageUri": image_uri}
     training_inputs["workerCount"] = DEFAULT_NUM_WORKERS
     job_spec = {"trainingInput": training_inputs}
-    job_spec["job_id"] = "cloud_fit_{}".format(
+    job_spec["job_id"] = "cloud_fit_{}".format(  # pyrefly: ignore[bad-assignment]
         datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     )
     return job_spec

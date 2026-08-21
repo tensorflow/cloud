@@ -405,7 +405,7 @@ def format_objective(
         ]
     if isinstance(objective, list):
         if isinstance(objective[0], oracle_module.Objective):
-            return objective
+            return objective  # pyrefly: ignore[bad-return]
         if isinstance(objective[0], str):
             return [
                 oracle_module.Objective(

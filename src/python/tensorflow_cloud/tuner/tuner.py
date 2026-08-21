@@ -279,7 +279,7 @@ class CloudOracle(oracle_module.Oracle):
         """Used by a worker to report the status of a trial."""
         # Constructs the measurement.
         # Adds the measurement of the objective functions to a trial.
-        elapsed_secs = time.time() - self._start_time
+        elapsed_secs = time.time() - self._start_time  # pyrefly: ignore[unsupported-operation]
         if elapsed_secs < 0 or step < 0:
             raise ValueError(
                 "Both elapsed_secs and step must be non-negative.")
@@ -294,7 +294,7 @@ class CloudOracle(oracle_module.Oracle):
                 if ob_name in metrics:
                     metric_list.append(
                         {"metric": ob_name,
-                         "value": float(metrics.get(ob_name))}
+                         "value": float(metrics.get(ob_name))}  # pyrefly: ignore[bad-argument-type]
                     )
                 tf.get_logger().info(
                     'Objective "{}" is not found in metrics.'.format(ob.name)
@@ -302,7 +302,7 @@ class CloudOracle(oracle_module.Oracle):
                 continue
 
             metric_list.append(
-                {"metric": ob.name, "value": float(metrics.get(ob.name))}
+                {"metric": ob.name, "value": float(metrics.get(ob.name))}  # pyrefly: ignore[bad-argument-type]
             )
 
         self.service.report_intermediate_objective_value(
@@ -775,7 +775,7 @@ class DistributingCloudTuner(tuner_module.Tuner):
             An AI Platform Training job spec.
         """
         # Set worker count as one less replica as one is dedicated as master
-        worker_count = self._replica_count -1
+        worker_count = self._replica_count -1  # pyrefly: ignore[unsupported-operation]
         worker_config = None
         if worker_count > 0:
             worker_config = self._replica_config

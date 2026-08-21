@@ -207,7 +207,7 @@ def get_preprocessed_entry_point(
                 )
 
             # Get the python code from the iPython notebook.
-            (py_content, _) = PythonExporter().from_filename(entry_point)
+            (py_content, _) = PythonExporter().from_filename(entry_point)  # pyrefly: ignore[bad-argument-type]
             py_content = py_content.splitlines(keepends=True)
 
         # Remove any iPython special commands and add the python code

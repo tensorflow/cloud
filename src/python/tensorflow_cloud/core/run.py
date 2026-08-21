@@ -233,9 +233,9 @@ def run(
         worker_config = machine_config.COMMON_MACHINE_CONFIGS["T4_1X"]
     if docker_config == "auto":
         docker_config = docker_config_module.DockerConfig()
-    docker_config.parent_image = (docker_config.parent_image or
+    docker_config.parent_image = (docker_config.parent_image or  # pyrefly: ignore[missing-attribute]
                                   docker_base_image)
-    docker_config.image_build_bucket = (docker_config.image_build_bucket or
+    docker_config.image_build_bucket = (docker_config.image_build_bucket or  # pyrefly: ignore[missing-attribute]
                                         docker_image_bucket_name)
 
     # Working directory in the Docker container filesystem.
@@ -255,11 +255,11 @@ def run(
         worker_count,
         entry_point_args,
         stream_logs,
-        docker_config.image_build_bucket,
+        docker_config.image_build_bucket,  # pyrefly: ignore[missing-attribute]
         called_from_notebook,
         job_labels=job_labels or {},
         service_account=service_account,
-        docker_parent_image=docker_config.parent_image,
+        docker_parent_image=docker_config.parent_image,  # pyrefly: ignore[missing-attribute]
     )
     print("Validation was successful.")
 
@@ -296,7 +296,7 @@ def run(
         "docker_config": docker_config,
         "called_from_notebook": called_from_notebook,
     }
-    if docker_config.image_build_bucket is None:
+    if docker_config.image_build_bucket is None:  # pyrefly: ignore[missing-attribute]
         container_builder = containerize.LocalContainerBuilder(
             *cb_args, **cb_kwargs)
     else:
@@ -306,7 +306,7 @@ def run(
 
     # Delete all the temporary files we created.
     if preprocessed_entry_point is not None:
-        os.close(pep_file_descriptor)
+        os.close(pep_file_descriptor)  # pyrefly: ignore[unbound-name]
         os.remove(preprocessed_entry_point)
     for file_path, file_descriptor in container_builder.get_generated_files(
         return_descriptors=True):

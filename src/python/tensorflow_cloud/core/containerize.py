@@ -94,8 +94,8 @@ class ContainerBuilder(object):
     self.project_id = gcp.get_project_name()
 
     # Those will be populated lazily.
-    self.tar_file_path: bytes | str = None
-    self.docker_client: docker.APIClient = None
+    self.tar_file_path: bytes | str = None  # pyrefly: ignore[bad-assignment]
+    self.docker_client: docker.APIClient = None  # pyrefly: ignore[bad-assignment]
     self.tar_file_descriptor = None
     self.docker_file_descriptor = None
 
@@ -239,7 +239,7 @@ class ContainerBuilder(object):
     )
 
     docker_entry_point = self.preprocessed_entry_point or self.entry_point
-    _, docker_entry_point_file_name = os.path.split(docker_entry_point)
+    _, docker_entry_point_file_name = os.path.split(docker_entry_point)  # pyrefly: ignore[no-matching-overload]
 
     # Using `ENTRYPOINT` here instead of `CMD` specifically because
     # we want to support passing user code flags.
@@ -503,10 +503,10 @@ class CloudContainerBuilder(ContainerBuilder):
         storage_client = storage.Client()
         try:
             bucket = storage_client.get_bucket(
-                self.docker_config.image_build_bucket)
+                self.docker_config.image_build_bucket)  # pyrefly: ignore[missing-attribute]
         except NotFound:
             bucket = storage_client.create_bucket(
-                self.docker_config.image_build_bucket)
+                self.docker_config.image_build_bucket)  # pyrefly: ignore[missing-attribute]
 
         unique_tag = str(uuid.uuid4()).replace("-", "_")
         storage_object_name = "tf_cloud_train_tar_{}".format(unique_tag)
@@ -542,7 +542,7 @@ class CloudContainerBuilder(ContainerBuilder):
             cache_from = (self.docker_config.cache_from or
                           self.docker_config.image)
 
-        if cache_from:
+        if cache_from:  # pyrefly: ignore[unbound-name]
             # Use the given Docker image as cache.
             request_dict["steps"].append({
                 "name": "gcr.io/cloud-builders/docker",
@@ -560,7 +560,7 @@ class CloudContainerBuilder(ContainerBuilder):
         })
         request_dict["source"] = {
             "storageSource": {
-                "bucket": self.docker_config.image_build_bucket,
+                "bucket": self.docker_config.image_build_bucket,  # pyrefly: ignore[missing-attribute]
                 "object": storage_object_name,
             }
         }
