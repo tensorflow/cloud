@@ -14,10 +14,10 @@
 """A thin client for the Cloud AI Platform Vizier Service."""
 import datetime
 import http
-import json
 import time
 from typing import Any, Dict, List, Mapping, Optional, Text, Union
 
+from google.api_core.client_options import ClientOptions
 from googleapiclient import discovery
 from googleapiclient import errors
 import tensorflow as tf
@@ -426,11 +426,20 @@ def create_or_load_study(
     # Build the API client
     # Note that Vizier service is exposed as a regional endpoint. As such,
     # an API client needs to be created separately from the default.
-    with open(constants.OPTIMIZER_API_DOCUMENT_FILE) as f:
-        service_client = discovery.build_from_document(
-            service=json.load(f),
-            requestBuilder=google_api_client.TFCloudHttpRequest,
-        )
+    ml_endpoint = f"https://{region}-ml.googleapis.com"
+    client_options = ClientOptions(
+        api_endpoint=ml_endpoint,
+    )
+
+    # Disabling cache discovery to suppress noisy warning. More details at:
+    # https://github.com/googleapis/google-api-python-client/issues/299
+    service_client = discovery.build(
+        serviceName="ml",
+        version="v1",
+        requestBuilder=google_api_client.TFCloudHttpRequest,
+        cache_discovery=False,
+        client_options=client_options,
+    )
 
     # Creates or loads a study.
     study_parent = "projects/{}/locations/{}".format(project_id, region)

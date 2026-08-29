@@ -13,13 +13,6 @@
 # limitations under the License.
 """Constants definitions for tuner sub module."""
 
-import os
-
-# API definition of Cloud AI Platform Vizier service
-OPTIMIZER_API_DOCUMENT_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "api/ml_public_google_rest_v1.json")
-
 # By default, the Tuner worker(s) always requests one trial at a time because
 # we would parallelize the tuning loop themselves as opposed to getting multiple
 # trial suggestions in one tuning loop.
