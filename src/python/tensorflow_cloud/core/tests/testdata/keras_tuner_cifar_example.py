@@ -25,8 +25,7 @@ def build_model(hp):
         [
             tf.keras.layers.experimental.preprocessing.RandomFlip(),
             tf.keras.layers.experimental.preprocessing.RandomRotation(0.1),
-            tf.keras.layers.experimental.preprocessing.RandomWidth(0.1),
-            tf.keras.layers.experimental.preprocessing.RandomHeight(0.1),
+            tf.keras.layers.experimental.preprocessing.RandomZoom(0.1),
         ]
     )
     inputs = tf.keras.Input(shape=(32, 32, 3))
