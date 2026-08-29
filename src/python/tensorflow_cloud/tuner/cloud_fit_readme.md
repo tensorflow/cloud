@@ -143,9 +143,10 @@ you can skip the setup and authentication steps and start from step 8.
     Create a dockerfile as follows:
 
     ```shell
-    # Using DLVM base image. For GPU training use
-    # gcr.io/deeplearning-platform-release/tf2-gpu instead.
-    FROM gcr.io/deeplearning-platform-release/tf2-cpu
+    # Using DLVM base image. 
+    # List of images to choose from: https://cloud.google.com/deep-learning-containers/docs/choosing-container
+    # Check for correct image according to CPU / GPU need.
+    FROM gcr.io/deeplearning-platform-release/tf-cpu.2-8
     WORKDIR /root
 
     # Path configuration
