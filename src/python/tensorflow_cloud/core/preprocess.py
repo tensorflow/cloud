@@ -269,7 +269,7 @@ def _get_kaggle_notebook_content():
             # `nbconvert` is always installed on Kaggle.
             "Please make sure you have installed `nbconvert` package."
         )
-    from kaggle_session import UserSessionClient  # pylint: disable=g-import-not-at-top  # pytype: disable=import-error
+    from kaggle_session import UserSessionClient  # pylint: disable=g-import-not-at-top  # pyrefly: ignore[missing-import]
     kaggle_session_client = UserSessionClient()
     try:
         response = kaggle_session_client.get_exportable_ipynb()
