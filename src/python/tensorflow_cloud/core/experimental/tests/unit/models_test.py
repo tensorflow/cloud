@@ -14,9 +14,10 @@
 """Tests for the models experimental module."""
 
 import os
+from unittest import mock
 import uuid
+
 from absl.testing import absltest
-import mock
 
 import tensorflow as tf
 from tensorflow_cloud.core import machine_config

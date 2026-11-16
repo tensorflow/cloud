@@ -13,8 +13,10 @@
 # limitations under the License.
 """Unit test for tf_utils module."""
 
-import mock
+from unittest import mock
+
 import tensorflow as tf
+
 from tensorboard.backend.event_processing import directory_watcher
 from tensorboard.backend.event_processing import event_file_loader
 from tensorboard.backend.event_processing import io_wrapper

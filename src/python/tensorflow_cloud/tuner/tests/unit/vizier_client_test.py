@@ -13,9 +13,10 @@
 # limitations under the License.
 """Tests for vizier_client."""
 
+from unittest import mock
+
 from googleapiclient import errors
 import httplib2
-import mock
 import tensorflow as tf
 from tensorflow_cloud.tuner import vizier_client
 

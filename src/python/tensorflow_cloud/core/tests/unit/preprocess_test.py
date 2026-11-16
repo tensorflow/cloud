@@ -14,9 +14,9 @@
 """Tests for the cloud preprocessing module."""
 
 import os
+from unittest import mock
 
 from absl.testing import absltest
-import mock
 
 from tensorflow_cloud.core import machine_config
 from tensorflow_cloud.core import preprocess

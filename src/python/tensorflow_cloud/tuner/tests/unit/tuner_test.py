@@ -15,13 +15,13 @@
 
 import os
 import time
+from unittest import mock
+
 from keras_tuner.engine import hypermodel as hypermodel_module
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as super_tuner
-
-import mock
 
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api

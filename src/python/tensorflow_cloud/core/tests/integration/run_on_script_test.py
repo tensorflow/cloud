@@ -14,7 +14,7 @@
 """Integration tests for calling tfc.run on a script with keras."""
 
 import os
-import mock
+from unittest import mock
 
 import tensorflow as tf
 import tensorflow_cloud as tfc

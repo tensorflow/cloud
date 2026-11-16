@@ -13,8 +13,9 @@
 # limitations under the License.
 """Tests for the models experimental module."""
 
+from unittest import mock
+
 from absl.testing import absltest
-import mock
 import tensorflow as tf
 
 from tensorflow_cloud.core.experimental import models_entry_point

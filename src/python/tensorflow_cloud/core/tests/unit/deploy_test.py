@@ -14,11 +14,11 @@
 """Tests for the cloud deploy module."""
 
 import io
+from unittest import mock
 
 from absl.testing import absltest
 from googleapiclient import discovery
 from googleapiclient import errors
-import mock
 
 from tensorflow_cloud.core import deploy
 from tensorflow_cloud.core import gcp

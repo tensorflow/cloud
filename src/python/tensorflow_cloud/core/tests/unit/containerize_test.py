@@ -15,11 +15,11 @@
 
 import os
 import tempfile
+from unittest import mock
 import uuid
 
 from absl.testing import absltest
 import docker
-import mock
 
 from tensorflow_cloud.core import containerize
 from tensorflow_cloud.core import docker_config

@@ -15,11 +15,12 @@
 
 import json
 import os
+from unittest import mock
+
 from googleapiclient import discovery
 from googleapiclient import errors
 from googleapiclient import http as googleapiclient_http
 import httplib2
-import mock
 import tensorflow as tf
 from tensorflow_cloud import version
 from tensorflow_cloud.utils import google_api_client
