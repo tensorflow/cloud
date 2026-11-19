@@ -13,6 +13,7 @@
 # limitations under the License.
 """Module that contains the `run_models` wrapper for training models from TF Model Garden."""
 
+from importlib import resources as pkg_resources
 import os
 import pickle
 from typing import Any, Dict, Optional
@@ -25,14 +26,6 @@ import tensorflow_datasets as tfds
 
 from official.legacy.image_classification.efficientnet import efficientnet_model
 from official.legacy.image_classification.resnet import resnet_model
-
-# pylint: disable=g-import-not-at-top
-try:
-  import importlib.resources as pkg_resources
-except ImportError:
-  # Backported for python<3.7
-  import importlib_resources as pkg_resources
-# pylint: enable=g-import-not-at-top
 
 _PARAMS_FILE_NAME_FORMAT = '{}_params'
 _ENTRY_POINT_FORMAT = '{}.py'
